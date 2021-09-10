@@ -12,7 +12,7 @@
 #' @return ROI pixel coordinates arranged in a named list.
 #' 
 CparseBrukerXML <- function(xml_path) {
-    .Call('_rMSI_CparseBrukerXML', PACKAGE = 'rMSI', xml_path)
+    .Call('_rMSI2_CparseBrukerXML', PACKAGE = 'rMSI2', xml_path)
 }
 
 #' Generic method for the imzMLreader
@@ -34,7 +34,7 @@ NULL
 #' @param mzArray: A matrix with the m/z values for all pixels. Each pixel corresponds to a row. If there is only one row data will be saved in continuous mode
 #' @param intArray: A matrix with the intensity values for all pixels. Each pixel corresponds to a row so the number of pixels is extracted from here.
 .debug_imzMLBinWriterSequential <- function(ibdFname, mz_dataTypeString, int_dataTypeString, str_uuid, mzArray, intArray) {
-    .Call('_rMSI_testingimzMLBinWriteSequential', PACKAGE = 'rMSI', ibdFname, mz_dataTypeString, int_dataTypeString, str_uuid, mzArray, intArray)
+    .Call('_rMSI2_testingimzMLBinWriteSequential', PACKAGE = 'rMSI2', ibdFname, mz_dataTypeString, int_dataTypeString, str_uuid, mzArray, intArray)
 }
 
 #' A method to use the imzMLwriter in modify mode to allow direct modification of mass axes for the calibration
@@ -47,7 +47,7 @@ NULL
 #' @param mzNew: A vector with the m/z values. Must be the same length as the original imzML mass target massa axis.
 #' @param mzOffset: offset in the ibd file of the target mass axis.
 CimzMLBinWriteModifyMass <- function(ibdFname, NPixels, mz_dataTypeString, int_dataTypeString, continuous, mzNew, mzOffset) {
-    invisible(.Call('_rMSI_CimzMLBinWriteModifyMass', PACKAGE = 'rMSI', ibdFname, NPixels, mz_dataTypeString, int_dataTypeString, continuous, mzNew, mzOffset))
+    invisible(.Call('_rMSI2_CimzMLBinWriteModifyMass', PACKAGE = 'rMSI2', ibdFname, NPixels, mz_dataTypeString, int_dataTypeString, continuous, mzNew, mzOffset))
 }
 
 #' CimzMLBinReadMass.
@@ -60,7 +60,7 @@ CimzMLBinWriteModifyMass <- function(ibdFname, NPixels, mz_dataTypeString, int_d
 #' @param offset: offset in bytes at which the reading operation is started.
 #' @param continuous: true if imzML data is in continuous mode
 CimzMLBinReadMass <- function(ibdFname, NPixels, N, offset, dataTypeString, continuous) {
-    .Call('_rMSI_CimzMLBinReadMass', PACKAGE = 'rMSI', ibdFname, NPixels, N, offset, dataTypeString, continuous)
+    .Call('_rMSI2_CimzMLBinReadMass', PACKAGE = 'rMSI2', ibdFname, NPixels, N, offset, dataTypeString, continuous)
 }
 
 #' CimzMLBinReadIntensity.
@@ -73,7 +73,7 @@ CimzMLBinReadMass <- function(ibdFname, NPixels, N, offset, dataTypeString, cont
 #' @param offset: offset in bytes at which the reading operation is started.
 #' @param continuous: true if imzML data is in continuous mode
 CimzMLBinReadIntensity <- function(ibdFname, NPixels, N, offset, dataTypeString, continuous) {
-    .Call('_rMSI_CimzMLBinReadIntensity', PACKAGE = 'rMSI', ibdFname, NPixels, N, offset, dataTypeString, continuous)
+    .Call('_rMSI2_CimzMLBinReadIntensity', PACKAGE = 'rMSI2', ibdFname, NPixels, N, offset, dataTypeString, continuous)
 }
 
 #' Method to read a peak list from an imzML file. Processed mode is assumed.
@@ -82,19 +82,19 @@ CimzMLBinReadIntensity <- function(ibdFname, NPixels, N, offset, dataTypeString,
 #' @param imzML_peakList_descriptor: imzML file description as it is returned by the CimzMLParse() function.
 #' @param PixelID: the pixel ID to read a peak list.
 CimzMLReadPeakList <- function(ibdFname, imzML_peakList_descriptor, PixelID) {
-    .Call('_rMSI_CimzMLReadPeakList', PACKAGE = 'rMSI', ibdFname, imzML_peakList_descriptor, PixelID)
+    .Call('_rMSI2_CimzMLReadPeakList', PACKAGE = 'rMSI2', ibdFname, imzML_peakList_descriptor, PixelID)
 }
 
 CimzMLParse <- function(xml_path) {
-    .Call('_rMSI_CimzMLParse', PACKAGE = 'rMSI', xml_path)
+    .Call('_rMSI2_CimzMLParse', PACKAGE = 'rMSI2', xml_path)
 }
 
 CimzMLStore <- function(fname, imgInfo, mass_spectrometer_file_format = "rMSI exported imzML") {
-    .Call('_rMSI_CimzMLStore', PACKAGE = 'rMSI', fname, imgInfo, mass_spectrometer_file_format)
+    .Call('_rMSI2_CimzMLStore', PACKAGE = 'rMSI2', fname, imgInfo, mass_spectrometer_file_format)
 }
 
 AlignSpectrumToReference <- function(mass, ref, spectrumInterpolated, massProcessedMode, intensityProcessedMode, bilinear = FALSE, lagRefLow = 0.1, lagRefMid = 0.5, lagRefHigh = 0.9, iterations = 1L, lagLimitppm = 200, fftOverSampling = 10L, winSizeRelative = 0.6) {
-    .Call('_rMSI_AlignSpectrumToReference', PACKAGE = 'rMSI', mass, ref, spectrumInterpolated, massProcessedMode, intensityProcessedMode, bilinear, lagRefLow, lagRefMid, lagRefHigh, iterations, lagLimitppm, fftOverSampling, winSizeRelative)
+    .Call('_rMSI2_AlignSpectrumToReference', PACKAGE = 'rMSI2', mass, ref, spectrumInterpolated, massProcessedMode, intensityProcessedMode, bilinear, lagRefLow, lagRefMid, lagRefHigh, iterations, lagLimitppm, fftOverSampling, winSizeRelative)
 }
 
 #' CalcMassAxisBinSize.
@@ -108,7 +108,7 @@ AlignSpectrumToReference <- function(mass, ref, spectrumInterpolated, massProces
 #' @export
 #' 
 CalcMassAxisBinSize <- function(mass, intensity) {
-    .Call('_rMSI_CalcMassAxisBinSize', PACKAGE = 'rMSI', mass, intensity)
+    .Call('_rMSI2_CalcMassAxisBinSize', PACKAGE = 'rMSI2', mass, intensity)
 }
 
 #' MergeMassAxis.
@@ -126,7 +126,7 @@ CalcMassAxisBinSize <- function(mass, intensity) {
 #' @return a list containing the common mass axis that represents mz1 and mz1 accurately and a boolean indicating if and error was raised.
 #' 
 MergeMassAxis <- function(mz1, bins1, mz2, bins2) {
-    .Call('_rMSI_MergeMassAxis', PACKAGE = 'rMSI', mz1, bins1, mz2, bins2)
+    .Call('_rMSI2_MergeMassAxis', PACKAGE = 'rMSI2', mz1, bins1, mz2, bins2)
 }
 
 #' MergeMassAxisAutoBinSize.
@@ -143,27 +143,27 @@ MergeMassAxis <- function(mz1, bins1, mz2, bins2) {
 #' @return a list containing the common mass axis that represents mz1 and mz1 accurately and a boolean indicating if and error was raised.
 #' 
 MergeMassAxisAutoBinSize <- function(mz1, mz2) {
-    .Call('_rMSI_MergeMassAxisAutoBinSize', PACKAGE = 'rMSI', mz1, mz2)
+    .Call('_rMSI2_MergeMassAxisAutoBinSize', PACKAGE = 'rMSI2', mz1, mz2)
 }
 
 COverallAverageSpectrum <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis, minTIC, maxTic) {
-    .Call('_rMSI_COverallAverageSpectrum', PACKAGE = 'rMSI', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis, minTIC, maxTic)
+    .Call('_rMSI2_COverallAverageSpectrum', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis, minTIC, maxTic)
 }
 
 CRunFillPeaks <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix) {
-    invisible(.Call('_rMSI_CRunFillPeaks', PACKAGE = 'rMSI', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix))
+    invisible(.Call('_rMSI2_CRunFillPeaks', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix))
 }
 
 CNormalizations <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis) {
-    .Call('_rMSI_CNormalizations', PACKAGE = 'rMSI', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis)
+    .Call('_rMSI2_CNormalizations', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis)
 }
 
 CRunPeakPicking <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, uuid, outputDataPath, imzMLoutFnames, commonMassAxis) {
-    .Call('_rMSI_CRunPeakPicking', PACKAGE = 'rMSI', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, uuid, outputDataPath, imzMLoutFnames, commonMassAxis)
+    .Call('_rMSI2_CRunPeakPicking', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, uuid, outputDataPath, imzMLoutFnames, commonMassAxis)
 }
 
 CRunPreProcessing <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, reference, uuid, outputDataPath, imzMLoutFnames, commonMassAxis) {
-    .Call('_rMSI_CRunPreProcessing', PACKAGE = 'rMSI', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, reference, uuid, outputDataPath, imzMLoutFnames, commonMassAxis)
+    .Call('_rMSI2_CRunPreProcessing', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, reference, uuid, outputDataPath, imzMLoutFnames, commonMassAxis)
 }
 
 #' NoiseEstimationFFTCosWin.
@@ -176,7 +176,7 @@ CRunPreProcessing <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, pre
 #' @return an Rcpp::NumericVector containing the estimated noise.
 #' @export
 NoiseEstimationFFTCosWin <- function(x, filWinSize = 40L) {
-    .Call('_rMSI_NoiseEstimationFFTCosWin', PACKAGE = 'rMSI', x, filWinSize)
+    .Call('_rMSI2_NoiseEstimationFFTCosWin', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
 #' NoiseEstimationFFTExpWin.
@@ -189,7 +189,7 @@ NoiseEstimationFFTCosWin <- function(x, filWinSize = 40L) {
 #' @return an Rcpp::NumericVector containing the estimated noise.
 #' @export
 NoiseEstimationFFTExpWin <- function(x, filWinSize = 40L) {
-    .Call('_rMSI_NoiseEstimationFFTExpWin', PACKAGE = 'rMSI', x, filWinSize)
+    .Call('_rMSI2_NoiseEstimationFFTExpWin', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
 #' NoiseEstimationFFTCosWinMat.
@@ -202,7 +202,7 @@ NoiseEstimationFFTExpWin <- function(x, filWinSize = 40L) {
 #' @return an Rcpp::NumericMatrix containing the estimated noise in a matrix where each spectrum is a row.
 #' @export
 NoiseEstimationFFTCosWinMat <- function(x, filWinSize = 40L) {
-    .Call('_rMSI_NoiseEstimationFFTCosWinMat', PACKAGE = 'rMSI', x, filWinSize)
+    .Call('_rMSI2_NoiseEstimationFFTCosWinMat', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
 #' NoiseEstimationFFTExpWinMat.
@@ -215,11 +215,11 @@ NoiseEstimationFFTCosWinMat <- function(x, filWinSize = 40L) {
 #' @return an Rcpp::NumericMatrix containing the estimated noise in a matrix where each spectrum is a row.
 #' @export
 NoiseEstimationFFTExpWinMat <- function(x, filWinSize = 40L) {
-    .Call('_rMSI_NoiseEstimationFFTExpWinMat', PACKAGE = 'rMSI', x, filWinSize)
+    .Call('_rMSI2_NoiseEstimationFFTExpWinMat', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
 CRunPeakBinning <- function(imzMLDescriptor, preProcessingParams, numOfThreads) {
-    .Call('_rMSI_CRunPeakBinning', PACKAGE = 'rMSI', imzMLDescriptor, preProcessingParams, numOfThreads)
+    .Call('_rMSI2_CRunPeakBinning', PACKAGE = 'rMSI2', imzMLDescriptor, preProcessingParams, numOfThreads)
 }
 
 #' DetectPeaks_C.
@@ -237,7 +237,7 @@ CRunPeakBinning <- function(imzMLDescriptor, preProcessingParams, numOfThreads) 
 #' @return a NumerixMatrix of 5 rows corresponding to: mass, intensity of the peak, SNR, area and binSize.
 #' 
 DetectPeaks_C <- function(mass, intensity, SNR = 5, WinSize = 20L, UpSampling = 10L) {
-    .Call('_rMSI_DetectPeaks_C', PACKAGE = 'rMSI', mass, intensity, SNR, WinSize, UpSampling)
+    .Call('_rMSI2_DetectPeaks_C', PACKAGE = 'rMSI2', mass, intensity, SNR, WinSize, UpSampling)
 }
 
 #' TestPeakInterpolation_C.
@@ -254,7 +254,7 @@ DetectPeaks_C <- function(mass, intensity, SNR = 5, WinSize = 20L, UpSampling = 
 #' @return a NumerixVector with the FFT interpolated peak shape.
 #' 
 TestPeakInterpolation_C <- function(mass, intensity, peakIndex, WinSize = 20L, UpSampling = 10L, useHanning = FALSE, Iterations = 1L) {
-    .Call('_rMSI_TestPeakInterpolation_C', PACKAGE = 'rMSI', mass, intensity, peakIndex, WinSize, UpSampling, useHanning, Iterations)
+    .Call('_rMSI2_TestPeakInterpolation_C', PACKAGE = 'rMSI2', mass, intensity, peakIndex, WinSize, UpSampling, useHanning, Iterations)
 }
 
 #' TestHanningWindow.
@@ -267,7 +267,7 @@ TestPeakInterpolation_C <- function(mass, intensity, peakIndex, WinSize = 20L, U
 #' @return a NumericVector containing the Hanning Window.
 #' 
 TestHanningWindow <- function(mass, WinSize = 20L, UpSampling = 10L) {
-    .Call('_rMSI_TestHanningWindow', PACKAGE = 'rMSI', mass, WinSize, UpSampling)
+    .Call('_rMSI2_TestHanningWindow', PACKAGE = 'rMSI2', mass, WinSize, UpSampling)
 }
 
 #' TestAreaWindow.
@@ -280,11 +280,11 @@ TestHanningWindow <- function(mass, WinSize = 20L, UpSampling = 10L) {
 #' @return a NumericVector containing the Area Window.
 #' 
 TestAreaWindow <- function(mass, WinSize = 20L, UpSampling = 10L) {
-    .Call('_rMSI_TestAreaWindow', PACKAGE = 'rMSI', mass, WinSize, UpSampling)
+    .Call('_rMSI2_TestAreaWindow', PACKAGE = 'rMSI2', mass, WinSize, UpSampling)
 }
 
 ReduceDataPointsC <- function(mass, intensity, massMin, massMax, npoints) {
-    .Call('_rMSI_ReduceDataPointsC', PACKAGE = 'rMSI', mass, intensity, massMin, massMax, npoints)
+    .Call('_rMSI2_ReduceDataPointsC', PACKAGE = 'rMSI2', mass, intensity, massMin, massMax, npoints)
 }
 
 #' decodePngStream2IonImages.
@@ -308,7 +308,7 @@ NULL
 #' @param number_of_threads: number of threads used for imgStream encoding.
 #' @return the rMSI object with rMSIXBin inforation completed. 
 Ccreate_rMSIXBinData <- function(rMSIobj, number_of_threads) {
-    .Call('_rMSI_Ccreate_rMSIXBinData', PACKAGE = 'rMSI', rMSIobj, number_of_threads)
+    .Call('_rMSI2_Ccreate_rMSIXBinData', PACKAGE = 'rMSI2', rMSIobj, number_of_threads)
 }
 
 #' Cload_rMSIXBinData.
@@ -320,7 +320,7 @@ Ccreate_rMSIXBinData <- function(rMSIobj, number_of_threads) {
 #' @param fname: file name of the .XrMSI file without the extension.
 #' @return the rMSI object with rMSIXBin inforation completed. 
 Cload_rMSIXBinData <- function(path, fname) {
-    .Call('_rMSI_Cload_rMSIXBinData', PACKAGE = 'rMSI', path, fname)
+    .Call('_rMSI2_Cload_rMSIXBinData', PACKAGE = 'rMSI2', path, fname)
 }
 
 #' Cload_rMSIXBinIonImage.
@@ -335,7 +335,7 @@ Cload_rMSIXBinData <- function(path, fname) {
 #' 
 #' @return the ion image as a NumericMatrix using max operator with all the ion images of the mass channels. 
 Cload_rMSIXBinIonImage <- function(rMSIobj, ionIndex, ionCount, normalization_coefs, number_of_threads) {
-    .Call('_rMSI_Cload_rMSIXBinIonImage', PACKAGE = 'rMSI', rMSIobj, ionIndex, ionCount, normalization_coefs, number_of_threads)
+    .Call('_rMSI2_Cload_rMSIXBinIonImage', PACKAGE = 'rMSI2', rMSIobj, ionIndex, ionCount, normalization_coefs, number_of_threads)
 }
 
 #' Cload_imzMLSpectra
@@ -344,7 +344,7 @@ Cload_rMSIXBinIonImage <- function(rMSIobj, ionIndex, ionCount, normalization_co
 #' @param pixelIDs: pixel ID's of the spectra to load in C-style indexing (starting at 0).
 #' @param commonMassAxis: a common mass axis that may be different than the mass axis in the rMSI object
 Cload_imzMLSpectra <- function(rMSIobj, pixelIDs, commonMassAxis) {
-    .Call('_rMSI_Cload_imzMLSpectra', PACKAGE = 'rMSI', rMSIobj, pixelIDs, commonMassAxis)
+    .Call('_rMSI2_Cload_imzMLSpectra', PACKAGE = 'rMSI2', rMSIobj, pixelIDs, commonMassAxis)
 }
 
 #' Smoothing_SavitzkyGolay.
@@ -354,6 +354,6 @@ Cload_imzMLSpectra <- function(rMSIobj, pixelIDs, commonMassAxis) {
 #' @param sgSize valid values are: 5, 7, 9, 11, 13, 15.
 #' @return the smoothed data vector.
 Smoothing_SavitzkyGolay <- function(x, sgSize = 5L) {
-    .Call('_rMSI_Smoothing_SavitzkyGolay', PACKAGE = 'rMSI', x, sgSize)
+    .Call('_rMSI2_Smoothing_SavitzkyGolay', PACKAGE = 'rMSI2', x, sgSize)
 }
 

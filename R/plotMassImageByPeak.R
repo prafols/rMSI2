@@ -29,7 +29,7 @@
   #Grab only MassPeaks Lists
   if(typeof(img) != "list")
   {
-    stop("Error in rMSI::.buildImageByPeak(), img is not a list")
+    stop("Error in rMSI2::.buildImageByPeak(), img is not a list")
   }
 
   #Get the image slice

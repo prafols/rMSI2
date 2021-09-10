@@ -35,7 +35,7 @@ InternalReferenceSpectrum <- function(img, reference, commonMassAxis = img$mass)
   selID <- NA
   for( id in 1:nrow(img$pos))
   {
-    spc <- rMSI::loadImgChunkFromIds(img, id, commonMassAxis)[1,]
+    spc <- loadImgChunkFromIds(img, id, commonMassAxis)[1,]
     if(var(spc) > 0)
     {
       score <- cor(reference, spc )
@@ -50,7 +50,7 @@ InternalReferenceSpectrum <- function(img, reference, commonMassAxis = img$mass)
   }
   
   close(pb)
-  return( list(spectrum = rMSI::loadImgChunkFromIds(img, maxId, commonMassAxis)[1,], score = maxScore, ID = selID ))
+  return( list(spectrum = loadImgChunkFromIds(img, maxId, commonMassAxis)[1,], score = maxScore, ID = selID ))
 }
 
 #' InternalReferenceSpectrumMultipleDatasets.

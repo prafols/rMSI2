@@ -256,7 +256,7 @@ List CimzMLParse( String xml_path )
   //Error handling
   if( bCompressionInt || bCompressionMz )
   {
-    return( List::create(Named("Error") = "imzML parse error: Data must not be compressed in order to be loaded in rMSI") );
+    return( List::create(Named("Error") = "imzML parse error: Data must not be compressed in order to be loaded in rMSI2") );
   }
   if( strcmp(sMzDataType.get_cstring(), "") == 0)
   {
@@ -713,13 +713,13 @@ bool CimzMLStore( String fname, List imgInfo, const char* mass_spectrometer_file
   pugi::xml_node node_softLst = node_mzML.append_child("softwareList");
   node_softLst.append_attribute("count") = "1";
   pugi::xml_node node_soft = node_softLst.append_child("software");
-  node_soft.append_attribute("id") = "rMSI";
-  node_soft.append_attribute("version") = "0.8";
+  node_soft.append_attribute("id") = "rMSI2";
+  node_soft.append_attribute("version") = "2.0";
   cvParam = node_soft.append_child("cvParam");
   cvParam.append_attribute("accession") = "MS:1000799";
   cvParam.append_attribute("cvRef") = "MS";
   cvParam.append_attribute("name") = "custom unreleased software tool";
-  cvParam.append_attribute("value") = "rMSI";
+  cvParam.append_attribute("value") = "rMSI2";
 
   
   //scanSettingsList

@@ -1,5 +1,5 @@
 #########################################################################
-#     rMSI - R package for MSI data handling and visualization
+#     rMSI2 - R package for MSI data handling and visualization
 #     Copyright (C) 2021 Pere Rafols Soler
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ DataInfo <- setRefClass("DataInfo",
                          
                          #Constructor
                          method = list(
-                           initialize = function(..., version = as.character(packageVersion("rMSI")))
+                           initialize = function(..., version = as.character(packageVersion("rMSI2")))
                            {
                              raw_data_path <<- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("imzML", "subimage_roi_xml")) 
                              callSuper(..., raw_data_path = raw_data_path,  version = version)
@@ -280,7 +280,7 @@ ProcParams <- setRefClass("ProcParams",
                           
                           #Constructor
                           method = list(
-                            initialize = function(..., version = as.character(packageVersion("rMSI")))
+                            initialize = function(..., version = as.character(packageVersion("rMSI2")))
                                           {
                                             callSuper(..., version = version)
                                           })

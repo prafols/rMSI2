@@ -33,16 +33,16 @@ raw_intensity <- 0.4*dnorm(raw_mass, mean = target_peaks[1], sd = 0.1) +
 ref_peaks <- c(110.1, 200.05, 499.95, 700.1, 750.15)
 
 # Calculate the calibration model using the linear and loess methods
-linModel <- rMSI::calcMassModel(ref_mz = ref_peaks, target_mz = target_peaks, method = "linear")
-loessModel <- rMSI::calcMassModel(ref_mz = ref_peaks, target_mz = target_peaks, method = "loess", CalSpan = 20)
+linModel <- rMSI2::calcMassModel(ref_mz = ref_peaks, target_mz = target_peaks, method = "linear")
+loessModel <- rMSI2::calcMassModel(ref_mz = ref_peaks, target_mz = target_peaks, method = "loess", CalSpan = 20)
 
 # Apply the calibration models to get a calibrated spectrum
-mass_linCal <- rMSI::applyMassCalibration(linModel, raw_mass)
-mass_loessCal <- rMSI::applyMassCalibration(loessModel, raw_mass)
+mass_linCal <- rMSI2::applyMassCalibration(linModel, raw_mass)
+mass_loessCal <- rMSI2::applyMassCalibration(loessModel, raw_mass)
 
 # Plot the synthetic raw spectrum overlaied with its calibrations
-rMSI::plotSpectra( raw_mass, raw_intensity, col = "black", ref_mass = ref_peaks) #raw with mass references marked
-rMSI::plotSpectra( mass_linCal, raw_intensity, col = "red") #linear calibration
-rMSI::plotSpectra( mass_loessCal, raw_intensity, col = "blue") #loess calibration
+rMSI2::plotSpectra( raw_mass, raw_intensity, col = "black", ref_mass = ref_peaks) #raw with mass references marked
+rMSI2::plotSpectra( mass_linCal, raw_intensity, col = "red") #linear calibration
+rMSI2::plotSpectra( mass_loessCal, raw_intensity, col = "blue") #loess calibration
 
 }

@@ -158,6 +158,12 @@ List PeakBinning::BinPeaks()
         }
         else
         {
+          /** DEBUG Prints
+          Rcout << "DBG: Adding new column to the peak matrix...\n";
+          Rcout << "DBG: new binMat.size() = "<< binMat.size() + 1 << "\n";
+          Rcout << "DBG: current mpeaks->mass.size() = " << mpeaks->mass.size() << "\n";
+           */
+          
           //A new column must be added to the peak matrix
           binMass.push_back(mpeaks->mass[imass]); //Append element to the mass vector (names of bin Matrix)
           columnsPeakCounters.push_back(1);
@@ -189,6 +195,12 @@ List PeakBinning::BinPeaks()
     {
       number_of_columns_to_remove++;
     }
+    /* DEBUG prints
+    Rcout << "DBG: columnsPeakCounters[ "<< i << " ] = " << columnsPeakCounters[i] <<"\n"; 
+    Rcout << "DBG: binFilter*(double)totalNumOfPixels = "<< binFilter*(double)totalNumOfPixels <<"\n"; 
+    Rcout << "DBG: keepColumns[ "<< i << " ] = " << keepColumns[i] <<"\n"; 
+    Rcout << "DBG: number_of_columns_to_remove = "<< number_of_columns_to_remove << "\n";
+     */
   }
   if(number_of_columns_to_remove >= binMass.size())
   {
@@ -228,7 +240,7 @@ List PeakBinning::BinPeaks()
   unsigned int icopy = 0;
   for(int i = 0; i < binMass.size(); i++)
   {
-    if(keepColumns[i])
+    if(keepColumns[sortedInds[i]])
     {
       massSorted[icopy] = binMass[sortedInds[i]];
       icopy++;
@@ -241,7 +253,7 @@ List PeakBinning::BinPeaks()
     icopy = 0;
     for(int ic = 0; ic < binMass.size(); ic++)
     {
-      if(keepColumns[ic])
+      if(keepColumns[sortedInds[ic]]) 
       {
         binMatIntensity(ir, icopy ) = binMat[sortedInds[ic]][ir].intensity;
         binMatSNR      (ir, icopy ) = binMat[sortedInds[ic]][ir].SNR;

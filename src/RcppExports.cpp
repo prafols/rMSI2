@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // CparseBrukerXML
 List CparseBrukerXML(String xml_path);
-RcppExport SEXP _rMSI_CparseBrukerXML(SEXP xml_pathSEXP) {
+RcppExport SEXP _rMSI2_CparseBrukerXML(SEXP xml_pathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,7 +23,7 @@ END_RCPP
 }
 // testingimzMLBinWriteSequential
 Rcpp::DataFrame testingimzMLBinWriteSequential(const char* ibdFname, Rcpp::String mz_dataTypeString, Rcpp::String int_dataTypeString, Rcpp::String str_uuid, Rcpp::NumericMatrix mzArray, Rcpp::NumericMatrix intArray);
-RcppExport SEXP _rMSI_testingimzMLBinWriteSequential(SEXP ibdFnameSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP str_uuidSEXP, SEXP mzArraySEXP, SEXP intArraySEXP) {
+RcppExport SEXP _rMSI2_testingimzMLBinWriteSequential(SEXP ibdFnameSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP str_uuidSEXP, SEXP mzArraySEXP, SEXP intArraySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,7 +39,7 @@ END_RCPP
 }
 // CimzMLBinWriteModifyMass
 void CimzMLBinWriteModifyMass(const char* ibdFname, unsigned int NPixels, Rcpp::String mz_dataTypeString, Rcpp::String int_dataTypeString, bool continuous, Rcpp::NumericVector mzNew, uint64_t mzOffset);
-RcppExport SEXP _rMSI_CimzMLBinWriteModifyMass(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP continuousSEXP, SEXP mzNewSEXP, SEXP mzOffsetSEXP) {
+RcppExport SEXP _rMSI2_CimzMLBinWriteModifyMass(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP continuousSEXP, SEXP mzNewSEXP, SEXP mzOffsetSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const char* >::type ibdFname(ibdFnameSEXP);
@@ -55,7 +55,7 @@ END_RCPP
 }
 // CimzMLBinReadMass
 Rcpp::NumericVector CimzMLBinReadMass(const char* ibdFname, unsigned int NPixels, unsigned int N, uint64_t offset, Rcpp::String dataTypeString, bool continuous);
-RcppExport SEXP _rMSI_CimzMLBinReadMass(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP NSEXP, SEXP offsetSEXP, SEXP dataTypeStringSEXP, SEXP continuousSEXP) {
+RcppExport SEXP _rMSI2_CimzMLBinReadMass(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP NSEXP, SEXP offsetSEXP, SEXP dataTypeStringSEXP, SEXP continuousSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -71,7 +71,7 @@ END_RCPP
 }
 // CimzMLBinReadIntensity
 Rcpp::NumericVector CimzMLBinReadIntensity(const char* ibdFname, unsigned int NPixels, unsigned int N, uint64_t offset, Rcpp::String dataTypeString, bool continuous);
-RcppExport SEXP _rMSI_CimzMLBinReadIntensity(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP NSEXP, SEXP offsetSEXP, SEXP dataTypeStringSEXP, SEXP continuousSEXP) {
+RcppExport SEXP _rMSI2_CimzMLBinReadIntensity(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP NSEXP, SEXP offsetSEXP, SEXP dataTypeStringSEXP, SEXP continuousSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -87,7 +87,7 @@ END_RCPP
 }
 // CimzMLReadPeakList
 Rcpp::List CimzMLReadPeakList(const char* ibdFname, Rcpp::List imzML_peakList_descriptor, unsigned int PixelID);
-RcppExport SEXP _rMSI_CimzMLReadPeakList(SEXP ibdFnameSEXP, SEXP imzML_peakList_descriptorSEXP, SEXP PixelIDSEXP) {
+RcppExport SEXP _rMSI2_CimzMLReadPeakList(SEXP ibdFnameSEXP, SEXP imzML_peakList_descriptorSEXP, SEXP PixelIDSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -100,7 +100,7 @@ END_RCPP
 }
 // CimzMLParse
 List CimzMLParse(String xml_path);
-RcppExport SEXP _rMSI_CimzMLParse(SEXP xml_pathSEXP) {
+RcppExport SEXP _rMSI2_CimzMLParse(SEXP xml_pathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -111,7 +111,7 @@ END_RCPP
 }
 // CimzMLStore
 bool CimzMLStore(String fname, List imgInfo, const char* mass_spectrometer_file_format);
-RcppExport SEXP _rMSI_CimzMLStore(SEXP fnameSEXP, SEXP imgInfoSEXP, SEXP mass_spectrometer_file_formatSEXP) {
+RcppExport SEXP _rMSI2_CimzMLStore(SEXP fnameSEXP, SEXP imgInfoSEXP, SEXP mass_spectrometer_file_formatSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -124,7 +124,7 @@ END_RCPP
 }
 // AlignSpectrumToReference
 Rcpp::List AlignSpectrumToReference(NumericVector mass, NumericVector ref, NumericVector spectrumInterpolated, NumericVector massProcessedMode, NumericVector intensityProcessedMode, bool bilinear, double lagRefLow, double lagRefMid, double lagRefHigh, int iterations, double lagLimitppm, int fftOverSampling, double winSizeRelative);
-RcppExport SEXP _rMSI_AlignSpectrumToReference(SEXP massSEXP, SEXP refSEXP, SEXP spectrumInterpolatedSEXP, SEXP massProcessedModeSEXP, SEXP intensityProcessedModeSEXP, SEXP bilinearSEXP, SEXP lagRefLowSEXP, SEXP lagRefMidSEXP, SEXP lagRefHighSEXP, SEXP iterationsSEXP, SEXP lagLimitppmSEXP, SEXP fftOverSamplingSEXP, SEXP winSizeRelativeSEXP) {
+RcppExport SEXP _rMSI2_AlignSpectrumToReference(SEXP massSEXP, SEXP refSEXP, SEXP spectrumInterpolatedSEXP, SEXP massProcessedModeSEXP, SEXP intensityProcessedModeSEXP, SEXP bilinearSEXP, SEXP lagRefLowSEXP, SEXP lagRefMidSEXP, SEXP lagRefHighSEXP, SEXP iterationsSEXP, SEXP lagLimitppmSEXP, SEXP fftOverSamplingSEXP, SEXP winSizeRelativeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -147,7 +147,7 @@ END_RCPP
 }
 // CalcMassAxisBinSize
 NumericVector CalcMassAxisBinSize(NumericVector mass, NumericVector intensity);
-RcppExport SEXP _rMSI_CalcMassAxisBinSize(SEXP massSEXP, SEXP intensitySEXP) {
+RcppExport SEXP _rMSI2_CalcMassAxisBinSize(SEXP massSEXP, SEXP intensitySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -159,7 +159,7 @@ END_RCPP
 }
 // MergeMassAxis
 List MergeMassAxis(NumericVector mz1, NumericVector bins1, NumericVector mz2, NumericVector bins2);
-RcppExport SEXP _rMSI_MergeMassAxis(SEXP mz1SEXP, SEXP bins1SEXP, SEXP mz2SEXP, SEXP bins2SEXP) {
+RcppExport SEXP _rMSI2_MergeMassAxis(SEXP mz1SEXP, SEXP bins1SEXP, SEXP mz2SEXP, SEXP bins2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -173,7 +173,7 @@ END_RCPP
 }
 // MergeMassAxisAutoBinSize
 List MergeMassAxisAutoBinSize(NumericVector mz1, NumericVector mz2);
-RcppExport SEXP _rMSI_MergeMassAxisAutoBinSize(SEXP mz1SEXP, SEXP mz2SEXP) {
+RcppExport SEXP _rMSI2_MergeMassAxisAutoBinSize(SEXP mz1SEXP, SEXP mz2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -185,7 +185,7 @@ END_RCPP
 }
 // COverallAverageSpectrum
 NumericVector COverallAverageSpectrum(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis, double minTIC, double maxTic);
-RcppExport SEXP _rMSI_COverallAverageSpectrum(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP, SEXP minTICSEXP, SEXP maxTicSEXP) {
+RcppExport SEXP _rMSI2_COverallAverageSpectrum(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP, SEXP minTICSEXP, SEXP maxTicSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -201,7 +201,7 @@ END_RCPP
 }
 // CRunFillPeaks
 void CRunFillPeaks(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams, Rcpp::NumericVector commonMassAxis, Rcpp::List peakMatrix);
-RcppExport SEXP _rMSI_CRunFillPeaks(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP commonMassAxisSEXP, SEXP peakMatrixSEXP) {
+RcppExport SEXP _rMSI2_CRunFillPeaks(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP commonMassAxisSEXP, SEXP peakMatrixSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type rMSIObj_list(rMSIObj_listSEXP);
@@ -216,7 +216,7 @@ END_RCPP
 }
 // CNormalizations
 List CNormalizations(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis);
-RcppExport SEXP _rMSI_CNormalizations(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP) {
+RcppExport SEXP _rMSI2_CNormalizations(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -230,7 +230,7 @@ END_RCPP
 }
 // CRunPeakPicking
 Rcpp::List CRunPeakPicking(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams, Rcpp::StringVector uuid, Rcpp::String outputDataPath, Rcpp::StringVector imzMLoutFnames, Rcpp::NumericVector commonMassAxis);
-RcppExport SEXP _rMSI_CRunPeakPicking(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP uuidSEXP, SEXP outputDataPathSEXP, SEXP imzMLoutFnamesSEXP, SEXP commonMassAxisSEXP) {
+RcppExport SEXP _rMSI2_CRunPeakPicking(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP uuidSEXP, SEXP outputDataPathSEXP, SEXP imzMLoutFnamesSEXP, SEXP commonMassAxisSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -248,7 +248,7 @@ END_RCPP
 }
 // CRunPreProcessing
 List CRunPreProcessing(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams, Rcpp::NumericVector reference, Rcpp::StringVector uuid, Rcpp::String outputDataPath, Rcpp::StringVector imzMLoutFnames, Rcpp::NumericVector commonMassAxis);
-RcppExport SEXP _rMSI_CRunPreProcessing(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP referenceSEXP, SEXP uuidSEXP, SEXP outputDataPathSEXP, SEXP imzMLoutFnamesSEXP, SEXP commonMassAxisSEXP) {
+RcppExport SEXP _rMSI2_CRunPreProcessing(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP referenceSEXP, SEXP uuidSEXP, SEXP outputDataPathSEXP, SEXP imzMLoutFnamesSEXP, SEXP commonMassAxisSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -267,7 +267,7 @@ END_RCPP
 }
 // NoiseEstimationFFTCosWin
 NumericVector NoiseEstimationFFTCosWin(NumericVector x, int filWinSize);
-RcppExport SEXP _rMSI_NoiseEstimationFFTCosWin(SEXP xSEXP, SEXP filWinSizeSEXP) {
+RcppExport SEXP _rMSI2_NoiseEstimationFFTCosWin(SEXP xSEXP, SEXP filWinSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -279,7 +279,7 @@ END_RCPP
 }
 // NoiseEstimationFFTExpWin
 NumericVector NoiseEstimationFFTExpWin(NumericVector x, int filWinSize);
-RcppExport SEXP _rMSI_NoiseEstimationFFTExpWin(SEXP xSEXP, SEXP filWinSizeSEXP) {
+RcppExport SEXP _rMSI2_NoiseEstimationFFTExpWin(SEXP xSEXP, SEXP filWinSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -291,7 +291,7 @@ END_RCPP
 }
 // NoiseEstimationFFTCosWinMat
 NumericMatrix NoiseEstimationFFTCosWinMat(NumericMatrix x, int filWinSize);
-RcppExport SEXP _rMSI_NoiseEstimationFFTCosWinMat(SEXP xSEXP, SEXP filWinSizeSEXP) {
+RcppExport SEXP _rMSI2_NoiseEstimationFFTCosWinMat(SEXP xSEXP, SEXP filWinSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -303,7 +303,7 @@ END_RCPP
 }
 // NoiseEstimationFFTExpWinMat
 NumericMatrix NoiseEstimationFFTExpWinMat(NumericMatrix x, int filWinSize);
-RcppExport SEXP _rMSI_NoiseEstimationFFTExpWinMat(SEXP xSEXP, SEXP filWinSizeSEXP) {
+RcppExport SEXP _rMSI2_NoiseEstimationFFTExpWinMat(SEXP xSEXP, SEXP filWinSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -315,7 +315,7 @@ END_RCPP
 }
 // CRunPeakBinning
 List CRunPeakBinning(Rcpp::List imzMLDescriptor, Rcpp::Reference preProcessingParams, int numOfThreads);
-RcppExport SEXP _rMSI_CRunPeakBinning(SEXP imzMLDescriptorSEXP, SEXP preProcessingParamsSEXP, SEXP numOfThreadsSEXP) {
+RcppExport SEXP _rMSI2_CRunPeakBinning(SEXP imzMLDescriptorSEXP, SEXP preProcessingParamsSEXP, SEXP numOfThreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -328,7 +328,7 @@ END_RCPP
 }
 // DetectPeaks_C
 NumericMatrix DetectPeaks_C(NumericVector mass, NumericVector intensity, double SNR, int WinSize, int UpSampling);
-RcppExport SEXP _rMSI_DetectPeaks_C(SEXP massSEXP, SEXP intensitySEXP, SEXP SNRSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
+RcppExport SEXP _rMSI2_DetectPeaks_C(SEXP massSEXP, SEXP intensitySEXP, SEXP SNRSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -343,7 +343,7 @@ END_RCPP
 }
 // TestPeakInterpolation_C
 NumericVector TestPeakInterpolation_C(NumericVector mass, NumericVector intensity, int peakIndex, int WinSize, int UpSampling, bool useHanning, int Iterations);
-RcppExport SEXP _rMSI_TestPeakInterpolation_C(SEXP massSEXP, SEXP intensitySEXP, SEXP peakIndexSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP, SEXP useHanningSEXP, SEXP IterationsSEXP) {
+RcppExport SEXP _rMSI2_TestPeakInterpolation_C(SEXP massSEXP, SEXP intensitySEXP, SEXP peakIndexSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP, SEXP useHanningSEXP, SEXP IterationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -360,7 +360,7 @@ END_RCPP
 }
 // TestHanningWindow
 NumericVector TestHanningWindow(NumericVector mass, int WinSize, int UpSampling);
-RcppExport SEXP _rMSI_TestHanningWindow(SEXP massSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
+RcppExport SEXP _rMSI2_TestHanningWindow(SEXP massSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -373,7 +373,7 @@ END_RCPP
 }
 // TestAreaWindow
 NumericVector TestAreaWindow(NumericVector mass, int WinSize, int UpSampling);
-RcppExport SEXP _rMSI_TestAreaWindow(SEXP massSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
+RcppExport SEXP _rMSI2_TestAreaWindow(SEXP massSEXP, SEXP WinSizeSEXP, SEXP UpSamplingSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -386,7 +386,7 @@ END_RCPP
 }
 // ReduceDataPointsC
 List ReduceDataPointsC(NumericVector mass, NumericVector intensity, double massMin, double massMax, int npoints);
-RcppExport SEXP _rMSI_ReduceDataPointsC(SEXP massSEXP, SEXP intensitySEXP, SEXP massMinSEXP, SEXP massMaxSEXP, SEXP npointsSEXP) {
+RcppExport SEXP _rMSI2_ReduceDataPointsC(SEXP massSEXP, SEXP intensitySEXP, SEXP massMinSEXP, SEXP massMaxSEXP, SEXP npointsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -401,7 +401,7 @@ END_RCPP
 }
 // Ccreate_rMSIXBinData
 List Ccreate_rMSIXBinData(List rMSIobj, int number_of_threads);
-RcppExport SEXP _rMSI_Ccreate_rMSIXBinData(SEXP rMSIobjSEXP, SEXP number_of_threadsSEXP) {
+RcppExport SEXP _rMSI2_Ccreate_rMSIXBinData(SEXP rMSIobjSEXP, SEXP number_of_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -413,7 +413,7 @@ END_RCPP
 }
 // Cload_rMSIXBinData
 List Cload_rMSIXBinData(String path, String fname);
-RcppExport SEXP _rMSI_Cload_rMSIXBinData(SEXP pathSEXP, SEXP fnameSEXP) {
+RcppExport SEXP _rMSI2_Cload_rMSIXBinData(SEXP pathSEXP, SEXP fnameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -425,7 +425,7 @@ END_RCPP
 }
 // Cload_rMSIXBinIonImage
 NumericMatrix Cload_rMSIXBinIonImage(List rMSIobj, unsigned int ionIndex, unsigned int ionCount, NumericVector normalization_coefs, int number_of_threads);
-RcppExport SEXP _rMSI_Cload_rMSIXBinIonImage(SEXP rMSIobjSEXP, SEXP ionIndexSEXP, SEXP ionCountSEXP, SEXP normalization_coefsSEXP, SEXP number_of_threadsSEXP) {
+RcppExport SEXP _rMSI2_Cload_rMSIXBinIonImage(SEXP rMSIobjSEXP, SEXP ionIndexSEXP, SEXP ionCountSEXP, SEXP normalization_coefsSEXP, SEXP number_of_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -440,7 +440,7 @@ END_RCPP
 }
 // Cload_imzMLSpectra
 NumericMatrix Cload_imzMLSpectra(List rMSIobj, IntegerVector pixelIDs, NumericVector commonMassAxis);
-RcppExport SEXP _rMSI_Cload_imzMLSpectra(SEXP rMSIobjSEXP, SEXP pixelIDsSEXP, SEXP commonMassAxisSEXP) {
+RcppExport SEXP _rMSI2_Cload_imzMLSpectra(SEXP rMSIobjSEXP, SEXP pixelIDsSEXP, SEXP commonMassAxisSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -453,7 +453,7 @@ END_RCPP
 }
 // Smoothing_SavitzkyGolay
 NumericVector Smoothing_SavitzkyGolay(NumericVector x, int sgSize);
-RcppExport SEXP _rMSI_Smoothing_SavitzkyGolay(SEXP xSEXP, SEXP sgSizeSEXP) {
+RcppExport SEXP _rMSI2_Smoothing_SavitzkyGolay(SEXP xSEXP, SEXP sgSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -465,42 +465,42 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_rMSI_CparseBrukerXML", (DL_FUNC) &_rMSI_CparseBrukerXML, 1},
-    {"_rMSI_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI_testingimzMLBinWriteSequential, 6},
-    {"_rMSI_CimzMLBinWriteModifyMass", (DL_FUNC) &_rMSI_CimzMLBinWriteModifyMass, 7},
-    {"_rMSI_CimzMLBinReadMass", (DL_FUNC) &_rMSI_CimzMLBinReadMass, 6},
-    {"_rMSI_CimzMLBinReadIntensity", (DL_FUNC) &_rMSI_CimzMLBinReadIntensity, 6},
-    {"_rMSI_CimzMLReadPeakList", (DL_FUNC) &_rMSI_CimzMLReadPeakList, 3},
-    {"_rMSI_CimzMLParse", (DL_FUNC) &_rMSI_CimzMLParse, 1},
-    {"_rMSI_CimzMLStore", (DL_FUNC) &_rMSI_CimzMLStore, 3},
-    {"_rMSI_AlignSpectrumToReference", (DL_FUNC) &_rMSI_AlignSpectrumToReference, 13},
-    {"_rMSI_CalcMassAxisBinSize", (DL_FUNC) &_rMSI_CalcMassAxisBinSize, 2},
-    {"_rMSI_MergeMassAxis", (DL_FUNC) &_rMSI_MergeMassAxis, 4},
-    {"_rMSI_MergeMassAxisAutoBinSize", (DL_FUNC) &_rMSI_MergeMassAxisAutoBinSize, 2},
-    {"_rMSI_COverallAverageSpectrum", (DL_FUNC) &_rMSI_COverallAverageSpectrum, 6},
-    {"_rMSI_CRunFillPeaks", (DL_FUNC) &_rMSI_CRunFillPeaks, 6},
-    {"_rMSI_CNormalizations", (DL_FUNC) &_rMSI_CNormalizations, 4},
-    {"_rMSI_CRunPeakPicking", (DL_FUNC) &_rMSI_CRunPeakPicking, 8},
-    {"_rMSI_CRunPreProcessing", (DL_FUNC) &_rMSI_CRunPreProcessing, 9},
-    {"_rMSI_NoiseEstimationFFTCosWin", (DL_FUNC) &_rMSI_NoiseEstimationFFTCosWin, 2},
-    {"_rMSI_NoiseEstimationFFTExpWin", (DL_FUNC) &_rMSI_NoiseEstimationFFTExpWin, 2},
-    {"_rMSI_NoiseEstimationFFTCosWinMat", (DL_FUNC) &_rMSI_NoiseEstimationFFTCosWinMat, 2},
-    {"_rMSI_NoiseEstimationFFTExpWinMat", (DL_FUNC) &_rMSI_NoiseEstimationFFTExpWinMat, 2},
-    {"_rMSI_CRunPeakBinning", (DL_FUNC) &_rMSI_CRunPeakBinning, 3},
-    {"_rMSI_DetectPeaks_C", (DL_FUNC) &_rMSI_DetectPeaks_C, 5},
-    {"_rMSI_TestPeakInterpolation_C", (DL_FUNC) &_rMSI_TestPeakInterpolation_C, 7},
-    {"_rMSI_TestHanningWindow", (DL_FUNC) &_rMSI_TestHanningWindow, 3},
-    {"_rMSI_TestAreaWindow", (DL_FUNC) &_rMSI_TestAreaWindow, 3},
-    {"_rMSI_ReduceDataPointsC", (DL_FUNC) &_rMSI_ReduceDataPointsC, 5},
-    {"_rMSI_Ccreate_rMSIXBinData", (DL_FUNC) &_rMSI_Ccreate_rMSIXBinData, 2},
-    {"_rMSI_Cload_rMSIXBinData", (DL_FUNC) &_rMSI_Cload_rMSIXBinData, 2},
-    {"_rMSI_Cload_rMSIXBinIonImage", (DL_FUNC) &_rMSI_Cload_rMSIXBinIonImage, 5},
-    {"_rMSI_Cload_imzMLSpectra", (DL_FUNC) &_rMSI_Cload_imzMLSpectra, 3},
-    {"_rMSI_Smoothing_SavitzkyGolay", (DL_FUNC) &_rMSI_Smoothing_SavitzkyGolay, 2},
+    {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
+    {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
+    {"_rMSI2_CimzMLBinWriteModifyMass", (DL_FUNC) &_rMSI2_CimzMLBinWriteModifyMass, 7},
+    {"_rMSI2_CimzMLBinReadMass", (DL_FUNC) &_rMSI2_CimzMLBinReadMass, 6},
+    {"_rMSI2_CimzMLBinReadIntensity", (DL_FUNC) &_rMSI2_CimzMLBinReadIntensity, 6},
+    {"_rMSI2_CimzMLReadPeakList", (DL_FUNC) &_rMSI2_CimzMLReadPeakList, 3},
+    {"_rMSI2_CimzMLParse", (DL_FUNC) &_rMSI2_CimzMLParse, 1},
+    {"_rMSI2_CimzMLStore", (DL_FUNC) &_rMSI2_CimzMLStore, 3},
+    {"_rMSI2_AlignSpectrumToReference", (DL_FUNC) &_rMSI2_AlignSpectrumToReference, 13},
+    {"_rMSI2_CalcMassAxisBinSize", (DL_FUNC) &_rMSI2_CalcMassAxisBinSize, 2},
+    {"_rMSI2_MergeMassAxis", (DL_FUNC) &_rMSI2_MergeMassAxis, 4},
+    {"_rMSI2_MergeMassAxisAutoBinSize", (DL_FUNC) &_rMSI2_MergeMassAxisAutoBinSize, 2},
+    {"_rMSI2_COverallAverageSpectrum", (DL_FUNC) &_rMSI2_COverallAverageSpectrum, 6},
+    {"_rMSI2_CRunFillPeaks", (DL_FUNC) &_rMSI2_CRunFillPeaks, 6},
+    {"_rMSI2_CNormalizations", (DL_FUNC) &_rMSI2_CNormalizations, 4},
+    {"_rMSI2_CRunPeakPicking", (DL_FUNC) &_rMSI2_CRunPeakPicking, 8},
+    {"_rMSI2_CRunPreProcessing", (DL_FUNC) &_rMSI2_CRunPreProcessing, 9},
+    {"_rMSI2_NoiseEstimationFFTCosWin", (DL_FUNC) &_rMSI2_NoiseEstimationFFTCosWin, 2},
+    {"_rMSI2_NoiseEstimationFFTExpWin", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWin, 2},
+    {"_rMSI2_NoiseEstimationFFTCosWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTCosWinMat, 2},
+    {"_rMSI2_NoiseEstimationFFTExpWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWinMat, 2},
+    {"_rMSI2_CRunPeakBinning", (DL_FUNC) &_rMSI2_CRunPeakBinning, 3},
+    {"_rMSI2_DetectPeaks_C", (DL_FUNC) &_rMSI2_DetectPeaks_C, 5},
+    {"_rMSI2_TestPeakInterpolation_C", (DL_FUNC) &_rMSI2_TestPeakInterpolation_C, 7},
+    {"_rMSI2_TestHanningWindow", (DL_FUNC) &_rMSI2_TestHanningWindow, 3},
+    {"_rMSI2_TestAreaWindow", (DL_FUNC) &_rMSI2_TestAreaWindow, 3},
+    {"_rMSI2_ReduceDataPointsC", (DL_FUNC) &_rMSI2_ReduceDataPointsC, 5},
+    {"_rMSI2_Ccreate_rMSIXBinData", (DL_FUNC) &_rMSI2_Ccreate_rMSIXBinData, 2},
+    {"_rMSI2_Cload_rMSIXBinData", (DL_FUNC) &_rMSI2_Cload_rMSIXBinData, 2},
+    {"_rMSI2_Cload_rMSIXBinIonImage", (DL_FUNC) &_rMSI2_Cload_rMSIXBinIonImage, 5},
+    {"_rMSI2_Cload_imzMLSpectra", (DL_FUNC) &_rMSI2_Cload_imzMLSpectra, 3},
+    {"_rMSI2_Smoothing_SavitzkyGolay", (DL_FUNC) &_rMSI2_Smoothing_SavitzkyGolay, 2},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_rMSI(DllInfo *dll) {
+RcppExport void R_init_rMSI2(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

@@ -133,11 +133,11 @@ plotMassDriftImageG <- function(peakMatrix, peakList, target_mass, error_range_p
     iStop <- iStart + peakMatrix$numPixels[i] - 1
     if(i == 1)
     {
-      pltDf$acq_order[iStart:iStop] <- rMSI::SortIDsByAcquisition( list(pos= pltDf[iStart:iStop, c("x", "y")] ) )
+      pltDf$acq_order[iStart:iStop] <- SortIDsByAcquisition( list(pos= pltDf[iStart:iStop, c("x", "y")] ) )
     }
     else
     {
-      pltDf$acq_order[iStart:iStop] <- rMSI::SortIDsByAcquisition( list(pos= pltDf[iStart:iStop, c("x", "y")] ) ) + sum(peakMatrix$numPixels[1:(i-1) ]) 
+      pltDf$acq_order[iStart:iStop] <- SortIDsByAcquisition( list(pos= pltDf[iStart:iStop, c("x", "y")] ) ) + sum(peakMatrix$numPixels[1:(i-1) ]) 
     }
     iStart <- iStop + 1
   }
@@ -324,7 +324,7 @@ plotMassDriftG <- function(peakMatrix, peakList, target_mass, error_range_ppm, m
       pltDf$dataset[currRows] <- rep(paste0("img",i), length(currRows) )
       if(length(currRows) > 1)
       {
-        acq_ordered_partial_rows <- rMSI::SortIDsByAcquisition( list(pos= pltDf[currRows, c("x", "y")] ) )
+        acq_ordered_partial_rows <- SortIDsByAcquisition( list(pos= pltDf[currRows, c("x", "y")] ) )
       }
       else
       {

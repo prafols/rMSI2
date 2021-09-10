@@ -6,6 +6,6 @@
 #' @author Pere Rafols
 #' @import Rcpp
 #' @importFrom Rcpp evalCpp
-#' @useDynLib rMSI
-#' @name rMSI
+#' @useDynLib rMSI2
+#' @name rMSI2
 NULL  

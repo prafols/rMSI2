@@ -1,5 +1,5 @@
 #########################################################################
-#     rMSI - R package for MSI data handling and visualization
+#     rMSI2 - R package for MSI data handling and visualization
 #     Copyright (C) 2014 Pere Rafols Soler
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -833,14 +833,14 @@
   RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$Btn_Show))
   Lbl_Rotation<- gWidgets2::glabel(text = "Rotation: 0", container = Grp_Buttons)
   Btn_rotate_CCW <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnRotateCCW)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CCW)$image, filename = file.path(system.file(package = "rMSI", "icons"),"Rotate_CCW.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CCW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CCW.png") )
   Btn_rotate_CW <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnRotateCW)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CW)$image, filename = file.path(system.file(package = "rMSI", "icons"),"Rotate_CW.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CW.png") )
 
   Btn_flipV <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipV)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI", "icons"),"FlipV.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipV.png") )
   Btn_flipH <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipH)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI", "icons"),"FlipH.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipH.png") )
 
   Lbl_Xres<- gWidgets2::glabel(text = "Interpolation:", container = Grp_Buttons)
   Combo_Xres <- gWidgets2::gcombobox( items = c("x1","x2","x3","x4","x5"), selected = 2, container = Grp_Buttons, handler = this$ComboBox_XRes_Changed)

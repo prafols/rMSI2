@@ -39,12 +39,12 @@ ProcessImages <- function(proc_params,
 {
   if(class(proc_params) != "ProcParams")
   {
-    stop("ERROR: proc_params argument must be an object of class \"ProcParams\". Use the rMSI::ProcessingParameters() function to create a valid proc_params\n")
+    stop("ERROR: proc_params argument must be an object of class \"ProcParams\". Use the rMSI2::ProcessingParameters() function to create a valid proc_params\n")
   }
   
   if(class(data_description) != "DataInfo")
   {
-    stop("ERROR: data_description argument must be an object of class \"DataInfo\". Use the rMSI::ImzMLDataDescription() function to create a valid data_description.\n")
+    stop("ERROR: data_description argument must be an object of class \"DataInfo\". Use the rMSI2::ImzMLDataDescription() function to create a valid data_description.\n")
   }
   
   pt <- proc.time()
@@ -285,7 +285,7 @@ RunPreProcessing <- function(proc_params,
       #Apply mass recalibration here to all images
       if(proc_params$preprocessing$massCalibration)
       {
-        img_lst_proc[[i]] <- rMSI::applyMassCalibrationImage(img_lst_proc[[i]], calModel$model)
+        img_lst_proc[[i]] <- applyMassCalibrationImage(img_lst_proc[[i]], calModel$model)
       }
       
       #The XML part is stored after the mass re-calibration since the mass axis overwrittening process will change the results of the checksums
