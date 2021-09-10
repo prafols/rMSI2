@@ -1,8 +1,8 @@
-Package: rMSI
+Package: rMSI2
 Type: Package
 Title: MSI Tools
-Version: 0.8
-Date: 2015-11-30
+Version: 2.0
+Date: 2021-9-10
 Author:  Pere Rafols[aut], Lluc Semente [aut]
 Authors@R: c( person("Pere", "Rafols", email="pere.rafols@urv.cat",
         role=c("aut")), person("Lluc", "Semente",
