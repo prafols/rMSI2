@@ -47,6 +47,33 @@ ProcessImages <- function(proc_params,
     stop("ERROR: data_description argument must be an object of class \"DataInfo\". Use the rMSI2::ImzMLDataDescription() function to create a valid data_description.\n")
   }
   
+  if(data_description$outputpath == "" || nchar(data_description$outputpath) == 0)
+  {
+    stop("ERROR: output path must be set before running the processing function. Set it with the setOutputPath() method of the data description object.\n")
+  }
+  
+  #Check that all files exist before continuing with the processing
+  if(nrow(data_description$raw_data_path) == 0)
+  {
+    stop("ERROR: no data has been a added to proces. Append data to the data description object with the appendImzMLDataPath() method.\n")
+  }
+  for( i in 1:nrow(data_description$raw_data_path))
+  {
+    if(!file.exists(data_description$raw_data_path$imzML[i]))
+    {
+      stop(paste0("ERROR: the imzML file ", data_description$raw_data_path$imzML[i], " does not exists!\n"))
+    }
+    if(!is.na(data_description$raw_data_path$subimage_roi_xml[i]))
+    {
+      if(!file.exists(data_description$raw_data_path$subimage_roi_xml[i]))
+      {
+        stop(paste0("ERROR: the ROI XML file ", data_description$raw_data_path$subimage_roi_xml[i], " does not exists!\n"))
+      }
+    }
+  }
+  
+  class(data_description$raw_data_path)
+  
   pt <- proc.time()
   CalibrationWindowElapsedTime <- 0 #Keep track of the elapsed time during the calibration GUI
   
@@ -54,11 +81,7 @@ ProcessImages <- function(proc_params,
   data_description$parseROIs() 
   
   #Check if data output path is set and create it
-  if(length(proc_params$outputpath) == 0)
-  {
-    stop("ERROR: Output data path is empty. Use the setOutputPath() method to set it for the processing parameters object.\n")
-  }
-  dir.create(proc_params$outputpath, showWarnings = F, recursive = T)
+  dir.create(data_description$outputpath, showWarnings = F, recursive = T)
   
   # Load the data (only imzML parsing)
   img_lst <- list()
@@ -90,12 +113,14 @@ ProcessImages <- function(proc_params,
   {
     #Merge processing, process all images at once
     result <- RunPreProcessing(proc_params,
-                        img_lst,
-                        numOfThreads,
-                        memoryPerThreadMB)
+                               data_description$outputpath,
+                               img_lst,
+                               numOfThreads,
+                               memoryPerThreadMB)
     
     #Get the time elapsed during calibration GUI
     CalibrationWindowElapsedTime <- result$CalibrationElapsedTime 
+    
   }
   else
   {
@@ -105,9 +130,10 @@ ProcessImages <- function(proc_params,
     {
       cat(paste0("\nProcessing image ", i, " of ", length(img_lst), " \n"))
       result[[i]] <- RunPreProcessing(proc_params,
-                          list(img_lst[[i]]),
-                          numOfThreads,
-                          memoryPerThreadMB)
+                                      data_description$outputpath,
+                                      list(img_lst[[i]]),
+                                      numOfThreads,
+                                      memoryPerThreadMB)
       
       #Get the time elapsed during calibration GUI
       CalibrationWindowElapsedTime <- CalibrationWindowElapsedTime + result[[i]]$CalibrationElapsedTime
@@ -117,6 +143,26 @@ ProcessImages <- function(proc_params,
   #TODO Intensity Normalizations are only calculated automatically when the alginemnt is enbaled (to calculate the reference spectrum). 
   #TODO So, at the end reuse them according to the desired output: if rMSIXBin must be exported reuse or calculate, if not just forget about normalizations.
   #TODO think about returning alignment lags here. Currently, im returning it but this may be confusing for the end user. Also the Calibration time... I dont need any of these!
+  
+  #Store the peak Matrices
+  if(proc_params$preprocessing$peakbinning$enable)
+  {
+    cat("Storing peak-matrices")
+    if(proc_params$getMergedProcessing())
+    {
+      StorePeakMatrix( file.path(data_description$outputpath, "merged-peakmatrix.pkmat"),  result$PeakMatrix)
+    }
+    else
+    {
+      for(i in 1:length(result))
+      {
+        StorePeakMatrix( file.path(data_description$outputpath, result[[i]]$PeakMatrix$names, "-peakmatrix.pkmat"),  result[[i]]$PeakMatrix)
+      }
+    }
+  }
+  
+  #Store preproc params
+  rMSI2::StoreProcParams(file.path(data_description$outputpath, "proc_parameters.params"), proc_params)
   
   #Display the used processing time
   elap <- proc.time() - pt - CalibrationWindowElapsedTime
@@ -130,13 +176,15 @@ ProcessImages <- function(proc_params,
 #' Process a single image or multiple images with the complete processing workflow.
 #' 
 #'
-#' @param proc_params a ProcParams object containing the processing parameters
+#' @param proc_params a ProcParams object containing the processing parameters.
+#' @param output_data_path output path to store the processing results. 
 #' @param img_lst a rMSI objects lis to process.
 #' @param numOfThreads the number number of threads used to process the data.
 #' @param memoryPerThreadMB maximum allowed memory by each thread. The total number of trehad will be two times numOfThreads, so the total memory usage will be: 2*numOfThreads*memoryPerThreadMB.
 #'
 #' @return 
 RunPreProcessing <- function(proc_params,
+                             output_data_path,
                                 img_lst,
                                 verifyImzMLChecksums = F,
                                 numOfThreads = min(parallel::detectCores()/2, 6),
@@ -227,7 +275,7 @@ RunPreProcessing <- function(proc_params,
     
     result <-  CRunPreProcessing( img_lst, numOfThreads, memoryPerThreadMB, 
                                   proc_params$preprocessing, refSpc, 
-                                  uuids_new, proc_params$outputpath, out_imzML_fnames, 
+                                  uuids_new, path.expand(output_data_path), out_imzML_fnames, 
                                   common_mass)
   }
 
@@ -265,7 +313,7 @@ RunPreProcessing <- function(proc_params,
       img_lst_proc[[i]] <- img_lst[[i]] #copy the original data
       img_lst_proc[[i]]$mass <- common_mass
       img_lst_proc[[i]]$name <- paste0(img_lst_proc[[i]]$name, "-proc")
-      img_lst_proc[[i]]$data$path <- proc_params$outputpath
+      img_lst_proc[[i]]$data$path <- output_data_path
       img_lst_proc[[i]]$data$rMSIXBin$uuid <- uuid_timebased()
       img_lst_proc[[i]]$data$rMSIXBin$file <- img_lst_proc[[i]]$name 
       img_lst_proc[[i]]$data$imzML$uuid <- uuids_new[i]
@@ -337,7 +385,7 @@ RunPreProcessing <- function(proc_params,
     
     peakListsOffsets <- CRunPeakPicking(img_lst_proc, numOfThreads, memoryPerThreadMB, 
                                         proc_params$preprocessing, 
-                                        uuids_peakLists, proc_params$outputpath, out_imzMLpeakLists_fnames, 
+                                        uuids_peakLists, path.expand(output_data_path), out_imzMLpeakLists_fnames, 
                                         common_mass)
     
     #Store peak lists imzML files and keep references to them in peaklists_lst
@@ -350,7 +398,7 @@ RunPreProcessing <- function(proc_params,
       
       #The XML part is stored after the mass re-calibration since the mass axis overwrittening process will change the results of the checksums
       cat(paste0("Calculating MD5 checksum for the peaks lists of image ", img_lst_proc[[i]]$name, "...\n"))
-      peaklistMD5 <- toupper(digest::digest( file.path( proc_params$outputpath, paste0(out_imzMLpeakLists_fnames[i], ".ibd")),
+      peaklistMD5 <- toupper(digest::digest( file.path( path.expand(output_data_path), paste0(out_imzMLpeakLists_fnames[i], ".ibd")),
                                                                   algo = "md5",
                                                                   file = T))
       
@@ -365,7 +413,7 @@ RunPreProcessing <- function(proc_params,
                                   int_dataType = "double",
                                   pixel_size_um = img_lst_proc[[i]]$pixel_size_um,
                                   run_data = currentRunData,
-                                  path = proc_params$outputpath,
+                                  path = output_data_path,
                                   file = out_imzMLpeakLists_fnames[i],
                                   rMSIpeakList = T #Peak list created with rMSI format
                                   )

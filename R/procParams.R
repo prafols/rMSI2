@@ -24,8 +24,8 @@ DataInfo <- setRefClass("DataInfo",
                          fields = list(
                           version = "character",
                           raw_data_path = "data.frame",
-                          out_path = "character",
-                          roi_list = "list"
+                          roi_list = "list",
+                          outputpath = "character"
                           ),
                          
                          #Constructor
@@ -127,6 +127,15 @@ DataInfo$methods(
                                                ROIpos = NULL) #NULL pos means all pixels in the imzML
       }
     }
+  },
+  
+  #' setOutputPath.
+  #' set the output directory to store the results of data processing.
+  #' Setting the output path is mandatory.
+  #' 
+  setOutputPath = function(datapath)
+  {
+    outputpath <<- path.expand(datapath)
   }
 )
 
@@ -274,8 +283,7 @@ ProcParams <- setRefClass("ProcParams",
                           fields = list(
                            version = "character",
                            preprocessing = "PreProcParams",
-                           annotations = "AnnotationParams",
-                           outputpath = "character"
+                           annotations = "AnnotationParams"
                            ),
                           
                           #Constructor
@@ -300,11 +308,6 @@ ProcParams$methods(
                     setMergedProcessing = function(bMerge)
                     {
                       preprocessing$merge <<- bMerge
-                    },
-                    
-                    setOutputPath = function(datapath)
-                    {
-                      outputpath <<- path.expand(datapath)
                     }
                     
                    )
@@ -322,4 +325,56 @@ ProcessingParameters <- function()
 {
   proc_params <- ProcParams()
   return (proc_params)
+}
+
+#' LoadProcParams.
+#' 
+#' Loads processing parameters from the HDD.
+#'
+#' @param filename full path to the .params file where processing paramers are stored.
+#'
+#' @return  a rMSI2 processing parameters object.
+#' @export
+#'
+LoadProcParams <- function( filename )
+{
+  #Remove extension if supplied
+  fname <- basename(filename)
+  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- paste0(fname, ".params")
+  data <- readRDS(file = file.path(dirname(filename), fname))
+  
+  if( class(data) != "ProcParams")
+  {
+    rm(data)
+    gc()
+    stop("The provided files does not contain a valid ProcParams object\n")
+  }
+  
+  return(data)
+}
+
+#' StoreProcParams.
+#'
+#' Stores all processing parameters to HDD.
+#' Parameters arestored compressed using RData format with .params extension.
+#'
+#' @param filename full path to the .params file where processing paramers are stored.
+#' @param params processing parameters object of the ProcParams class. 
+#' @export
+#'
+StoreProcParams <- function( filename, params )
+{
+  if( class(params) != "ProcParams")
+  {
+    stop("The provided parameters are not in ProcParams format\n")
+  }
+  
+  #Remove extension if supplied
+  fname <- basename(filename)
+  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- paste0(fname, ".params")
+  
+  dir.create(dirname(filename), recursive = T, showWarnings = F)
+  saveRDS(params, file= file.path( dirname(filename), fname ))
 }

@@ -75,6 +75,13 @@ plotPeakImage <- function(peakMatrix, mz = NULL, column = NULL, matrix = "intens
     {
       stop(paste0("No normalization found with the name:", normalization))
     }
+    
+    #Replace possible zeros in the normalization vectors by ones to aboid zero divisions. At the end if a pixel has a normalization value of zero most of its value will be zero as well.
+    idZeroNormPlaces <- which(normVals == 0)
+    if(length(idZeroNormPlaces) > 0)
+    {
+      normVals[idZeroNormPlaces] <- 1.0;
+    }
   }
   else
   {

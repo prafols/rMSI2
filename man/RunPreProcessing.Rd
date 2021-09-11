@@ -6,6 +6,7 @@
 \usage{
 RunPreProcessing(
   proc_params,
+  output_data_path,
   img_lst,
   verifyImzMLChecksums = F,
   numOfThreads = min(parallel::detectCores()/2, 6),
@@ -13,7 +14,9 @@ RunPreProcessing(
 )
 }
 \arguments{
-\item{proc_params}{a ProcParams object containing the processing parameters}
+\item{proc_params}{a ProcParams object containing the processing parameters.}
+
+\item{output_data_path}{output path to store the processing results.}
 
 \item{img_lst}{a rMSI objects lis to process.}
 
