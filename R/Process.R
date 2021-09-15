@@ -503,3 +503,33 @@ FormatPeakMatrix <- function (cPeakMatrix, posMat, numPixels, names, uuid, posMo
   return(cPeakMatrix)
 }
 
+#' ProcessWizard.
+#' 
+#' Imports and process MSI data using a friendly GUI.
+#' Various images can be loaded and processed with a single execution.
+#' Data must be in imzML format.
+#' Processed data will be saved in a user specified directory.
+#' The applied processing consists in:
+#'   - Spectral smoothing.
+#'   - Label-free aligment (various iterations can be performed, zero iterations means no alignment).
+#'   - Peak-picking.
+#'   - Peak-binning.
+#'   - Mass calibration with internal reference compounds.
+#' The processed data includes:
+#'   - The processed spectral data stored in imzML files.
+#'   - a rMSIproc formated matrices with binned peaks.
+#'   - a file with used processing parameters.
+#' @export
+#'
+ProcessWizard <- function( deleteRamdisk = T, overwriteRamdisk = F, calibrationSpan = 0.75, store_binsize_txt_file = F )
+{
+  #Get processing params using a GUI
+  wizardResult <- ImportWizardGui()
+  
+  if(is.null(wizardResult))
+  {
+    stop("Processing Aborted.\n")
+  }
+  
+  return(ProcessImages(wizardResult$procparams, wizardResult$datadesc, numOfThreads = wizardResult$numOfThreads, memoryPerThreadMB = wizardResult$memoryPerThreadMB ) )
+}

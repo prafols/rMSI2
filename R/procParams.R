@@ -265,10 +265,11 @@ PreProcParams <- setRefClass("PreProcParams",
                              #Constructor
                              method = list(
                                initialize = function(...,
+                                                     merge = T,
                                                      massCalibration = T
                                                      )
                                {
-                                 callSuper(..., massCalibration = massCalibration)
+                                 callSuper(..., merge = merge, massCalibration = massCalibration)
                                })
                             )
 

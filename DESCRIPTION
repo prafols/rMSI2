@@ -3,7 +3,7 @@ Type: Package
 Title: MSI Tools
 Version: 2.0
 Date: 2021-9-10
-Author:  Pere Rafols[aut], Lluc Semente [aut]
+Author: Pere Rafols[aut], Lluc Semente [aut]
 Authors@R: c( person("Pere", "Rafols", email="pere.rafols@urv.cat",
         role=c("aut")), person("Lluc", "Semente",
         email="lluc.semente@urv.cat", role=c("aut")))
@@ -30,4 +30,4 @@ Suggests:
     ggplot2 (>= 3.0.0),
     gridExtra (>= 2.3)
 LinkingTo: Rcpp
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
