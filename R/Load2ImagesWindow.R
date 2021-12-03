@@ -40,7 +40,7 @@ LoadTwoMsImages <- function( )
   #Signal handlers
   fileChooseClicked <- function(h, ...)
   {
-    fname<-gWidgets2::gfile("Select an MSI file to open", type="open", multi = F, filter =  list("TAR , imzML" = list(patterns = c("*.tar", "*.imzML"))), initial.dir = path.expand("~/"))
+    fname<-gWidgets2::gfile("Select an MSI file to open", type="open", multi = F, filter =  list("XrMSI , imzML" = list(patterns = c("*.XrMSI", "*.imzML"))), initial.dir = path.expand("~/"))
     if(length(fname) == 0)
     {
       return ()

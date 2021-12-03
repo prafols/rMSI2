@@ -181,6 +181,9 @@ class ImzMLBinWrite : public ImzMLBin
     //Write the 16 bytes UUID to the imzML ibd file. Uuid provided as a std::String
     void writeUUID(std::string suuid);
     
+    //Overwrite the UUID
+    void overwriteUUID(std::string suuid);
+    
     //Write N elements to the ibd file at the given offset as m/z channels
     //Data is obtained from ptr pointer
     void writeMzData(std::streampos offset, unsigned int N, double* ptr );

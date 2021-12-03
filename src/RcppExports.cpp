@@ -98,6 +98,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// overwriteIbdUUid
+void overwriteIbdUUid(const char* ibdFname, Rcpp::String newUUID);
+RcppExport SEXP _rMSI2_overwriteIbdUUid(SEXP ibdFnameSEXP, SEXP newUUIDSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const char* >::type ibdFname(ibdFnameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type newUUID(newUUIDSEXP);
+    overwriteIbdUUid(ibdFname, newUUID);
+    return R_NilValue;
+END_RCPP
+}
 // CimzMLParse
 List CimzMLParse(String xml_path);
 RcppExport SEXP _rMSI2_CimzMLParse(SEXP xml_pathSEXP) {
@@ -471,6 +482,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CimzMLBinReadMass", (DL_FUNC) &_rMSI2_CimzMLBinReadMass, 6},
     {"_rMSI2_CimzMLBinReadIntensity", (DL_FUNC) &_rMSI2_CimzMLBinReadIntensity, 6},
     {"_rMSI2_CimzMLReadPeakList", (DL_FUNC) &_rMSI2_CimzMLReadPeakList, 3},
+    {"_rMSI2_overwriteIbdUUid", (DL_FUNC) &_rMSI2_overwriteIbdUUid, 2},
     {"_rMSI2_CimzMLParse", (DL_FUNC) &_rMSI2_CimzMLParse, 1},
     {"_rMSI2_CimzMLStore", (DL_FUNC) &_rMSI2_CimzMLStore, 3},
     {"_rMSI2_AlignSpectrumToReference", (DL_FUNC) &_rMSI2_AlignSpectrumToReference, 13},

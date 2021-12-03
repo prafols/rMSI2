@@ -85,6 +85,14 @@ CimzMLReadPeakList <- function(ibdFname, imzML_peakList_descriptor, PixelID) {
     .Call('_rMSI2_CimzMLReadPeakList', PACKAGE = 'rMSI2', ibdFname, imzML_peakList_descriptor, PixelID)
 }
 
+#' Method to overwrite the UUID of an imzML ibd file.
+#' testingimzMLBinRead
+#' @param ibdFname: full path to the ibd file.
+#' @param newUUID: the new uuid as a string.
+overwriteIbdUUid <- function(ibdFname, newUUID) {
+    invisible(.Call('_rMSI2_overwriteIbdUUid', PACKAGE = 'rMSI2', ibdFname, newUUID))
+}
+
 CimzMLParse <- function(xml_path) {
     .Call('_rMSI2_CimzMLParse', PACKAGE = 'rMSI2', xml_path)
 }

@@ -618,11 +618,6 @@ void ImzMLBinWrite::open(bool truncate)
 
 void ImzMLBinWrite::writeUUID(const char* uuid)
 {
-  if(fileMode == Mode::ModifyFile)
-  {
-    throw std::runtime_error("ERROR: ibd file was opened in an invalid mode for sequencial writing and UUID can only be set in sequential mode");
-  }
-  
   if(ibdFile.tellp() != 0)
   {
     throw std::runtime_error("ERROR: the ibd writing pointer is not at zero so UUID cannot be writen");
@@ -644,6 +639,22 @@ void ImzMLBinWrite::writeUUID(std::string suuid)
     uuid[i] = strtol(suuid.substr(i*2, 2).c_str(), NULL, 16);
   }
   writeUUID(uuid);
+}
+
+void ImzMLBinWrite::overwriteUUID(std::string suuid)
+{
+  if(fileMode == Mode::SequentialWriteFile)
+  {
+    throw std::runtime_error("ERROR: ibd file was opened in an invalid mode for data modification");
+  }
+  
+  ibdFile.seekp(0);
+  if(ibdFile.fail() || ibdFile.bad())
+  {
+    throw std::runtime_error("FATAL ERROR: overwriteUUID got fail or bad bit condition seeking the imzML ibd file.\n"); 
+  }
+  
+  writeUUID(suuid);
 }
 
 void ImzMLBinWrite::writeMzData(std::streampos offset, unsigned int N, double* ptr )
@@ -1051,5 +1062,25 @@ Rcpp::List CimzMLReadPeakList(const char* ibdFname, Rcpp::List imzML_peakList_de
     return Rcpp::List::create( Rcpp::Named("ID") = PixelID,
                                Rcpp::Named("mass") = vmass,
                                Rcpp::Named("intensity") = vintensity);
+  }
+}
+
+//TODO working here to allow overwrting an already set uuid
+//' Method to overwrite the UUID of an imzML ibd file.
+//' testingimzMLBinRead
+//' @param ibdFname: full path to the ibd file.
+//' @param newUUID: the new uuid as a string.
+// [[Rcpp::export]]
+void overwriteIbdUUid(const char* ibdFname, Rcpp::String newUUID)
+{
+  try
+  {
+    ImzMLBinWrite myWriter(ibdFname, 1, "double", "double", true, false);
+    myWriter.overwriteUUID(newUUID.get_cstring());
+    myWriter.close();
+  }
+  catch(std::runtime_error &e)
+  {
+    Rcpp::Rcout << "Catch Error: "<< e.what() << "\n";
   }
 }

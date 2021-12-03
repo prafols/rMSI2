@@ -8,7 +8,7 @@ RunPreProcessing(
   proc_params,
   output_data_path,
   img_lst,
-  verifyImzMLChecksums = F,
+  data_is_peaklist,
   numOfThreads = min(parallel::detectCores()/2, 6),
   memoryPerThreadMB = 200
 )
@@ -18,7 +18,9 @@ RunPreProcessing(
 
 \item{output_data_path}{output path to store the processing results.}
 
-\item{img_lst}{a rMSI objects lis to process.}
+\item{img_lst}{a rMSI objects lis to process when processing spectral data or reference to peaks list when processing peak lists.}
+
+\item{data_is_peaklist}{a boolean indicating wheter the imzML data contains peak lists instead of spectral data.}
 
 \item{numOfThreads}{the number number of threads used to process the data.}
 

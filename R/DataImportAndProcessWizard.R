@@ -16,9 +16,6 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-#TODO redeign the enable-disable widgets strategy: for example: when peakpicking disabled peakbinning is disabled too... but what if I just want to bin  a peak list?
-#TODO add the option to use input data as a peak-list.. thus directely to the peak-matrix (peak-binning) and al pre-processing settins will be disabled
-
 ImportWizardGui <- function()
 {
   oldWarning<-options()$warn
@@ -28,7 +25,8 @@ ImportWizardGui <- function()
   ## instance of the function.
   this <- environment()
   
-  ##Class data members 
+  ##Class data members
+  abort_GUI <- T
   ParamList <- list( procparams = ProcessingParameters(), datadesc = ImzMLDataDescription(), numberOfThread = parallel::detectCores() - 2, memoryPerThreadMB = 100) #Start with defaults!
   workdir <- path.expand("~/")
   
@@ -50,7 +48,7 @@ ImportWizardGui <- function()
     return(this$workdir)
   }
   
-  UpdateDataDescriptions <- function()
+  CheckIfDataIsSet <- function( )
   {
     #Data source and output list
     MSIfilesdatapath <- this$browseMSIFile$GetPath()
@@ -59,8 +57,7 @@ ImportWizardGui <- function()
     {
       #Error no file selected
       gWidgets2::gmessage("Error: No file selected.", icon = "error") 
-      this$ParamList <- NULL
-      return()
+      return(FALSE)
     }
     
     for(i in 1:length(MSIfilesdatapath))
@@ -69,10 +66,32 @@ ImportWizardGui <- function()
       {
         #Error file does not exists
         gWidgets2::gmessage(paste("Error: file", MSIfilesdatapath[i], "\nDoes not exists."), icon = "error")
-        this$ParamList <- NULL
-        return()
+        return(FALSE)
       }
-      
+    }
+    
+    DataOutpath <- this$browseOut$GetPath()
+    if( is.null(DataOutpath) )
+    {
+      gWidgets2::gmessage("Error: No output directory selected.", icon = "error")
+      return(FALSE)
+    }
+    if( !dir.exists(DataOutpath))
+    {
+      gWidgets2::gmessage("Error: output directory does not exists.", icon = "error")
+      return(FALSE)
+    }
+    return(TRUE)
+  }
+  
+  
+  UpdateDataDescriptions <- function()
+  {
+    #Data source and output list
+    MSIfilesdatapath <- this$browseMSIFile$GetPath()
+
+    for(i in 1:length(MSIfilesdatapath))
+    {
       if( this$xmlRoiFiles[i] == "")
       {
         this$ParamList$datadesc$appendImzMLDataPath(path_imzML = MSIfilesdatapath[i] )
@@ -84,23 +103,8 @@ ImportWizardGui <- function()
     }
     
     #Set the output data path
-    DataOutpath <- this$browseOut$GetPath()
-    if( is.null(DataOutpath) )
-    {
-      gWidgets2::gmessage("Error: No output directory selected.", icon = "error")
-      this$ParamList <- NULL 
-      return()
-    }
-    if( !dir.exists(DataOutpath))
-    {
-      #Error file does not exists
-      gWidgets2::gmessage("Error: output directory does not exists.", icon = "error")
-      this$ParamList <- NULL 
-      return()
-    }
-    this$ParamList$datadesc$setOutputPath(DataOutpath)
+    this$ParamList$datadesc$setOutputPath(this$browseOut$GetPath())
   }
-  
   
   UpdateParamListStruct <- function()
   {
@@ -151,7 +155,10 @@ ImportWizardGui <- function()
   
   RunClicked <- function(h, ...)
   {
+    this$abort_GUI <- F
     UpdateParamListStruct()
+    #Set the data_is_peaklist field
+    this$ParamList$datadesc$setImzMLIsPeakList(gWidgets2::svalue(this$check_imzMLisPeakList))
     gWidgets2::dispose(h$obj)
   }
   
@@ -213,21 +220,41 @@ ImportWizardGui <- function()
   }
   
   #Checkboxes enabled status
+  ChkBoxImzMLisPeakList <- function(...)
+  {
+    gWidgets2::enabled(this$frm_SGKernSize) <- !gWidgets2::svalue(this$check_imzMLisPeakList)
+    gWidgets2::enabled(this$frm_alignment) <- !gWidgets2::svalue(this$check_imzMLisPeakList)
+    gWidgets2::enabled(this$frm_calibration) <- !gWidgets2::svalue(this$check_imzMLisPeakList)
+    gWidgets2::enabled(this$frm_peakpick) <- !gWidgets2::svalue(this$check_imzMLisPeakList)
+    
+    if( gWidgets2::svalue(this$check_imzMLisPeakList) )
+    {
+      #Force to enable peak-binning when data is imzML peaklist
+      gWidgets2::svalue(this$check_peakbinnig) <- T
+      gWidgets2::enabled(this$check_peakbinnig) <- F
+    }
+    else
+    {
+      gWidgets2::enabled(this$check_peakbinnig) <- T 
+    }
+  }
+  
+  #Checkboxes enabled status
   ChkBoxSmoothingChanged <- function(...)
   {
-    gWidgets2::enabled( this$lblSg) <- gWidgets2::svalue(check_smoothing)
-    gWidgets2::enabled( this$ratio_SGkernSize) <- gWidgets2::svalue(check_smoothing)
+    gWidgets2::enabled( this$lblSg) <- gWidgets2::svalue(this$check_smoothing)
+    gWidgets2::enabled( this$ratio_SGkernSize) <- gWidgets2::svalue(this$check_smoothing)
   }
   
   ChkBoxAlignmentChanged <- function(...)
   {
-    gWidgets2::enabled( this$spin_AlignIterations) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$spin_AlignMaxDev) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$check_AlignBilinear) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$spin_AlignRefLow) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$spin_AlignRefMid) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$spin_AlignRefHigh) <- gWidgets2::svalue(check_alignment)
-    gWidgets2::enabled( this$spin_AlignOverSampling) <- gWidgets2::svalue(check_alignment)
+    gWidgets2::enabled( this$spin_AlignIterations) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$spin_AlignMaxDev) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$check_AlignBilinear) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$spin_AlignRefLow) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$spin_AlignRefMid) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$spin_AlignRefHigh) <- gWidgets2::svalue(this$check_alignment)
+    gWidgets2::enabled( this$spin_AlignOverSampling) <- gWidgets2::svalue(this$check_alignment)
   }
   
   ChkBoxCalibrationChanged <- function(...)
@@ -237,14 +264,22 @@ ImportWizardGui <- function()
   
   ChkBoxPeakPickingChanged <- function(...)
   {
-    gWidgets2::enabled( this$spin_SNR) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$spin_peakWin) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$spin_peakOversample) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$spin_binTolerance) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$spin_binFilter) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$frm_binUnits) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$check_exportPeakList) <- gWidgets2::svalue(check_peakpicking)
-    gWidgets2::enabled( this$box_imzMLNorm) <- gWidgets2::svalue(check_peakpicking)
+    gWidgets2::enabled( this$spin_SNR) <- gWidgets2::svalue(this$check_peakpicking)
+    gWidgets2::enabled( this$spin_peakWin) <- gWidgets2::svalue(this$check_peakpicking)
+    gWidgets2::enabled( this$spin_peakOversample) <- gWidgets2::svalue(this$check_peakpicking)
+    
+    if( !gWidgets2::svalue(this$check_peakpicking) && !gWidgets2::svalue(this$check_imzMLisPeakList) )
+    {
+      #Force to disable peak-binning when not peak-picking or data is not imzML peaklist
+      gWidgets2::svalue(this$check_peakbinnig) <- F
+    }
+  }
+  
+  ChkBoxPeakBinningChanged <- function(...)
+  {
+    gWidgets2::enabled( this$spin_binTolerance) <- gWidgets2::svalue(this$check_peakbinnig)
+    gWidgets2::enabled( this$spin_binFilter) <- gWidgets2::svalue(this$check_peakbinnig)
+    gWidgets2::enabled( this$frm_binUnits) <- gWidgets2::svalue(this$check_peakbinnig)
   }
   
   mainWin<-gWidgets2::gwindow(title = "MSI data import and process wizard", visible = F)
@@ -260,6 +295,7 @@ ImportWizardGui <- function()
   #Data Input box
   frm_dataInput <-  gWidgets2::gframe( "Data Source", container =  box_mainV, expand = T, fill = T)
   box_dataInput <- gWidgets2::ggroup( horizontal = F, container = frm_dataInput, expand = T, fill = T)
+  check_imzMLisPeakList <- gWidgets2::gcheckbox("ImzML files contain peaks-lists", checked = F, container = box_dataInput, handler = this$ChkBoxImzMLisPeakList)
   browseMSIFile <- FileBrowseWidget( box_dataInput, setdir_fun = SetWorkingDir, getdir_fun = GetWorkingDir )
   
   #Set initial state properly
@@ -306,7 +342,7 @@ ImportWizardGui <- function()
   box_calibration <- gWidgets2::ggroup(horizontal = F, container = frm_calibration)
   check_calibration <- gWidgets2::gcheckbox("Enable calibration", checked = this$ParamList$procparams$preprocessing$massCalibration, container = box_calibration, handler = this$ChkBoxCalibrationChanged)
   
-  #Peak picking and binning params
+  #Peak picking params
   frm_peakpick <- gWidgets2::gframe("Peak-Picking", container = box_proc2, spacing = 10)
   box_peakpick <- gWidgets2::ggroup(horizontal = F, container = frm_peakpick)
   check_peakpicking <- gWidgets2::gcheckbox("Enable peak-picking", checked = this$ParamList$procparams$preprocessing$peakpicking$enable, container = box_peakpick, handler = this$ChkBoxPeakPickingChanged)
@@ -314,9 +350,12 @@ ImportWizardGui <- function()
   spin_peakWin <- drawLabelSpin(box_peakpick, "Detector window size:", 5, 200, this$ParamList$procparams$preprocessing$peakpicking$WinSize)
   spin_peakOversample <- drawLabelSpin(box_peakpick, "Peak shape over-sampling:", 1, 50, this$ParamList$procparams$preprocessing$peakpicking$overSampling)
   
-  check_peakbinnig <- gWidgets2::gcheckbox("Enable peak-binning", checked = this$ParamList$procparams$preprocessing$peakbinning$enable, container = box_peakpick)
-  spin_binTolerance <- drawLabelSpin(box_peakpick, "Peak-Bin Tolerance:", 1, 1000, this$ParamList$procparams$preprocessing$peakbinning$tolerance, decPlaces = 0)
-  frm_binUnits <- gWidgets2::gframe("Binning Tolerance Units:", container = box_peakpick)
+  #Peak binning params
+  frm_peakbinning <- gWidgets2::gframe("Peak-Binning", container = box_proc2, spacing = 10)
+  box_peakbinning <- gWidgets2::ggroup(horizontal = F, container = frm_peakbinning)
+  check_peakbinnig <- gWidgets2::gcheckbox("Enable peak-binning", checked = this$ParamList$procparams$preprocessing$peakbinning$enable, container = box_peakbinning, handler = this$ChkBoxPeakBinningChanged)
+  spin_binTolerance <- drawLabelSpin(box_peakbinning, "Peak-Bin Tolerance:", 1, 1000, this$ParamList$procparams$preprocessing$peakbinning$tolerance, decPlaces = 0)
+  frm_binUnits <- gWidgets2::gframe("Binning Tolerance Units:", container = box_peakbinning)
   if(this$ParamList$procparams$preprocessing$peakbinning$tolerance_in_ppm)
   {
     peakBinningToleranceModeSelection <- 1
@@ -326,7 +365,7 @@ ImportWizardGui <- function()
     peakBinningToleranceModeSelection <- 2
   }
   ratio_binningUnits <- gWidgets2::gradio(c("[ppm]", "[scans]"), container = frm_binUnits, selected = peakBinningToleranceModeSelection, horizontal = T)
-  spin_binFilter <- drawLabelSpin(box_peakpick, "Peak Filter [%]:", 1, 100, this$ParamList$procparams$preprocessing$peakbinning$binFilter * 100)
+  spin_binFilter <- drawLabelSpin(box_peakbinning, "Peak Filter [%]:", 1, 100, this$ParamList$procparams$preprocessing$peakbinning$binFilter * 100)
 
   #Number of processing threads
   frm_procThreads <- gWidgets2::gframe("Processing Threads", container = box_proc2, spacing = 10)
@@ -362,7 +401,18 @@ ImportWizardGui <- function()
   options(warn = oldWarning)
   rm(oldWarning)
   
+  if(this$abort_GUI)
+  {
+    #User aborted the GUI
+    return(NULL)
+  }  
+  
   #Ask the user for the XML's containing the ROI files
+  if(!this$CheckIfDataIsSet())
+  {
+    #Data description contains errors
+    return(NULL)
+  }
   
   data_imzML_files <- browseMSIFile$GetPath()
   xmlRoiFiles <- XmlRoiSelectionDialog(basename(data_imzML_files), init_dir = dirname(data_imzML_files[1] ) )
@@ -370,7 +420,7 @@ ImportWizardGui <- function()
   {
     #Process aborted by user
     cat("Processing aborted\n")
-    ParamList <- NULL 
+    return(NULL)
   }
   else
   {

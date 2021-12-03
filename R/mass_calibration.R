@@ -449,7 +449,7 @@ applyMassCalibrationImage<-function(img, massModel)
   }
   else
   {
-    #Data in contiuous mode, so each pixel mass axis must be calibrated
+    #Data in processed mode, so each pixel mass axis must be calibrated
     cat("Calibrating the imzML file...\n")
     pb <- txtProgressBar(min = 0, max = nrow(img$data$imzML$run), initial = 0, style = 3)
     for(i in 1:nrow(img$data$imzML$run))

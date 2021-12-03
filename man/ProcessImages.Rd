@@ -24,7 +24,7 @@ ProcessImages(
 \item{memoryPerThreadMB}{maximum allowed memory by each thread. The total number of trehad will be two times numOfThreads, so the total memory usage will be: 2*numOfThreads*memoryPerThreadMB.}
 }
 \value{
-
+a list with the processed data and the peak matrix.
 }
 \description{
 Process a single image or multiple images with the complete processing workflow.

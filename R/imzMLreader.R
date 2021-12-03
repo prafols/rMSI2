@@ -82,6 +82,7 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   {
     .controlled_loadAbort(paste0(xmlRes$Error, "\n"), close_signal)
   }
+  
   if(verifyChecksum)
   {
     if( xmlRes$SHA != "" )
@@ -322,6 +323,10 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
       cat(paste("\nMass axis calculation time:",round(pt["elapsed"], digits = 1),"seconds\n"))
       cat(paste("The re-sampled mass axis contains", length(mzAxis), "data points\n"))
     }
+    else
+    {
+      mzAxis <- NULL #Setting the common mass axis to NULL since data will be a peak list so it is not possible to directely create an rMSIXBin object
+    }
   }
   close(bincon)
  
@@ -350,7 +355,24 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   {
     img$data$imzML$MD5 <- xmlRes$MD5
   }
-  img$data$imzML$continuous_mode <- bNoNeed2Resample #Use this bool instead of xmlRes data becaus Bruker FTICR use processed mode but the mass axis is actually replicated
+  
+  
+  if (xmlRes$continuous_mode )
+  {
+    img$data$imzML$continuous_mode <- T
+  }
+  else
+  {
+    if(convertProcessed2Continuous)
+    {
+      img$data$imzML$continuous_mode <- convertProcessed2Continuous & bNoNeed2Resample
+    }
+    else
+    {
+      img$data$imzML$continuous_mode <- F
+    }
+  }
+  
   img$data$imzML$mz_dataType <- xmlRes$mz_dataType
   img$data$imzML$int_dataType <-xmlRes$int_dataType
   img$data$imzML$run <- xmlRes$run_data
@@ -362,64 +384,31 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   img$size["x"] <- max(img$pos[,"x"])
   img$size["y"] <- max(img$pos[,"y"])
   
-  #6- Just reading the peak lists
-  if(!xmlRes$continuous_mode && !convertProcessed2Continuous)
+  #6- It is a peak list, so, set references to it
+  if(!img$data$imzML$continuous_mode && !convertProcessed2Continuous)
   {
-    pt <- proc.time()
-    cat("\nReading peak lists from binary file...\n")
-    img <- read_imzML_peaklists(img)
-    pt<-proc.time() - pt
-    cat(paste("\nBinary file reading time:",round(pt["elapsed"], digits = 1),"seconds\n\n"))
+    
+    img$data$peaklist <- list( UUID = img$data$imzML$uuid,
+                               continuous_mode = F,
+                               compression_mz = F,
+                               compression_int = F,
+                               MD5 = img$data$imzML$MD5,
+                               SHA = img$data$imzML$SHA,
+                               mz_dataType = img$data$imzML$mz_dataType,
+                               int_dataType = img$data$imzML$int_dataType,
+                               pixel_size_um = img$pixel_size_um,
+                               run_data = img$data$imzML$run,
+                               path = img$data$path,
+                               file = img$data$imzML$file,
+                               rMSIpeakList = xmlRes$rMSIpeakList
+                              )
+    
+    img$data$imzML <- NULL #It is a peak list, so no spectra in profile mode
+    img$data$rMSIXBin <- NULL #It is a peak lis, so no pngstream can be created
   }
 
   #7- And it's done, just return de rMSI object
   gc()
-  return(img)
-}
-
-#' read_imzML_peaklists.
-#' 
-#' Reads the peak list in an imzML file containing data in processed mode.
-#' Use this function carefully since all peak lists are loaded in memory.
-#'
-#' @param img a rMSIObj with valid imzML data in processed mode.
-#'
-#' @return a rMSIObj with the peak list in the img$data$peaklist field.
-#'
-read_imzML_peaklists <- function(img)
-{
-  if(img$data$imzML$continuous_mode)
-  {
-    stop("Error: read_imzML_peaklists() is only available with imzML in processed mode.\n")
-  }
-    
-  dataPointEncoding_Int <- dataPointBinaryEncoding(img$data$imzML$int_dataType)
-  dataPointEncoding_Mz  <- dataPointBinaryEncoding(img$data$imzML$mz_dataType)
-  bincon <- file(description = file.path(img$data$path, paste0(img$data$imzML$file, ".ibd")), open = "rb")
-  
-  ppStep<-100/nrow(img$data$imzML$run)
-  pp<-0
-  pb<-txtProgressBar(min = 0, max = 100, style = 3 )
-  setTxtProgressBar(pb, pp)
-  
-  for(i in 1:nrow(img$data$imzML$run))
-  {
-    #Read intensity of current spectrum
-    seek(bincon, rw = "read", where = img$data$imzML$run[i, "intOffset"] )
-    dd <- readBin(bincon, dataPointEncoding_Int$dataType, img$data$imzML$run[i, "intLength"], size = dataPointEncoding_Int$bytes, signed = T)
-    
-    #Read mass axis for the current spectrum 
-    seek(bincon, rw = "read", where = img$data$imzML$run[i, "mzOffset"] )
-    mzdd <- readBin(bincon, dataPointEncoding_Mz$dataType, img$data$imzML$run[i, "mzLength"], size = dataPointEncoding_Mz$bytes, signed = T) 
-    
-    img$data$peaklist[[i]]<-list(mass = mzdd, intensity = dd)
-
-    #Update progress bar
-    pp<-pp+ppStep
-    setTxtProgressBar(pb, pp)
-  }
-  close(pb)
-  close(bincon)
   return(img)
 }
 
@@ -453,41 +442,4 @@ dataPointBinaryEncoding <- function(str_dataType)
   }
 
   return(result)
-}
-
-##TODO revise and reuse the following code for data interpolation!!! ()
-reuseThisFunctionCodeProperly<-function()
-{
-bCreaterMSIXBin <- T
-
-  
-  if(bCreaterMSIXBin)
-  {
-    #Delete duplicates and possible zero-drops errors (fixing Bruker's bugs in imzML)
-    idup <- which(duplicated(mzdd))
-    if(length(idup) > 0)
-    {
-      for( i in 1:length(idup))
-      {
-        dd[idup[i] - 1] <- max( dd[idup[i]], dd[idup[i] - 1])
-      }
-      mzdd <- mzdd[-idup]
-      dd <- dd[-idup]
-    }
-    
-    #Apply re-sampling (only if needed...)
-    if( ! identical(mzdd, mzAxis))
-    {
-      if(length(mzdd) == length(dd))
-      {
-        dd <- (approx( x = mzdd, y = dd, xout = mzAxis, ties = "ordered", yleft = 0, yright = 0))$y
-        dd[which(is.na(dd))] <- 0 #Remove any possible NA
-      }
-      else
-      {
-        cat(paste0("WARNING: spectra at X = ", xmlRes$run_data$x[i], "  Y = ", xmlRes$run_data$y[i], " corrupt!\n" ))
-        dd <- rep(0, length(mzAxis))  
-      }
-    } 
-  }  
 }

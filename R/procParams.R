@@ -24,6 +24,7 @@ DataInfo <- setRefClass("DataInfo",
                          fields = list(
                           version = "character",
                           raw_data_path = "data.frame",
+                          data_is_peaklist = "logical",
                           roi_list = "list",
                           outputpath = "character"
                           ),
@@ -33,6 +34,7 @@ DataInfo <- setRefClass("DataInfo",
                            initialize = function(..., version = as.character(packageVersion("rMSI2")))
                            {
                              raw_data_path <<- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("imzML", "subimage_roi_xml")) 
+                             data_is_peaklist <<- F
                              callSuper(..., raw_data_path = raw_data_path,  version = version)
                            })
                         )
@@ -136,6 +138,14 @@ DataInfo$methods(
   setOutputPath = function(datapath)
   {
     outputpath <<- path.expand(datapath)
+  },
+  
+  #' setImzMLIsPeakList.
+  #' set the input data imzML files as peak lists instead of spectral data.
+  #' 
+  setImzMLIsPeakList = function(bIsPeakList)
+  {
+    data_is_peaklist <<- bIsPeakList
   }
 )
 
@@ -234,8 +244,7 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                    enable = "logical",
                                    tolerance = "numeric",
                                    tolerance_in_ppm = "logical",
-                                   binFilter = "numeric",
-                                   fillpeaks = "logical"
+                                   binFilter = "numeric"
                                  ),
                                  
                                  #Constructor
@@ -248,7 +257,7 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                                          fillpeaks = T
                                    )
                                    {
-                                     callSuper(..., enable = enable, tolerance = tolerance, tolerance_in_ppm = tolerance_in_ppm, binFilter = binFilter, fillpeaks = fillpeaks)
+                                     callSuper(..., enable = enable, tolerance = tolerance, tolerance_in_ppm = tolerance_in_ppm, binFilter = binFilter)
                                    })
 )
 
