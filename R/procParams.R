@@ -115,8 +115,8 @@ DataInfo$methods(
         rois <- ParseBrukerXML(raw_data_path$subimage_roi_xml[i])  
         for( roi in rois)
         {
-          roi_list[[length(roi_list)+1]] <<- list( name = paste0(unlist(strsplit(basename(raw_data_path$imzML[i]), split = "\\."))[1] , "_ROI_", roi$name ), 
-                                                imzML = raw_data_path$imzML[i], 
+          roi_list[[length(roi_list)+1]] <<- list( name = paste0(unlist(strsplit(basename( as.character(raw_data_path$imzML[i])), split = "\\."))[1] , "_ROI_", roi$name ), 
+                                                imzML =  as.character(raw_data_path$imzML[i]), 
                                                 ROIpos = roi$pos)
         }
         
@@ -124,8 +124,8 @@ DataInfo$methods(
       else
       {
         #No ROI file provided so just a single image
-        roi_list[[length(roi_list)+1]] <<- list( name = unlist(strsplit(basename(raw_data_path$imzML[i]), split = "\\."))[1], 
-                                               imzML = raw_data_path$imzML[i], 
+        roi_list[[length(roi_list)+1]] <<- list( name = unlist(strsplit(basename(  as.character(raw_data_path$imzML[i])), split = "\\."))[1], 
+                                               imzML =  as.character(raw_data_path$imzML[i]), 
                                                ROIpos = NULL) #NULL pos means all pixels in the imzML
       }
     }
@@ -231,7 +231,7 @@ PeakPickingParams <- setRefClass("PeakPickingParams",
                                  initialize = function(...,
                                                        enable = T,
                                                        SNR = 5,
-                                                       WinSize = as.integer(10),
+                                                       WinSize = as.integer(20),
                                                        overSampling = as.integer(10)
                                                        )
                                  {
@@ -251,9 +251,9 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                  method = list(
                                    initialize = function(...,
                                                          enable = T,
-                                                         tolerance = 5,
+                                                         tolerance = 6,
                                                          tolerance_in_ppm = F,
-                                                         binFilter = 0.01,
+                                                         binFilter = 0.05,
                                                          fillpeaks = T
                                    )
                                    {

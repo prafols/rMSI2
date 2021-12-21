@@ -26,21 +26,16 @@ MTAverage::MTAverage(Rcpp::List rMSIObj_list, int numberOfThreads, double memory
   TICmin(minTIC), 
   TICmax(maxTIC)
 {
-  sm = new double*[ioObj->getNumberOfCubes()];
+  AverageSpectrum = NumericVector(ioObj->getMassAxisLength());
+  for(int i = 0; i < AverageSpectrum.length(); i++)
+  {
+    AverageSpectrum[i] = 0.0;
+  }
+
   validPixelCount = new unsigned int[ioObj->getNumberOfCubes()];  
-  
   for(int i = 0; i < ioObj->getNumberOfCubes() ; i++)
   {
-    sm[i] = new double[ioObj->getMassAxisLength()];
     validPixelCount[i] = 0;
-  }
-  
-  for (int i = 0; i < ioObj->getNumberOfCubes() ; i++)
-  {
-    for (int j = 0; j < ioObj->getMassAxisLength() ; j++)
-    {
-    sm[i][j] = 0;
-    }
   }
   
   //Get normalizations
@@ -55,12 +50,6 @@ MTAverage::MTAverage(Rcpp::List rMSIObj_list, int numberOfThreads, double memory
 
 MTAverage::~MTAverage()
 {
-  for (int i = 0; i < ioObj->getNumberOfCubes(); i++)
-  {
-     delete[] sm[i];
-  }
-  delete[] sm;
-  
   for (int i = 0; i < ioObj->get_images_count(); i++)
   {
     delete[] TicNormalizations[i];
@@ -74,42 +63,37 @@ NumericVector MTAverage::Run()
 {
   Rcpp::Rcout<<"Calculating overall average spectrum...\n";
   
-  NumericVector avg(ioObj->getMassAxisLength());
-  for (int j = 0; j < ioObj->getMassAxisLength(); j++)
-  {
-    avg[j] = 0;
-  }
   //Run in multi-threading
   runMSIProcessingCpp();
   
-  //Merging all the cube's partial average spectrum and getting the total average spectrum
-  unsigned int CubeCount = 0;
-  for (int i = 0; i < ioObj->getNumberOfCubes(); i++)
+  //Sum the total number of pixels used to calculate the average
+  unsigned int pixelCount = 0;
+  for(int i = 0; i < ioObj->getNumberOfCubes(); i++)
   {
-    if(validPixelCount[i] > 0)
+    pixelCount += validPixelCount[i];
+  }
+  
+  if(pixelCount > 0)
+  {
+    for(int i = 0; i < ioObj->getMassAxisLength(); i++)
     {
-      for (int j = 0; j < ioObj->getMassAxisLength(); j++)
-      {
-        avg[j] += sm[i][j];
-      }
-      CubeCount++;
+      AverageSpectrum[i] /= (double)pixelCount;
     }
   }
   
-  if(CubeCount > 0)
-  {
-    for (int j = 0; j < ioObj->getMassAxisLength(); j++)
-    {
-      avg[j] /= (double)CubeCount;
-    }
-  }
-  
-  return avg;
+  return AverageSpectrum;
 }
 
 
 void MTAverage::ProcessingFunction(int threadSlot)
 {
+  
+  double *partialAverage = new double[cubes[threadSlot]->ncols];
+  for(int i = 0; i < cubes[threadSlot]->ncols; i++)
+  {
+    partialAverage[i] = 0.0;
+  }
+  
   //Perform the average value of each mass channel in the current loaded cube
   for (int j = 0; j < cubes[threadSlot]->nrows; j++)
   {
@@ -122,7 +106,7 @@ void MTAverage::ProcessingFunction(int threadSlot)
     {
       for (int k= 0; k < cubes[threadSlot]->ncols; k++)
       {
-        sm[cubes[threadSlot]->cubeID][k] += (cubes[threadSlot]->dataInterpolated[j][k])/TICval; //Average with TIC Normalization
+        partialAverage[k] += (cubes[threadSlot]->dataInterpolated[j][k])/TICval; //Average with TIC Normalization
         validPixelCount[cubes[threadSlot]->cubeID]++;
       }
     }
@@ -131,11 +115,15 @@ void MTAverage::ProcessingFunction(int threadSlot)
   //Partial average
   if(validPixelCount[cubes[threadSlot]->cubeID] > 0)
   {
+    averageMutex.lock();
     for (int k= 0; k < cubes[threadSlot]->ncols; k++)
     {
-      sm[cubes[threadSlot]->cubeID][k] /= (double)(validPixelCount[cubes[threadSlot]->cubeID]);
+      AverageSpectrum[k] += partialAverage[k];
     }
+    averageMutex.unlock();
   }
+  
+  delete[] partialAverage;
 }
 
 // Calculate the average spectrum from a list of rMSI objects.

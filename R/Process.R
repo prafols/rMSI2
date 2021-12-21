@@ -59,13 +59,13 @@ ProcessImages <- function(proc_params,
   }
   for( i in 1:nrow(data_description$raw_data_path))
   {
-    if(!file.exists(data_description$raw_data_path$imzML[i]))
+    if(!file.exists(  as.character( data_description$raw_data_path$imzML[i])) )
     {
       stop(paste0("ERROR: the imzML file ", data_description$raw_data_path$imzML[i], " does not exists!\n"))
     }
     if(!is.na(data_description$raw_data_path$subimage_roi_xml[i]))
     {
-      if(!file.exists(data_description$raw_data_path$subimage_roi_xml[i]))
+      if(!file.exists(  as.character( data_description$raw_data_path$subimage_roi_xml[i])) )
       {
         stop(paste0("ERROR: the ROI XML file ", data_description$raw_data_path$subimage_roi_xml[i], " does not exists!\n"))
       }

@@ -131,18 +131,20 @@ List PeakBinning::BinPeaks()
           compTolerance = tolerance * mpeaks->binSize[imass];
         } 
         
-        /**** DEBUG Pints
-        Rcout << "ipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
+        /**** DEBUG Pints */ //TODO Comment me
+        Rcout << "\n\n\nipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
         Rcout << "mpeaks->mass[ " << imass << " ] = " << mpeaks->mass[imass] << "\n"; 
         Rcout << "minMassDistance = " << minMassDistance << "\n";
         Rcout << "minDistanceIndex = " << minDistanceIndex << "\n";
         Rcout << "compTolerance = " << compTolerance << "\n";
         Rcout << "binMat ncols = " << binMat.size() << "\n";
-        if(binMat.size() > 20000)
+        
+        //TODO remove me! or think about how to limit RAM
+        if(binMat.size() > 10000)
         {
           stop("ABORTING!!!! too much columns!!!\n");
         }
-        */
+        
         
         if( (minMassDistance < compTolerance) && (minDistanceIndex >= 0) )
         {
@@ -158,11 +160,11 @@ List PeakBinning::BinPeaks()
         }
         else
         {
-          /** DEBUG Prints
+          /** DEBUG Prints */ //TODO COMMENT ME
           Rcout << "DBG: Adding new column to the peak matrix...\n";
           Rcout << "DBG: new binMat.size() = "<< binMat.size() + 1 << "\n";
           Rcout << "DBG: current mpeaks->mass.size() = " << mpeaks->mass.size() << "\n";
-           */
+          
           
           //A new column must be added to the peak matrix
           binMass.push_back(mpeaks->mass[imass]); //Append element to the mass vector (names of bin Matrix)

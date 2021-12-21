@@ -199,6 +199,9 @@ void MTPreProcessing::BitDepthReduction(double *data, int dataLength, int noiseM
     ptr = (unsigned long long*) (data + i);
     *ptr &= maskLUT_double[resolution_bits-1];  
     
+    //Clip values below zero to zero
+    data[i] = data[i] < 0.0 ? 0.0 : data[i];
+    
   }
   
   delete[] noise_floor;

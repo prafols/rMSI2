@@ -19,6 +19,7 @@
 #ifndef MT_AVERAGE_H
   #define MT_AVERAGE_H
 #include <Rcpp.h>
+#include <mutex>
 #include "threadingmsiproc.h"
 
 class MTAverage : public ThreadingMsiProc 
@@ -38,11 +39,11 @@ class MTAverage : public ThreadingMsiProc
     Rcpp::NumericVector Run();
     
   private:
-    double **sm;  //A matrix containing the partial average spectrum of the datacubes
+    Rcpp::NumericVector AverageSpectrum;
     unsigned int *validPixelCount; //Count the number of pixels that meet the TIC condition in each datacube
     double TICmin, TICmax;
     double **TicNormalizations; //Copy of TIC normalization values for each image in rMSIObj_list. Need to allow a safe axes to TIC values from working threads
-    
+    std::mutex averageMutex;
     
     //Thread Processing function definition
     void ProcessingFunction(int threadSlot);
