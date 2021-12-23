@@ -91,9 +91,6 @@ List PeakBinning::BinPeaks()
   //Store the number of peaks added to each column to apply the bin filter at the end
   std::vector<unsigned int> columnsPeakCounters;
   
-  //Peak matrices starting with zero columns
-  std::vector<std::vector<TBin> > binMat; //A matrix containing binning values
-  
   int iPixelPeakMatRowOffset = 0;
   for(int iimg = 0; iimg < imzMLReaders.size(); iimg++)
   {
@@ -131,52 +128,28 @@ List PeakBinning::BinPeaks()
           compTolerance = tolerance * mpeaks->binSize[imass];
         } 
         
-        /**** DEBUG Pints */ //TODO Comment me
+        /**** DEBUG Pints
         Rcout << "\n\n\nipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
         Rcout << "mpeaks->mass[ " << imass << " ] = " << mpeaks->mass[imass] << "\n"; 
         Rcout << "minMassDistance = " << minMassDistance << "\n";
         Rcout << "minDistanceIndex = " << minDistanceIndex << "\n";
-        Rcout << "compTolerance = " << compTolerance << "\n";
-        Rcout << "binMat ncols = " << binMat.size() << "\n";
-        
-        //TODO remove me! or think about how to limit RAM
-        if(binMat.size() > 10000)
-        {
-          stop("ABORTING!!!! too much columns!!!\n");
-        }
-        
+        Rcout << "compTolerance = " << compTolerance << "\n";*/
         
         if( (minMassDistance < compTolerance) && (minDistanceIndex >= 0) )
         {
           //The peak must be binned with the minDistanceIndex column of the peak matrix
           columnsPeakCounters[minDistanceIndex]++;
           binMass[minDistanceIndex] = 0.5*(binMass[minDistanceIndex] + mpeaks->mass[imass]); //Recompute the peak matrix mass by simply averaging it
-          binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].intensity = mpeaks->intensity[imass] > binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].intensity ? mpeaks->intensity[imass] : binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].intensity;
-          if(imzMLReaders[iimg]->get_rMSIPeakListFormat())
-          {
-            binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].SNR = mpeaks->SNR[imass] > binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].SNR ? mpeaks->SNR[imass] : binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].SNR;
-            binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].area = mpeaks->area[imass] > binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].area ? mpeaks->area[imass] : binMat[minDistanceIndex][ipixel + iPixelPeakMatRowOffset].area;
-          }
         }
         else
         {
-          /** DEBUG Prints */ //TODO COMMENT ME
+          /** DEBUG Prints
           Rcout << "DBG: Adding new column to the peak matrix...\n";
-          Rcout << "DBG: new binMat.size() = "<< binMat.size() + 1 << "\n";
-          Rcout << "DBG: current mpeaks->mass.size() = " << mpeaks->mass.size() << "\n";
-          
+          Rcout << "DBG: current mpeaks->mass.size() = " << mpeaks->mass.size() << "\n";*/
           
           //A new column must be added to the peak matrix
           binMass.push_back(mpeaks->mass[imass]); //Append element to the mass vector (names of bin Matrix)
           columnsPeakCounters.push_back(1);
-          binMat.resize(binMat.size() + 1); //Append new column
-          binMat[binMat.size() - 1].resize(totalNumOfPixels); //Extenend all new column elements
-          binMat[binMat.size() - 1][ipixel + iPixelPeakMatRowOffset].intensity = mpeaks->intensity[imass];
-          if(imzMLReaders[iimg]->get_rMSIPeakListFormat())
-          {
-            binMat[binMat.size() - 1][ipixel + iPixelPeakMatRowOffset].SNR = mpeaks->SNR[imass]; 
-            binMat[binMat.size() - 1][ipixel + iPixelPeakMatRowOffset].area = mpeaks->area[imass]; 
-          }
         }
       }
       
@@ -211,12 +184,6 @@ List PeakBinning::BinPeaks()
 
   Rcout<<"Bining complete with a total number of "<<binMass.size() - number_of_columns_to_remove<<" bins\n"; 
   
-  //Copy data to R matrices
-  Rcout<<"Coping data to R object...\n";
-  NumericMatrix binMatIntensity(totalNumOfPixels, binMass.size() - number_of_columns_to_remove);
-  NumericMatrix binMatSNR(totalNumOfPixels, binMass.size() - number_of_columns_to_remove);
-  NumericMatrix binMatArea(totalNumOfPixels, binMass.size()- number_of_columns_to_remove);
-  
   //Sort columns by mass
   Rcout<<"Sorting columns by mass...\n";
   NumericVector massCopy(binMass.size());
@@ -249,22 +216,73 @@ List PeakBinning::BinPeaks()
     }
   }
   
-  //Copy the matrix sorting it
-  for( int ir = 0;  ir < totalNumOfPixels; ir++)
-  {
-    icopy = 0;
-    for(int ic = 0; ic < binMass.size(); ic++)
-    {
-      if(keepColumns[sortedInds[ic]]) 
-      {
-        binMatIntensity(ir, icopy ) = binMat[sortedInds[ic]][ir].intensity;
-        binMatSNR      (ir, icopy ) = binMat[sortedInds[ic]][ir].SNR;
-        binMatArea     (ir, icopy ) = binMat[sortedInds[ic]][ir].area;
-        icopy++;
-      }
-    }
-  }
+  //Fill the Peak matrices
+  Rcout<<"Filling the peak matrix...\n";
+  NumericMatrix binMatIntensity(totalNumOfPixels, massSorted.length());
+  NumericMatrix binMatSNR(totalNumOfPixels, massSorted.length());
+  NumericMatrix binMatArea(totalNumOfPixels, massSorted.length());
   
+  iPixelPeakMatRowOffset = 0; //Reset offsets
+  iCount = 0; //Reset progress bar
+  for(int iimg = 0; iimg < imzMLReaders.size(); iimg++)
+  {
+    imzMLReaders[iimg]->open();
+    for(int ipixel = 0; ipixel < imzMLReaders[iimg]->get_number_of_pixels(); ipixel++)
+    {
+      progressBar(iCount, totalNumOfPixels, "=", " ");
+      iCount++;
+      mpeaks = imzMLReaders[iimg]->ReadPeakList(ipixel);
+      for(int imass = 0; imass < mpeaks->mass.size(); imass++)
+      {
+        //Search the closest mass bin
+        double minMassDistance = std::numeric_limits<double>::max();
+        int minDistanceIndex = -1;
+        double currentMassDistance;
+        for(int icol = 0; icol < massSorted.length(); icol++)
+        {
+          currentMassDistance = fabs(mpeaks->mass[imass] - massSorted[icol]);
+          if(currentMassDistance < minMassDistance)
+          {
+            minMassDistance = currentMassDistance;
+            minDistanceIndex = icol;
+          }
+        }
+        
+        //Select the kind of binning tolerance
+        double compTolerance;
+        if(tolerance_in_ppm)
+        {
+          minMassDistance = 1e6*(minMassDistance/mpeaks->mass[imass]); //Compute distance in ppm
+          compTolerance = tolerance;
+        }
+        else
+        {
+          compTolerance = tolerance * mpeaks->binSize[imass];
+        } 
+        
+        /**** DEBUG Pints
+         Rcout << "\n\n\nipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
+         Rcout << "mpeaks->mass[ " << imass << " ] = " << mpeaks->mass[imass] << "\n"; 
+         Rcout << "minMassDistance = " << minMassDistance << "\n";
+         Rcout << "minDistanceIndex = " << minDistanceIndex << "\n";
+         Rcout << "compTolerance = " << compTolerance << "\n";*/
+        
+        if( (minMassDistance <= compTolerance) && (minDistanceIndex >= 0) )
+        {
+          binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) = mpeaks->intensity[imass] > binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->intensity[imass] : binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
+          if(imzMLReaders[iimg]->get_rMSIPeakListFormat())
+          {
+            binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex)= mpeaks->SNR[imass] > binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->SNR[imass] : binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
+            binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex)= mpeaks->area[imass] > binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->area[imass] : binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
+          }
+        }
+      }
+      delete mpeaks;
+    }
+    imzMLReaders[iimg]->close();
+    iPixelPeakMatRowOffset += imzMLReaders[iimg]->get_number_of_pixels();
+  }
+
   return List::create( Named("mass") = massSorted, Named("intensity") = binMatIntensity, Named("SNR") = binMatSNR, Named("area") = binMatArea );
 }
 

@@ -46,12 +46,5 @@ private:
   int totalNumOfPixels;
   
   std::vector<ImzMLBinRead*> imzMLReaders;  //Pointers to multiple imzMLReadrs initialized with openIbd = false to avoid exiding the maximum open files.
-  
-  typedef struct
-  {
-    double intensity;
-    double SNR;
-    double area;
-  }TBin;
 };
 #endif
