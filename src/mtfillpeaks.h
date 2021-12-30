@@ -47,9 +47,13 @@ class MTFillPeaks : public ThreadingMsiProc
   private:
     unsigned int *replacedZerosCounters;
     unsigned int *mass_index;
+    double tolerance;
+    bool tolerance_in_ppm; //If true the binning tolerance is specified in  ppm, if false then the number of datapoints per peak is used instead
+    bool peaklists_in_rMSIformat; //True when peaklists are in rMSI format.
     
     //In theory, Rcpp passes arguments like Rcpp::Lists an matrices as reference... so it should be as simple as follows
     Rcpp::NumericVector pkMatmass;
+    Rcpp::NumericVector pkMatbinSize;
     Rcpp::NumericMatrix pkMatintensity;
     Rcpp::NumericMatrix pkMatarea;
     Rcpp::NumericMatrix pkMatsnr;

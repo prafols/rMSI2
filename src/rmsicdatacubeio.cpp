@@ -25,11 +25,17 @@
 #include "rmsicdatacubeio.h"
 using namespace Rcpp;
 
-
-CrMSIDataCubeIO::CrMSIDataCubeIO(Rcpp::NumericVector massAxis, double cubeMemoryLimitMB, DataCubeIOMode storeDataModeEnum, Rcpp::String imzMLOutputPath)
-  :mass(massAxis), storeDataMode(storeDataModeEnum), dataOutputPath(imzMLOutputPath.get_cstring()), next_peakMatrix_row(0)
+CrMSIDataCubeIO::CrMSIDataCubeIO(Rcpp::NumericVector massAxis, double cubeMemoryLimitMB, DataCubeIOMode dataModeEnum, Rcpp::String imzMLOutputPath)
+  :mass(massAxis), dataMode(dataModeEnum), dataOutputPath(imzMLOutputPath.get_cstring()), next_peakMatrix_row(0)
 {
-  cubeMaxNumRows = std::ceil((1024*1024*cubeMemoryLimitMB)/(double)(8*mass.length()));
+  if(mass.length() > 0)
+  {
+    cubeMaxNumRows = std::ceil((1024*1024*cubeMemoryLimitMB)/(double)(8*mass.length()));
+  }
+  else
+  {
+    cubeMaxNumRows = MAX_DATACUBES_ROWS_WITH_PEAKLISTS_ONLY;
+  }
 }
 
 CrMSIDataCubeIO::~CrMSIDataCubeIO()
@@ -43,63 +49,117 @@ CrMSIDataCubeIO::~CrMSIDataCubeIO()
   {
     delete imzMLWriters[i];
   }
+  
+  for( int i = 0; i < imzMLPeaksReaders.size(); i++)
+  {
+    delete imzMLPeaksReaders[i];
+  }
 }
 
 void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzMLuuid, std::string outputImzMLfname)
 {
-  if(outputImzMLuuid.empty() && storeDataMode != DataCubeIOMode::DATA_READ)
+  if(outputImzMLuuid.empty() && (dataMode == DataCubeIOMode::DATA_STORE || dataMode == DataCubeIOMode::PEAKLIST_STORE ))
   {
     throw std::runtime_error("Error: A valid UUID must be provided for the stored imzML file.\n");
   }
   
-  if(outputImzMLfname.empty() && storeDataMode != DataCubeIOMode::DATA_READ)
+  if(outputImzMLfname.empty() && (dataMode == DataCubeIOMode::DATA_STORE || dataMode == DataCubeIOMode::PEAKLIST_STORE ))
   {
     throw std::runtime_error("Error: A filename suffix must be provided for the stored imzML file.\n");
   }
   
-  if(outputImzMLuuid.length() != 32 && storeDataMode != DataCubeIOMode::DATA_READ)
+  if(outputImzMLuuid.length() != 32 && (dataMode == DataCubeIOMode::DATA_STORE || dataMode == DataCubeIOMode::PEAKLIST_STORE ))
   {
     throw std::runtime_error("Error: The UUID must contain 16 bytes.\n");
   }
   
-  //Set the imzML reader
+  //get the rMSI object data field
   List data = rMSIobj["data"];
-  List imzML = data["imzML"];
-  DataFrame imzMLrun = as<DataFrame>(imzML["run"]);
-  std::string sFilePath = as<std::string>(data["path"]);
-  std::string sFnameImzML = as<std::string>(imzML["file"]);
-  std::string sFnameImzMLInput = sFilePath + "/" + sFnameImzML + ".ibd";
+  List imzML;
+  DataFrame imzMLrun;
   
-  //Rcpp::Rcout << "CrMSIDataCubeIO::appedImageData()--> sFnameImzML = "<< sFnameImzML << std::endl; //DEBUG line
-
-  //Append the imzML Reader
-  imzMLReaders.push_back(new ImzMLBinRead(sFnameImzMLInput.c_str(), 
-                                     imzMLrun.nrows(), 
-                                     as<String>(imzML["mz_dataType"]),
-                                     as<String>(imzML["int_dataType"]) ,
-                                     (as<bool>(imzML["continuous_mode"])),
-                                     false //Do not call the file open() on constructor
-                                     )); 
+  //Set the imzML reader
+  if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+  {
+    imzML = data["imzML"];
+    imzMLrun = as<DataFrame>(imzML["run"]);
+    std::string sFilePath = as<std::string>(data["path"]);
+    std::string sFnameImzML = as<std::string>(imzML["file"]);
+    std::string sFnameImzMLInput = sFilePath + "/" + sFnameImzML + ".ibd";
+    
+    //Rcpp::Rcout << "CrMSIDataCubeIO::appedImageData()--> sFnameImzML = "<< sFnameImzML << std::endl; //DEBUG line
   
-  //If data is in continuous mode but resampling is needed, then read the imzML in processed mode to enable interpolation.
-  imzMLReaders.back()->setCommonMassAxis(mass.length(), mass.begin());
-
-  NumericVector imzML_mzLength = imzMLrun["mzLength"];
-  NumericVector imzML_mzOffsets = imzMLrun["mzOffset"];
-  NumericVector imzML_intLength = imzMLrun["intLength"];
-  NumericVector imzML_intOffsets = imzMLrun["intOffset"];
-  imzMLReaders.back()->set_mzLength(&imzML_mzLength);  
-  imzMLReaders.back()->set_mzOffset(&imzML_mzOffsets);
-  imzMLReaders.back()->set_intLength(&imzML_intLength);
-  imzMLReaders.back()->set_intOffset(&imzML_intOffsets);
+    //Append the imzML Reader
+    imzMLReaders.push_back(new ImzMLBinRead(sFnameImzMLInput.c_str(), 
+                                       imzMLrun.nrows(), 
+                                       as<String>(imzML["mz_dataType"]),
+                                       as<String>(imzML["int_dataType"]) ,
+                                       (as<bool>(imzML["continuous_mode"])),
+                                       false //Do not call the file open() on constructor
+                                       )); 
+    
+    //If data is in continuous mode but resampling is needed, then read the imzML in processed mode to enable interpolation.
+    imzMLReaders.back()->setCommonMassAxis(mass.length(), mass.begin());
   
+    NumericVector imzML_mzLength = imzMLrun["mzLength"];
+    NumericVector imzML_mzOffsets = imzMLrun["mzOffset"];
+    NumericVector imzML_intLength = imzMLrun["intLength"];
+    NumericVector imzML_intOffsets = imzMLrun["intOffset"];
+    imzMLReaders.back()->set_mzLength(&imzML_mzLength);  
+    imzMLReaders.back()->set_mzOffset(&imzML_mzOffsets);
+    imzMLReaders.back()->set_intLength(&imzML_intLength);
+    imzMLReaders.back()->set_intOffset(&imzML_intOffsets);
+  }
+  
+  //Create the imzMLPeaksReaders corresponding to the current imzMLread
+  DataFrame peaksimzMLrun;
+  if(dataMode == DataCubeIOMode::PEAKLIST_READ || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
+  {
+    if( data["peaklist"] == R_NilValue)
+    {
+      throw std::runtime_error("Error: peak list data not available\n");
+    }
+    
+    List peakListimzML = data["peaklist"];
+    peaksimzMLrun = as<DataFrame>(peakListimzML["run_data"]);
+    if(dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
+    {
+      if(peaksimzMLrun.nrows() != imzMLrun.nrows())
+      {
+        throw std::runtime_error("Error: peak list number of pixels do not match with spectral data number of pixels\n");
+      }
+    }
+    
+    std::string speaksFilePath = as<std::string>(peakListimzML["path"]);
+    std::string speaksFnameImzML = as<std::string>(peakListimzML["file"]);
+    std::string speaksFnameImzMLInput = speaksFilePath + "/" + speaksFnameImzML + ".ibd";
+    
+    //Append the imzML peaks Reader
+    imzMLPeaksReaders.push_back(new ImzMLBinRead(speaksFnameImzMLInput.c_str(), 
+                                                 peaksimzMLrun.nrows(), 
+                                                 as<String>(peakListimzML["mz_dataType"]),
+                                                 as<String>(peakListimzML["int_dataType"]),
+                                                 false,
+                                                 false, //Do not call the file open() on constructor
+                                                 as<bool>(peakListimzML["rMSIpeakList"])//true if the peak list is in rMSI format
+                                                 )); 
+    
+    NumericVector imzML_mzLength = peaksimzMLrun["mzLength"];
+    NumericVector imzML_mzOffsets = peaksimzMLrun["mzOffset"];
+    NumericVector imzML_intLength = peaksimzMLrun["intLength"];
+    NumericVector imzML_intOffsets = peaksimzMLrun["intOffset"];
+    imzMLPeaksReaders.back()->set_mzLength(&imzML_mzLength);  
+    imzMLPeaksReaders.back()->set_mzOffset(&imzML_mzOffsets);
+    imzMLPeaksReaders.back()->set_intLength(&imzML_intLength);
+    imzMLPeaksReaders.back()->set_intOffset(&imzML_intOffsets);
+  }
   
   //Create the imzMLwriter corresponding to the current imzMLreader
-  if(storeDataMode == DataCubeIOMode::DATA_STORE || storeDataMode == DataCubeIOMode::PEAKLIST_STORE )
+  if(dataMode == DataCubeIOMode::DATA_STORE || dataMode == DataCubeIOMode::PEAKLIST_STORE )
   {
     std::string sFnameImzMLOutput= dataOutputPath + "/" + outputImzMLfname + ".ibd"; 
     
-    if(storeDataMode == DataCubeIOMode::DATA_STORE)
+    if(dataMode == DataCubeIOMode::DATA_STORE)
     {
       //Outputing spectral data
       imzMLWriters.push_back(new ImzMLBinWrite(sFnameImzMLOutput.c_str(),
@@ -115,7 +175,7 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
       baseSpectrum.push_back(Rcpp::NumericVector(mass.length()));
     }
     
-    if(storeDataMode == DataCubeIOMode::PEAKLIST_STORE)
+    if(dataMode == DataCubeIOMode::PEAKLIST_STORE)
     {
       //Outputing peaklist data
       imzMLWriters.push_back(new ImzMLBinWrite(sFnameImzMLOutput.c_str(),
@@ -138,7 +198,16 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
     dataCubesDesc.push_back(DataCubeDescription());
   }
   
-  for( unsigned int i = 0; i < imzMLrun.nrows(); i++) //For each pixel in imzML file
+  unsigned int iters;
+  if( dataMode == DataCubeIOMode::PEAKLIST_READ)
+  {
+    iters = peaksimzMLrun.nrows(); 
+  }
+  else
+  {
+    iters = imzMLrun.nrows();
+  }
+  for( unsigned int i = 0; i < iters; i++) //For each pixel in imzML file
   {
     if(dataCubesDesc.back().size() == cubeMaxNumRows)
     {
@@ -148,7 +217,14 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
     
     dataCubesDesc.back().push_back(PixelDescription());
     dataCubesDesc.back().back().pixel_ID = i;
-    dataCubesDesc.back().back().imzML_ID = imzMLReaders.size()-1;
+    if( dataMode == DataCubeIOMode::PEAKLIST_READ)
+    {
+      dataCubesDesc.back().back().imzML_ID = imzMLPeaksReaders.size()-1;
+    }
+    else
+    {
+      dataCubesDesc.back().back().imzML_ID = imzMLReaders.size()-1;
+    }
     dataCubesDesc.back().back().peakMatrix_row = next_peakMatrix_row;
     next_peakMatrix_row++;
   }
@@ -167,14 +243,18 @@ CrMSIDataCubeIO::DataCube *CrMSIDataCubeIO::loadDataCube(int iCube)
   data_ptr->cubeID = iCube;
   data_ptr->nrows = dataCubesDesc[iCube].size();
   data_ptr->ncols = mass.length();
-  data_ptr->dataOriginal = new imzMLSpectrum[data_ptr->nrows];
-  data_ptr->dataInterpolated = new double*[data_ptr->nrows];
-  if(storeDataMode == DataCubeIOMode::PEAKLIST_STORE)
+  
+  if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+  {
+    data_ptr->dataOriginal = new imzMLSpectrum[data_ptr->nrows];
+    data_ptr->dataInterpolated = new double*[data_ptr->nrows];
+  }
+  
+  if(dataMode == DataCubeIOMode::PEAKLIST_STORE || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ || dataMode == DataCubeIOMode::PEAKLIST_READ)
   {
     data_ptr->peakLists = new PeakPicking::Peaks*[data_ptr->nrows];
   }
   
-
   //Data reading
   int current_imzML_id;
   int previous_imzML_id = -1; //Start previous as -1 to indicate an unallocated imzML
@@ -186,26 +266,57 @@ CrMSIDataCubeIO::DataCube *CrMSIDataCubeIO::loadDataCube(int iCube)
     //Rcpp::Rcout << "CrMSIDataCubeIO::loadDataCube()--> mzLength(0)=" << imzMLReaders[current_imzML_id]->get_mzLength(0)  << std::endl; //DEBUG line
     //Rcpp::Rcout << "CrMSIDataCubeIO::loadDataCube()--> ibd file=" << imzMLReaders[current_imzML_id]->getIbdFilePath()  << std::endl; //DEBUG line
     
-    
     if(current_imzML_id != previous_imzML_id)
     {
       if(previous_imzML_id != -1)
       {
-        imzMLReaders[previous_imzML_id]->close();
+        if( (dataMode == DataCubeIOMode::PEAKLIST_READ) || (dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ))
+        {
+          imzMLPeaksReaders[previous_imzML_id]->close();
+        }
+        if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+        {
+          imzMLReaders[previous_imzML_id]->close();
+        }
       }
-      imzMLReaders[current_imzML_id]->open();
+      if( (dataMode == DataCubeIOMode::PEAKLIST_READ) || (dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ))
+      {
+        imzMLPeaksReaders[current_imzML_id]->open();
+      }
+      if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+      {
+        imzMLReaders[current_imzML_id]->open();
+      }
     }
     
-    data_ptr->dataInterpolated[i] = new double[data_ptr->ncols];
-    data_ptr->dataOriginal[i] = imzMLReaders[current_imzML_id]->ReadSpectrum(dataCubesDesc[iCube][i].pixel_ID, //pixel id to read
-                                                0, //unsigned int ionIndex
-                                                mass.length(),//unsigned int ionCount
-                                                data_ptr->dataInterpolated[i] //Store data directely at the datacube mem
-                                                );
+    if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+    {
+      data_ptr->dataInterpolated[i] = new double[data_ptr->ncols];
+      data_ptr->dataOriginal[i] = imzMLReaders[current_imzML_id]->ReadSpectrum(dataCubesDesc[iCube][i].pixel_ID, //pixel id to read
+                                                  0, //unsigned int ionIndex
+                                                  mass.length(),//unsigned int ionCount
+                                                  data_ptr->dataInterpolated[i] //Store data directely at the datacube mem
+                                                  );
+    }
+    
+    if(dataMode == DataCubeIOMode::PEAKLIST_READ || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
+    {
+      //Load the peak list in reading mode
+      data_ptr->peakLists[i] = imzMLPeaksReaders[current_imzML_id]->ReadPeakList(dataCubesDesc[iCube][i].pixel_ID); 
+    }
                                   
     previous_imzML_id = current_imzML_id;
   }
-  imzMLReaders[current_imzML_id]->close(); //Force to close the last opened imzML
+  
+  //Force to close the last opened imzML
+  if( (dataMode == DataCubeIOMode::PEAKLIST_READ) || (dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ))
+  {
+    imzMLPeaksReaders[current_imzML_id]->close();
+  }
+  if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+  {
+    imzMLReaders[current_imzML_id]->close();
+  }
   
   return data_ptr;
 }
@@ -214,15 +325,23 @@ void CrMSIDataCubeIO::freeDataCube(DataCube *data_ptr)
 {
   for( int i = 0; i < data_ptr->nrows; i++ )
   {
-    delete[] data_ptr->dataInterpolated[i];
-    if(storeDataMode == DataCubeIOMode::PEAKLIST_STORE)
+    if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+    {
+      delete[] data_ptr->dataInterpolated[i];
+    }
+    if(dataMode == DataCubeIOMode::PEAKLIST_STORE || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ || dataMode == DataCubeIOMode::PEAKLIST_READ)
     {
       delete data_ptr->peakLists[i];
     }
   }
-  delete[] data_ptr->dataOriginal;
-  delete[] data_ptr->dataInterpolated;
-  if(storeDataMode == DataCubeIOMode::PEAKLIST_STORE)
+  
+  if(dataMode != DataCubeIOMode::PEAKLIST_READ)
+  {
+    delete[] data_ptr->dataOriginal;
+    delete[] data_ptr->dataInterpolated;
+  }
+  
+  if(dataMode == DataCubeIOMode::PEAKLIST_STORE || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ || dataMode == DataCubeIOMode::PEAKLIST_READ)
   {
     delete[] data_ptr->peakLists;
   }
@@ -257,7 +376,7 @@ void CrMSIDataCubeIO::storeDataCube(int iCube, DataCube *data_ptr)
     }
     
     //Store Spectral data
-    if( storeDataMode == DataCubeIOMode::DATA_STORE)
+    if( dataMode == DataCubeIOMode::DATA_STORE)
     {
       //Calc average and base spectrum
       for(unsigned int j = 0; j < mass.length(); j++)
@@ -281,7 +400,7 @@ void CrMSIDataCubeIO::storeDataCube(int iCube, DataCube *data_ptr)
     }
     
     //Store Peak lists
-    if( storeDataMode == DataCubeIOMode::PEAKLIST_STORE)
+    if( dataMode == DataCubeIOMode::PEAKLIST_STORE)
     {
       //Processed mode write with phantom data for snr, area and bin size
       //Rcpp::Rcout<<"iCube = " <<iCube<< "  i = " <<i<<"  mass.size() = "<<data_ptr->peakLists[i]->mass.size()<< "  intensity.size() = " << data_ptr->peakLists[i]->intensity.size() <<"\n";
@@ -397,3 +516,23 @@ Rcpp::NumericVector CrMSIDataCubeIO::get_BaseSpectrum(unsigned int index)
   
   return baseSpectrum[index];
 }
+
+bool CrMSIDataCubeIO::get_all_peakLists_are_rMSIformated()
+{
+  bool rMSIpeakListFormated = true;
+  if( (dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ) || (dataMode == DataCubeIOMode::PEAKLIST_READ) )
+  {
+    for(int i = 0; i < imzMLPeaksReaders.size(); i++)
+    {
+      rMSIpeakListFormated &= imzMLPeaksReaders[i]->get_rMSIPeakListFormat(); 
+    }
+    
+  }
+  else
+  {
+    throw std::runtime_error("Error: get_all_peakLists_are_rMSIformated() can only be called when data mode is set to DATA_AND_PEAKLIST_READ or PEAKLIST_READ\n");
+  }
+    
+  return rMSIpeakListFormated;
+}
+

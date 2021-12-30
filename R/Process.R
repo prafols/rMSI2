@@ -176,7 +176,7 @@ ProcessImages <- function(proc_params,
     if(!is.null(result$processed_data[[i]]$data$imzML))
     {
       cat(paste0("Writing .XrMSI file ", i, " of ", length(result$processed_data), "...\n"))
-      result$processed_data[[i]] <- Ccreate_rMSIXBinData(result$processed_data[[i]], numOfThreads)
+      result$processed_data[[i]] <- Ccreate_rMSIXBinData(result$processed_data[[i]], numOfThreads) #TODO include information for the peaklists in the XML if available!
     }
     else
     {
@@ -186,10 +186,9 @@ ProcessImages <- function(proc_params,
   }
   
   #Display the used processing time
+  cat(paste0("All data processing was completed at ", format(Sys.time(), "%Y-%m-%d %H:%M:%S") ,"\n"))
   elap <- proc.time() - pt - CalibrationWindowElapsedTime
   display_processing_time(elap, "Total data processing time")
-  
-  return(list(processed_data = result$processed_data, PeakMatrix = result$PeakMatrix))
 }
 
 #' RunPreProcessing
@@ -493,17 +492,15 @@ RunPreProcessing <- function(proc_params,
   #Run the peakbining
   if((proc_params$preprocessing$peakpicking$enable && proc_params$preprocessing$peakbinning$enable) || data_is_peaklist)
   {
-    peakMatrix <- CRunPeakBinning(peaklists_lst,  proc_params$preprocessing, numOfThreads)
+    peakMatrix <- CRunPeakBinning(img_lst_proc, numOfThreads, memoryPerThreadMB, proc_params$preprocessing)
     
     #Execute the fillpeaks after running the binning routine
     if(data_is_peaklist) 
     {
-      cat("No spectral data available, skiping the fill-peaks algorithm.\n")
+      cat("No spectral data available, fill-peaks algorithm will not be able to retrieve zero-values.\n")
+      common_mass <- numeric() #Using an empty mass axis to signal non spectral data available
     }
-    else
-    {
-      CRunFillPeaks(img_lst_proc, numOfThreads, memoryPerThreadMB, proc_params$preprocessing, common_mass, peakMatrix)
-    }
+    CRunFillPeaks(img_lst_proc, numOfThreads, memoryPerThreadMB, proc_params$preprocessing, common_mass, peakMatrix)
     
     #Append normalizations to the peak matrix
     if(data_is_peaklist) 

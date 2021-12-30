@@ -23,10 +23,16 @@
 #include <stdexcept>
 using namespace Rcpp;
 
-PeakBinning::PeakBinning(Rcpp::Reference preProcessingParams, int numberOfThreads) //TODO currently the numberOfThreads is not used since the implementation is not multithreaded.. think about it
+PeakBinning::PeakBinning(Rcpp::List rMSIObj_list, int numberOfThreads, double memoryPerThreadMB, 
+                         Rcpp::Reference preProcessingParams):
+  ThreadingMsiProc(rMSIObj_list, numberOfThreads, memoryPerThreadMB, Rcpp::NumericVector(), DataCubeIOMode::PEAKLIST_READ)
 {
-  //Start with total number of pixels set to zero, it will be increased when data is appended
+  //Calculate the total number of pixels
   totalNumOfPixels = 0;
+  for(int i=0; i < ioObj->getNumberOfCubes(); i++ )
+  {
+    totalNumOfPixels += ioObj->getNumberOfPixelsInCube(i);
+  }
   
   //Get the parameters
   Rcpp::Reference binningParams = preProcessingParams.field("peakbinning");
@@ -37,269 +43,164 @@ PeakBinning::PeakBinning(Rcpp::Reference preProcessingParams, int numberOfThread
 
 PeakBinning::~PeakBinning()
 {
-  for( int i = 0; i < imzMLReaders.size(); i++)
-  {
-    delete imzMLReaders[i];
-  }
+
 }
 
-void PeakBinning::appedImageData(Rcpp::List imzMLDescriptor)
+void PeakBinning::AppendMassChannel2MassBins(MassBin newMassBin, std::vector<MassBin> &targetMassBins)
 {
-  //Set the imzML reader
-  DataFrame imzMLrun = as<DataFrame>(imzMLDescriptor["run_data"]);
-  std::string sFilePath = as<std::string>(imzMLDescriptor["path"]);
-  std::string sFnameImzML = as<std::string>(imzMLDescriptor["file"]);
-  std::string sFnameImzMLInput = sFilePath + "/" + sFnameImzML + ".ibd";
-  bool bPeakListrMSIformat = as<bool>(imzMLDescriptor["rMSIpeakList"]);
-  
-  if(!bPeakListrMSIformat && !tolerance_in_ppm)
+  //Search the closest mass bin
+  double minMassDistance = std::numeric_limits<double>::max();
+  int minDistanceIndex = -1;
+  double currentMassDistance;
+  for(int icol = 0; icol < targetMassBins.size(); icol++)
   {
-    throw std::runtime_error("ERROR: a peak list is not in rMSI imzML format, please set the bining tolerance in ppm to use non-rMSI peak lists.\n");
-  }
-  
-  //Append the imzML Reader
-  imzMLReaders.push_back(new ImzMLBinRead(sFnameImzMLInput.c_str(), 
-                                          imzMLrun.nrows(), 
-                                          as<String>(imzMLDescriptor["mz_dataType"]),
-                                          as<String>(imzMLDescriptor["int_dataType"]) ,
-                                          false, //A peak list is allways processed mode
-                                          false, //Do not call the file open() on constructor
-                                          bPeakListrMSIformat
-                                          )); 
-  
-  NumericVector imzML_mzLength = imzMLrun["mzLength"];
-  NumericVector imzML_mzOffsets = imzMLrun["mzOffset"];
-  NumericVector imzML_intLength = imzMLrun["intLength"];
-  NumericVector imzML_intOffsets = imzMLrun["intOffset"];
-  imzMLReaders.back()->set_mzLength(&imzML_mzLength);  
-  imzMLReaders.back()->set_mzOffset(&imzML_mzOffsets);
-  imzMLReaders.back()->set_intLength(&imzML_intLength);
-  imzMLReaders.back()->set_intOffset(&imzML_intOffsets);
-  
-  totalNumOfPixels += imzMLrun.nrows();
-}
-
-List PeakBinning::BinPeaks()
-{
-  Rcout<<"Binning peaks...\n";
-  unsigned int iCount = 0; //Used for the progress bar
-  PeakPicking::Peaks *mpeaks; //Pointer to the current peaklist
-  
-  //The mass name for each matrix column
-  std::vector<double> binMass; 
-  
-  //Store the number of peaks added to each column to apply the bin filter at the end
-  std::vector<unsigned int> columnsPeakCounters;
-  
-  int iPixelPeakMatRowOffset = 0;
-  for(int iimg = 0; iimg < imzMLReaders.size(); iimg++)
-  {
-    imzMLReaders[iimg]->open();
-    for(int ipixel = 0; ipixel < imzMLReaders[iimg]->get_number_of_pixels(); ipixel++)
+    currentMassDistance = newMassBin.mass - targetMassBins[icol].mass;
+    
+    if(fabs(currentMassDistance) < fabs(minMassDistance))
     {
-      progressBar(iCount, totalNumOfPixels, "=", " ");
-      iCount++;
-      mpeaks = imzMLReaders[iimg]->ReadPeakList(ipixel);
-      for(int imass = 0; imass < mpeaks->mass.size(); imass++)
+      minMassDistance = currentMassDistance;
+      minDistanceIndex = icol;
+    }
+    
+    if(currentMassDistance < 0)
+    {
+      break;
+    }
+  }
+  
+  //Select the kind of binning tolerance
+  double compTolerance;
+  if(tolerance_in_ppm)
+  {
+    minMassDistance = 1e6*(fabs(minMassDistance)/newMassBin.mass); //Compute distance in ppm
+    compTolerance = tolerance;
+  }
+  else
+  {
+    compTolerance = tolerance * newMassBin.binSize;
+  } 
+  
+  if(minDistanceIndex >= 0)
+  {
+    if( (fabs(minMassDistance) < compTolerance))
+    {
+      //The peak must be binned with the minDistanceIndex column of the peak matrix
+      targetMassBins[minDistanceIndex].mass = 
+        ((double)targetMassBins[minDistanceIndex].counts)/((double)(targetMassBins[minDistanceIndex].counts + 1)) * targetMassBins[minDistanceIndex].mass 
+        + newMassBin.mass/((double)(targetMassBins[minDistanceIndex].counts + 1));
+      
+      targetMassBins[minDistanceIndex].binSize = 
+      ((double)targetMassBins[minDistanceIndex].counts)/((double)(targetMassBins[minDistanceIndex].counts + 1)) * targetMassBins[minDistanceIndex].binSize 
+        + newMassBin.binSize/((double)(targetMassBins[minDistanceIndex].counts + 1));
+      
+      targetMassBins[minDistanceIndex].counts++;
+    }
+    else
+    {
+      auto it = targetMassBins.begin();
+      if(minMassDistance > 0)
       {
-        //Search the closest mass bin
-        double minMassDistance = std::numeric_limits<double>::max();
-        int minDistanceIndex = -1;
-        double currentMassDistance;
-        for(int icol = 0; icol < binMass.size(); icol++)
-        {
-          currentMassDistance = fabs(mpeaks->mass[imass] - binMass[icol]);
-          if(currentMassDistance < minMassDistance)
-          {
-            minMassDistance = currentMassDistance;
-            minDistanceIndex = icol;
-          }
-        }
-        
-        //Select the kind of binning tolerance
-        double compTolerance;
-        if(tolerance_in_ppm)
-        {
-          minMassDistance = 1e6*(minMassDistance/mpeaks->mass[imass]); //Compute distance in ppm
-          compTolerance = tolerance;
-        }
-        else
-        {
-          compTolerance = tolerance * mpeaks->binSize[imass];
-        } 
-        
-        /**** DEBUG Pints
-        Rcout << "\n\n\nipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
-        Rcout << "mpeaks->mass[ " << imass << " ] = " << mpeaks->mass[imass] << "\n"; 
-        Rcout << "minMassDistance = " << minMassDistance << "\n";
-        Rcout << "minDistanceIndex = " << minDistanceIndex << "\n";
-        Rcout << "compTolerance = " << compTolerance << "\n";*/
-        
-        if( (minMassDistance < compTolerance) && (minDistanceIndex >= 0) )
-        {
-          //The peak must be binned with the minDistanceIndex column of the peak matrix
-          columnsPeakCounters[minDistanceIndex]++;
-          binMass[minDistanceIndex] = 0.5*(binMass[minDistanceIndex] + mpeaks->mass[imass]); //Recompute the peak matrix mass by simply averaging it
-        }
-        else
-        {
-          /** DEBUG Prints
-          Rcout << "DBG: Adding new column to the peak matrix...\n";
-          Rcout << "DBG: current mpeaks->mass.size() = " << mpeaks->mass.size() << "\n";*/
-          
-          //A new column must be added to the peak matrix
-          binMass.push_back(mpeaks->mass[imass]); //Append element to the mass vector (names of bin Matrix)
-          columnsPeakCounters.push_back(1);
-        }
+        //Insert the new mass channel after the minDistanceIndex
+        it = targetMassBins.insert(targetMassBins.begin() + minDistanceIndex + 1, MassBin());
+      }
+      else
+      {
+        //Insert the new mass channel before the minDistanceIndex
+        it = targetMassBins.insert(targetMassBins.begin() + minDistanceIndex, MassBin());
       }
       
-      delete mpeaks;
+      //Set values for the new column added to the peak matrix
+      it->mass = newMassBin.mass;
+      it->binSize = newMassBin.binSize;
+      it->counts = newMassBin.counts;
     }
-    imzMLReaders[iimg]->close();
-    
-    iPixelPeakMatRowOffset += imzMLReaders[iimg]->get_number_of_pixels();
+  }
+  else
+  {
+    //targetMassBins is empty, so add the first element to it
+    targetMassBins.push_back(MassBin());
+    targetMassBins.back().mass =  newMassBin.mass;
+    targetMassBins.back().binSize = newMassBin.binSize;
+    targetMassBins.back().counts =  newMassBin.counts;
+  }
+}
+
+void PeakBinning::ProcessingFunction(int threadSlot)
+{
+  std::vector<MassBin> thread_binMass; //The mass name for each matrix column (local thread space)
+  MassBin current_bin;
+
+  //Thread local worker
+  PeakPicking::Peaks *mpeaks; //Pointer to the current peaklist
+  for( int irow = 0; irow < cubes[threadSlot]->nrows; irow++)
+  {
+    mpeaks = cubes[threadSlot]->peakLists[irow];
+    for(int ipeak = 0; ipeak < mpeaks->mass.size(); ipeak++)
+    {
+      current_bin.mass = mpeaks->mass[ipeak];
+      current_bin.binSize = mpeaks->binSize[ipeak];
+      current_bin.counts = 1;
+      AppendMassChannel2MassBins(current_bin, thread_binMass);
+    }
   }
   
-  //Apply binFilter
-  std::vector<bool> keepColumns(columnsPeakCounters.size());
-  unsigned int number_of_columns_to_remove = 0;
-  for( int i=0; i < keepColumns.size(); i++)
+  //Append local thread result to the main bins
+  if(!thread_binMass.empty())
   {
-    keepColumns[i] = (double)columnsPeakCounters[i] > binFilter*(double)totalNumOfPixels;
-    if(!keepColumns[i])
+    mainBinsMutex.lock();
+    for( auto it = thread_binMass.begin(); it != thread_binMass.end(); ++it)
     {
-      number_of_columns_to_remove++;
+      AppendMassChannel2MassBins(*it, mainMassBins);
     }
-    /* DEBUG prints
-    Rcout << "DBG: columnsPeakCounters[ "<< i << " ] = " << columnsPeakCounters[i] <<"\n"; 
-    Rcout << "DBG: binFilter*(double)totalNumOfPixels = "<< binFilter*(double)totalNumOfPixels <<"\n"; 
-    Rcout << "DBG: keepColumns[ "<< i << " ] = " << keepColumns[i] <<"\n"; 
-    Rcout << "DBG: number_of_columns_to_remove = "<< number_of_columns_to_remove << "\n";
-     */
+    mainBinsMutex.unlock();
   }
-  if(number_of_columns_to_remove >= binMass.size())
+}
+
+
+List PeakBinning::Run()
+{
+  //Run the mass binning in multithreading
+  mainMassBins.clear();
+  Rcout<<"Binning peaks...\n";
+  runMSIProcessingCpp(); //After the multithreaded binning the mainMassBins object contains the sorted mass channels and the counts on each
+  
+  //Apply binFilter
+  NumericVector massR;
+  NumericVector binSizeR;
+  for( auto it = mainMassBins.begin(); it != mainMassBins.end(); ++it)
+  {
+    if( ((double)(it->counts)) > binFilter*(double)totalNumOfPixels)
+    {
+      massR.push_back(it->mass);
+      binSizeR.push_back(it->binSize);
+    }
+  }
+  if(massR.length() == 0)
   {
     throw std::runtime_error("ERROR: all peaks were removed by the bin filter. Consider decresin the bin filter or SNR.\n");
   }
-
-  Rcout<<"Bining complete with a total number of "<<binMass.size() - number_of_columns_to_remove<<" bins\n"; 
   
-  //Sort columns by mass
-  Rcout<<"Sorting columns by mass...\n";
-  NumericVector massCopy(binMass.size());
-  NumericVector massSorted(binMass.size() - number_of_columns_to_remove);
-  memcpy(massCopy.begin(), binMass.data(), sizeof(double)*binMass.size());
-  int sortedInds[binMass.size()];
-  double minVal;
-  for(int i = 0; i < binMass.size(); i++)
-  {
-    minVal = std::numeric_limits<double>::max();
-    for( int j = 0; j < binMass.size(); j++ )
-    {
-      if( massCopy[j] < minVal && massCopy[j] > 0 )
-      {
-        minVal = massCopy[j];
-        sortedInds[i] = j;
-      }  
-    }
-    massCopy[ sortedInds[i]  ] = -1; //Mark as sorted
-  }
+  Rcout<<"Bining complete with a total number of "<<massR.length()<<" bins\n"; 
   
-  //Copy the mass axis sorting it
-  unsigned int icopy = 0;
-  for(int i = 0; i < binMass.size(); i++)
-  {
-    if(keepColumns[sortedInds[i]])
-    {
-      massSorted[icopy] = binMass[sortedInds[i]];
-      icopy++;
-    }
-  }
+  //Prepare the R bin matrix
+  NumericMatrix binMatIntensity(totalNumOfPixels, massR.length());
+  NumericMatrix binMatSNR(totalNumOfPixels, massR.length());
+  NumericMatrix binMatArea(totalNumOfPixels, massR.length());
   
-  //Fill the Peak matrices
-  Rcout<<"Filling the peak matrix...\n";
-  NumericMatrix binMatIntensity(totalNumOfPixels, massSorted.length());
-  NumericMatrix binMatSNR(totalNumOfPixels, massSorted.length());
-  NumericMatrix binMatArea(totalNumOfPixels, massSorted.length());
-  
-  iPixelPeakMatRowOffset = 0; //Reset offsets
-  iCount = 0; //Reset progress bar
-  for(int iimg = 0; iimg < imzMLReaders.size(); iimg++)
-  {
-    imzMLReaders[iimg]->open();
-    for(int ipixel = 0; ipixel < imzMLReaders[iimg]->get_number_of_pixels(); ipixel++)
-    {
-      progressBar(iCount, totalNumOfPixels, "=", " ");
-      iCount++;
-      mpeaks = imzMLReaders[iimg]->ReadPeakList(ipixel);
-      for(int imass = 0; imass < mpeaks->mass.size(); imass++)
-      {
-        //Search the closest mass bin
-        double minMassDistance = std::numeric_limits<double>::max();
-        int minDistanceIndex = -1;
-        double currentMassDistance;
-        for(int icol = 0; icol < massSorted.length(); icol++)
-        {
-          currentMassDistance = fabs(mpeaks->mass[imass] - massSorted[icol]);
-          if(currentMassDistance < minMassDistance)
-          {
-            minMassDistance = currentMassDistance;
-            minDistanceIndex = icol;
-          }
-        }
-        
-        //Select the kind of binning tolerance
-        double compTolerance;
-        if(tolerance_in_ppm)
-        {
-          minMassDistance = 1e6*(minMassDistance/mpeaks->mass[imass]); //Compute distance in ppm
-          compTolerance = tolerance;
-        }
-        else
-        {
-          compTolerance = tolerance * mpeaks->binSize[imass];
-        } 
-        
-        /**** DEBUG Pints
-         Rcout << "\n\n\nipixel = " << ipixel << " of " << totalNumOfPixels << "\n"; 
-         Rcout << "mpeaks->mass[ " << imass << " ] = " << mpeaks->mass[imass] << "\n"; 
-         Rcout << "minMassDistance = " << minMassDistance << "\n";
-         Rcout << "minDistanceIndex = " << minDistanceIndex << "\n";
-         Rcout << "compTolerance = " << compTolerance << "\n";*/
-        
-        if( (minMassDistance <= compTolerance) && (minDistanceIndex >= 0) )
-        {
-          binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) = mpeaks->intensity[imass] > binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->intensity[imass] : binMatIntensity(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
-          if(imzMLReaders[iimg]->get_rMSIPeakListFormat())
-          {
-            binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex)= mpeaks->SNR[imass] > binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->SNR[imass] : binMatSNR(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
-            binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex)= mpeaks->area[imass] > binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex) ? mpeaks->area[imass] : binMatArea(ipixel + iPixelPeakMatRowOffset, minDistanceIndex);
-          }
-        }
-      }
-      delete mpeaks;
-    }
-    imzMLReaders[iimg]->close();
-    iPixelPeakMatRowOffset += imzMLReaders[iimg]->get_number_of_pixels();
-  }
-
-  return List::create( Named("mass") = massSorted, Named("intensity") = binMatIntensity, Named("SNR") = binMatSNR, Named("area") = binMatArea );
+  return List::create( Named("mass") = massR, Named("binSize") = binSizeR, Named("intensity") = binMatIntensity, Named("SNR") = binMatSNR, Named("area") = binMatArea );
 }
 
 // [[Rcpp::export]]
-List CRunPeakBinning(Rcpp::List imzMLDescriptor, Rcpp::Reference preProcessingParams, int numOfThreads)
+List CRunPeakBinning(Rcpp::List rMSIObj_list,int numOfThreads, double memoryPerThreadMB, 
+                     Rcpp::Reference preProcessingParams)
 {
   List out;
   try
   {
-    PeakBinning myPeakBinning(preProcessingParams, numOfThreads);
-    
-    for(int i = 0; i < imzMLDescriptor.length(); i++)
-    {
-      myPeakBinning.appedImageData(imzMLDescriptor[i]);
-    }
-    
-    out = myPeakBinning.BinPeaks(); 
+    PeakBinning myPeakBinning(rMSIObj_list, numOfThreads, memoryPerThreadMB, 
+                              preProcessingParams);
+  
+    out = myPeakBinning.Run(); 
   }
   catch(std::runtime_error &e)
   {

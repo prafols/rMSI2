@@ -1065,7 +1065,6 @@ Rcpp::List CimzMLReadPeakList(const char* ibdFname, Rcpp::List imzML_peakList_de
   }
 }
 
-//TODO working here to allow overwrting an already set uuid
 //' Method to overwrite the UUID of an imzML ibd file.
 //' testingimzMLBinRead
 //' @param ibdFname: full path to the ibd file.

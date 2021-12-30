@@ -24,7 +24,7 @@ ThreadingMsiProc::ThreadingMsiProc(Rcpp::List rMSIObj_list, int numberOfThreads,
                                    DataCubeIOMode storeDataModeimzml, Rcpp::StringVector uuid, Rcpp::String outputImzMLPath, Rcpp::StringVector outputImzMLfnames):
   dataStoreMode(storeDataModeimzml), massAxis(commonMassAxis)
 {
-  if(dataStoreMode != DataCubeIOMode::DATA_READ)
+  if( (dataStoreMode == DataCubeIOMode::DATA_STORE) || (dataStoreMode == DataCubeIOMode::PEAKLIST_STORE) )
   {
     if(uuid.size() != rMSIObj_list.length())
     {
@@ -42,13 +42,20 @@ ThreadingMsiProc::ThreadingMsiProc(Rcpp::List rMSIObj_list, int numberOfThreads,
     }
   }
   
+  //Force dataStoreMode to peak list read mode if no spectral data is available
+  if( dataStoreMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ && massAxis.length() == 0)
+  {
+    //common mass axis has a length of zero, so it is assumed no spectral data available
+    dataStoreMode = DataCubeIOMode::PEAKLIST_READ;
+  }
+  
   numOfThreadsDouble = 2*numberOfThreads;
   ioObj = new CrMSIDataCubeIO( massAxis, memoryPerThreadMB, dataStoreMode, outputImzMLPath);
   
   //Call the append method for each image in the list
   for(int i = 0; i < rMSIObj_list.length(); i++)
   {
-    if(dataStoreMode != DataCubeIOMode::DATA_READ)
+    if( (dataStoreMode == DataCubeIOMode::DATA_STORE) || (dataStoreMode == DataCubeIOMode::PEAKLIST_STORE) )
     {
       Rcpp::String RcppStr_uuid = uuid[i];
       Rcpp::String RcppStr_outImzmls = outputImzMLfnames[i];
@@ -56,7 +63,7 @@ ThreadingMsiProc::ThreadingMsiProc(Rcpp::List rMSIObj_list, int numberOfThreads,
     }
     else
     {
-      ioObj->appedImageData(rMSIObj_list[i]); 
+      ioObj->appedImageData(rMSIObj_list[i]);
     }
   }
   
@@ -71,6 +78,7 @@ ThreadingMsiProc::ThreadingMsiProc(Rcpp::List rMSIObj_list, int numberOfThreads,
   {
     numPixels += ioObj->getNumberOfPixelsInCube(i);
   }
+  
 }
 
 ThreadingMsiProc::~ThreadingMsiProc()
@@ -98,6 +106,7 @@ void ThreadingMsiProc::runMSIProcessingCpp()
   int nextCubeStore = 0; //Point to the next datacube to store
   int runningThreads = 0; //Total number of running threads
   bool end_of_program = false;
+  
   while( !end_of_program ) 
   {
     //Load data for future threads and start working threads
@@ -117,12 +126,11 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         }
       }
     }
-    
+
     //Wait for thread ends
     WaitForSomeThreadEnd();
-    
     mtx.lock(); //Any thread locked to this mutex is actually waiting to save data
-    
+
     //Update number of running threads
     for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
     {
@@ -132,7 +140,7 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         runningThreads++;
       }
     }
-    
+
     //Start thread that have data loaded ready to be processed
     for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
     {
@@ -143,14 +151,18 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         runningThreads++;
       }      
     }
-    
+
     //Save data and free thread slots
     for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
     {
-      if(bDataReady[iThread] && ((nextCubeStore == iCube[iThread]) || (dataStoreMode == DataCubeIOMode::DATA_READ)) ) 
+      if(bDataReady[iThread] && 
+          ((nextCubeStore == iCube[iThread]) ||
+          (dataStoreMode == DataCubeIOMode::DATA_READ) ||
+          (dataStoreMode == DataCubeIOMode::PEAKLIST_READ) || 
+          (dataStoreMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ) ) ) 
       {
         //If destination imzML is set then store the data
-        if(dataStoreMode != DataCubeIOMode::DATA_READ)
+        if( (dataStoreMode == DataCubeIOMode::DATA_STORE) || (dataStoreMode == DataCubeIOMode::PEAKLIST_STORE) )
         {
           ioObj->storeDataCube(iCube[iThread], cubes[iThread]);   
           nextCubeStore++;
@@ -162,7 +174,7 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         tworkers[iThread].join();
       } 
     }
-    
+
     //Check end condition
     if( nextCubeLoad >= ioObj->getNumberOfCubes() )
     {

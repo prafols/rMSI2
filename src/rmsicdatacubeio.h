@@ -30,11 +30,18 @@
  *  using the rMSIproc multithread processing approach.
  ********************************************************************************/
 
+#define MAX_DATACUBES_ROWS_WITH_PEAKLISTS_ONLY 1000
+//When reading peak lists without the spectral interpolation neigther a common mass axis the max number of rows used in each data cube is set by this define.
+//This is the case for peak binning first stage where only peak lists are accessed. 
+//The default value of a thousand is a good trade of to maximize parallelization.
+
 typedef enum DataCubeIOMode
 {
-  DATA_READ,
-  DATA_STORE,
-  PEAKLIST_STORE
+  DATA_READ, //Read spectral data with interpolation to the common mass axis
+  DATA_STORE, //Store spectral
+  PEAKLIST_READ, //Read a peaklist (interpolated data will be empty) 
+  PEAKLIST_STORE, //Store a peaklist
+  DATA_AND_PEAKLIST_READ //Read spectral data with interpolation to the common mass axis along with its corresponding peak list... 
 }DataCubeIOMode;
 
 class CrMSIDataCubeIO
@@ -44,8 +51,8 @@ class CrMSIDataCubeIO
     // Constructor Arguments:
     // - massAxis: The common mass axis for all the data.
     // - cubeMemoryLimitMB: Memory limit for the interpolated spectra in a cube, thus the acutal used memory can be higher due to stored data as-is in the imzML.
-    // - storeDataModeEnum: set the data store mode.
-    CrMSIDataCubeIO(Rcpp::NumericVector massAxis, double cubeMemoryLimitMB, DataCubeIOMode storeDataModeEnum, Rcpp::String imzMLOutputPath = "");
+    // - dataModeEnum: set the data store mode.
+    CrMSIDataCubeIO(Rcpp::NumericVector massAxis, double cubeMemoryLimitMB, DataCubeIOMode dataModeEnum, Rcpp::String imzMLOutputPath = "");
     ~CrMSIDataCubeIO();
     
     //Struct to define a whole data cube in memory
@@ -98,20 +105,24 @@ class CrMSIDataCubeIO
     
     //Return the number of images attached to the data cube object
     unsigned int get_images_count();
-    
+
     //Return the average spectrum for a specified imzMLWriter
     Rcpp::NumericVector get_AverageSpectrum(unsigned int index);
     
     //Return the base spectrum for a specified imzMLWriter
     Rcpp::NumericVector get_BaseSpectrum(unsigned int index);
+    
+    //Return true if a peaklist is the imzMLPeaksReaders array is in rMSI format (include snr and area)
+    bool get_all_peakLists_are_rMSIformated();
 
   private:
-    DataCubeIOMode storeDataMode; //An enum to set the data output mode.
+    DataCubeIOMode dataMode; //An enum to set the data mode.
     std::string dataOutputPath; //A path to save output imzML data
     unsigned int cubeMaxNumRows; //The maximum rows in a datacube calculated from the maximum memory allowed by each cube and the mass axis length.
     Rcpp::NumericVector mass; //A common mass axis for all images to process
     std::vector<ImzMLBinRead*> imzMLReaders;  //Pointers to multiple imzMLReadrs initialized with openIbd = false to avoid exiding the maximum open files.
     std::vector<ImzMLBinWrite*> imzMLWriters; //Pointers to multiple imzMLWriters initialized with openIbd = false to avoid exiding the maximum open files.
+    std::vector<ImzMLBinRead*> imzMLPeaksReaders;  //Pointers to multiple imzMLReadrs for peaklist reading initialized with openIbd = false to avoid exiding the maximum open files.
     std::vector<Rcpp::NumericVector> acumulatedSpectrum; //A vector to contain all the average spectra (there is one for each imzMLWriter)
     std::vector<Rcpp::NumericVector> baseSpectrum; //A vector to contain all the base spectra (there is one for each imzMLWriter)  
     

@@ -226,8 +226,8 @@ NoiseEstimationFFTExpWinMat <- function(x, filWinSize = 40L) {
     .Call('_rMSI2_NoiseEstimationFFTExpWinMat', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
-CRunPeakBinning <- function(imzMLDescriptor, preProcessingParams, numOfThreads) {
-    .Call('_rMSI2_CRunPeakBinning', PACKAGE = 'rMSI2', imzMLDescriptor, preProcessingParams, numOfThreads)
+CRunPeakBinning <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams) {
+    .Call('_rMSI2_CRunPeakBinning', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams)
 }
 
 #' DetectPeaks_C.

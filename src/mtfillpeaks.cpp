@@ -26,7 +26,7 @@ MTFillPeaks::MTFillPeaks(Rcpp::List rMSIObj_list, int numberOfThreads, double me
                          Rcpp::Reference preProcessingParams,
                          Rcpp::NumericVector commonMassAxis,
                          Rcpp::List peakMatrix):
-  ThreadingMsiProc(rMSIObj_list, numberOfThreads, memoryPerThreadMB, commonMassAxis)
+  ThreadingMsiProc(rMSIObj_list, numberOfThreads, memoryPerThreadMB, commonMassAxis, DataCubeIOMode::DATA_AND_PEAKLIST_READ)
 {
   replacedZerosCounters = new unsigned int[numOfThreadsDouble];
   for( int i = 0; i < numOfThreadsDouble; i++)
@@ -39,6 +39,12 @@ MTFillPeaks::MTFillPeaks(Rcpp::List rMSIObj_list, int numberOfThreads, double me
   int peakWinSize = peakPickingParams.field("WinSize");
   int peakInterpolationUpSampling = peakPickingParams.field("overSampling");
   
+  //Get peak-binning params
+  //Get the parameters
+  Rcpp::Reference binningParams = preProcessingParams.field("peakbinning");
+  tolerance = binningParams.field("tolerance");
+  tolerance_in_ppm = binningParams.field("tolerance_in_ppm");
+  
   peakObj = new PeakPicking*[numOfThreadsDouble];
   for(int i = 0; i < numOfThreadsDouble; i++)
   {
@@ -50,6 +56,7 @@ MTFillPeaks::MTFillPeaks(Rcpp::List rMSIObj_list, int numberOfThreads, double me
   pkMatarea = as<NumericMatrix>(peakMatrix["area"]);
   pkMatsnr = as<NumericMatrix>(peakMatrix["SNR"]);
   pkMatmass = as<NumericVector>(peakMatrix["mass"]);
+  pkMatbinSize = as<NumericVector>(peakMatrix["binSize"]);
   
   //Build the mass index vector
   Rcout<<"Creating the mass index vector...\n";
@@ -87,41 +94,96 @@ MTFillPeaks::~MTFillPeaks()
 
 void MTFillPeaks::Run()
 {
-  Rcout<<"Filling peaks below SNR threshold...\n";
+  Rcout<<"Filling the peak matrix...\n";
+  peaklists_in_rMSIformat = ioObj->get_all_peakLists_are_rMSIformated();
   runMSIProcessingCpp();
-  int replacedZerosSum = 0;
-  for( int i = 0; i < numOfThreadsDouble; i++)
+  
+  if(dataStoreMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
   {
-    replacedZerosSum += replacedZerosCounters[i];
+    int replacedZerosSum = 0;
+    for( int i = 0; i < numOfThreadsDouble; i++)
+    {
+      replacedZerosSum += replacedZerosCounters[i];
+    }
+    Rcout << "A total of " << replacedZerosSum << " low intensity peaks were retrieved\n";
   }
-  Rcout << "A total of " << replacedZerosSum << " low intensity peaks were retrieved\n";
 }
 
 void MTFillPeaks::ProcessingFunction(int threadSlot)
 {
   unsigned int peakMat_row_index;
+  PeakPicking::Peaks *mpeaks; //Pointer to the current peaklist
   for( int j = 0; j < cubes[threadSlot]->nrows; j++)
   {
     //Get the row in the peak matrix of the current pixel
     peakMat_row_index = ioObj->getPeakMatrixRow(cubes[threadSlot]->cubeID, j);
     
-    for( int imass = 0; imass < pkMatintensity.ncol(); imass++)
+    for( int imass = 0; imass < pkMatmass.length(); imass++)
     {
-      //Locate the zeros.....
-      if( pkMatintensity(peakMat_row_index, imass) == 0.0 )
+      //Look for the current mass in the peaklist
+      double minMassDistance = std::numeric_limits<double>::max();
+      int minDistanceIndex = -1;
+      double currentMassDistance;
+      mpeaks = cubes[threadSlot]->peakLists[j];
+      for(int ipeak = 0; ipeak < mpeaks->mass.size(); ipeak++)
       {
-        //Count the replaced zero
-        replacedZerosCounters[threadSlot]++;
+        currentMassDistance = pkMatmass[imass] - mpeaks->mass[ipeak];
         
-        //Fill matrix position with proper intensity
-        pkMatintensity(peakMat_row_index, imass) = cubes[threadSlot]->dataInterpolated[j][mass_index[imass]]; 
-        pkMatarea(peakMat_row_index, imass) = peakObj[threadSlot]->predictPeakArea(cubes[threadSlot]->dataInterpolated[j], mass_index[imass]);
+        if(fabs(currentMassDistance) < fabs(minMassDistance))
+        {
+          minMassDistance = currentMassDistance;
+          minDistanceIndex = ipeak;
+        }
+        
+        if(currentMassDistance < 0)
+        {
+          break;
+        }
+      }
+      
+      //Check tolerance
+      //Select the kind of binning tolerance
+      double compTolerance;
+      if(tolerance_in_ppm) 
+      {
+        minMassDistance = 1e6*(fabs(minMassDistance)/pkMatmass[imass]); //Compute distance in ppm
+        compTolerance = tolerance;
+      }
+      else
+      {
+        compTolerance = tolerance * pkMatbinSize[imass];
+      } 
+      
+      if( (minDistanceIndex >= 0) && (fabs(minMassDistance) <= compTolerance))
+      {
+        //Fill peak matrix using the peak list
+        pkMatintensity(peakMat_row_index, imass) = mpeaks->intensity[minDistanceIndex] > pkMatintensity(peakMat_row_index, imass) ? mpeaks->intensity[minDistanceIndex] : pkMatintensity(peakMat_row_index, imass) ;
+        
+        //Fill SNR and area matrices when available
+        if(peaklists_in_rMSIformat)
+        {
+          pkMatarea(peakMat_row_index, imass) = mpeaks->area[minDistanceIndex] > pkMatarea(peakMat_row_index, imass) ? mpeaks->area[minDistanceIndex] : pkMatarea(peakMat_row_index, imass) ;
+          pkMatsnr(peakMat_row_index, imass) = mpeaks->SNR[minDistanceIndex] > pkMatsnr(peakMat_row_index, imass) ? mpeaks->SNR[minDistanceIndex] : pkMatsnr(peakMat_row_index, imass) ;
+        }
+      }
+      else
+      {
+        //Not available in peak lists, then integrate the spectral data if available
+        if(dataStoreMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
+        {
+          //Count the replaced zero
+          replacedZerosCounters[threadSlot]++;
+        
+          //Fill matrix position with proper intensity
+          pkMatintensity(peakMat_row_index, imass) = cubes[threadSlot]->dataInterpolated[j][mass_index[imass]]; 
+          pkMatarea(peakMat_row_index, imass) = peakObj[threadSlot]->predictPeakArea(cubes[threadSlot]->dataInterpolated[j], mass_index[imass]);
+        }
       }
     }
   }
 }
 
-//Returning void since in theory I  can directely modify the peak matrix without returning anything
+//Returning void since it directely modify the peak matrix without returning anything
 // [[Rcpp::export]]
 void CRunFillPeaks( Rcpp::List rMSIObj_list,int numOfThreads, double memoryPerThreadMB, 
                     Rcpp::Reference preProcessingParams, 

@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // CparseBrukerXML
 List CparseBrukerXML(String xml_path);
 RcppExport SEXP _rMSI2_CparseBrukerXML(SEXP xml_pathSEXP) {
@@ -320,15 +325,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // CRunPeakBinning
-List CRunPeakBinning(Rcpp::List imzMLDescriptor, Rcpp::Reference preProcessingParams, int numOfThreads);
-RcppExport SEXP _rMSI2_CRunPeakBinning(SEXP imzMLDescriptorSEXP, SEXP preProcessingParamsSEXP, SEXP numOfThreadsSEXP) {
+List CRunPeakBinning(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams);
+RcppExport SEXP _rMSI2_CRunPeakBinning(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type imzMLDescriptor(imzMLDescriptorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::Reference >::type preProcessingParams(preProcessingParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type rMSIObj_list(rMSIObj_listSEXP);
     Rcpp::traits::input_parameter< int >::type numOfThreads(numOfThreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(CRunPeakBinning(imzMLDescriptor, preProcessingParams, numOfThreads));
+    Rcpp::traits::input_parameter< double >::type memoryPerThreadMB(memoryPerThreadMBSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Reference >::type preProcessingParams(preProcessingParamsSEXP);
+    rcpp_result_gen = Rcpp::wrap(CRunPeakBinning(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -493,7 +499,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_NoiseEstimationFFTExpWin", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWin, 2},
     {"_rMSI2_NoiseEstimationFFTCosWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTCosWinMat, 2},
     {"_rMSI2_NoiseEstimationFFTExpWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWinMat, 2},
-    {"_rMSI2_CRunPeakBinning", (DL_FUNC) &_rMSI2_CRunPeakBinning, 3},
+    {"_rMSI2_CRunPeakBinning", (DL_FUNC) &_rMSI2_CRunPeakBinning, 4},
     {"_rMSI2_DetectPeaks_C", (DL_FUNC) &_rMSI2_DetectPeaks_C, 5},
     {"_rMSI2_TestPeakInterpolation_C", (DL_FUNC) &_rMSI2_TestPeakInterpolation_C, 7},
     {"_rMSI2_TestHanningWindow", (DL_FUNC) &_rMSI2_TestHanningWindow, 3},
