@@ -93,35 +93,26 @@ void PeakBinning::AppendMassChannel2MassBins(MassBin newMassBin, std::vector<Mas
       ((double)targetMassBins[minDistanceIndex].counts)/((double)(targetMassBins[minDistanceIndex].counts + 1)) * targetMassBins[minDistanceIndex].binSize 
         + newMassBin.binSize/((double)(targetMassBins[minDistanceIndex].counts + 1));
       
-      targetMassBins[minDistanceIndex].counts++;
+      targetMassBins[minDistanceIndex].counts+=newMassBin.counts;
     }
     else
     {
-      auto it = targetMassBins.begin();
       if(minMassDistance > 0)
       {
         //Insert the new mass channel after the minDistanceIndex
-        it = targetMassBins.insert(targetMassBins.begin() + minDistanceIndex + 1, MassBin());
+        targetMassBins.insert(targetMassBins.begin() + minDistanceIndex + 1, newMassBin);
       }
       else
       {
         //Insert the new mass channel before the minDistanceIndex
-        it = targetMassBins.insert(targetMassBins.begin() + minDistanceIndex, MassBin());
+        targetMassBins.insert(targetMassBins.begin() + minDistanceIndex, newMassBin);
       }
-      
-      //Set values for the new column added to the peak matrix
-      it->mass = newMassBin.mass;
-      it->binSize = newMassBin.binSize;
-      it->counts = newMassBin.counts;
     }
   }
   else
   {
     //targetMassBins is empty, so add the first element to it
-    targetMassBins.push_back(MassBin());
-    targetMassBins.back().mass =  newMassBin.mass;
-    targetMassBins.back().binSize = newMassBin.binSize;
-    targetMassBins.back().counts =  newMassBin.counts;
+    targetMassBins.push_back(newMassBin);
   }
 }
 
@@ -179,7 +170,6 @@ List PeakBinning::Run()
   {
     throw std::runtime_error("ERROR: all peaks were removed by the bin filter. Consider decresin the bin filter or SNR.\n");
   }
-  
   Rcout<<"Bining complete with a total number of "<<massR.length()<<" bins\n"; 
   
   //Prepare the R bin matrix
