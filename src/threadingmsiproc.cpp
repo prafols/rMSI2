@@ -191,9 +191,6 @@ void ThreadingMsiProc::runMSIProcessingCpp()
 
 void ThreadingMsiProc::ProcessingThread( int threadSlot )
 {
-  
-  //TODO Im working here!!!! test this! lets see if I get some improvment interpolating here instead of at the main thread!
-  //TODO check compiler errors
   ioObj->interpolateDataCube(cubes[threadSlot]);
   
   //Call the processing function for this thread

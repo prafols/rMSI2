@@ -352,16 +352,19 @@ void CrMSIDataCubeIO::freeDataCube(DataCube *data_ptr)
 
 void CrMSIDataCubeIO::interpolateDataCube(DataCube *data_ptr)
 {
-  if(data_ptr->cubeID >= dataCubesDesc.size())
+  if(dataMode != DataCubeIOMode::PEAKLIST_READ)
   {
-    throw std::runtime_error("Error: DataCube index out of range\n");
-  }
-  
-  int current_imzML_id;
-  for(unsigned int i = 0; i < data_ptr->nrows; i++) //For each spectrum belonging to the selected datacube
-  {
-    current_imzML_id = dataCubesDesc[data_ptr->cubeID][i].imzML_ID;
-    imzMLReaders[current_imzML_id]->InterpolateSpectrum( &(data_ptr->dataOriginal[i]), 0, mass.length(), data_ptr->dataInterpolated[i]);
+    if(data_ptr->cubeID >= dataCubesDesc.size())
+    {
+      throw std::runtime_error("Error: DataCube index out of range\n");
+    }
+    
+    int current_imzML_id;
+    for(unsigned int i = 0; i < data_ptr->nrows; i++) //For each spectrum belonging to the selected datacube
+    {
+      current_imzML_id = dataCubesDesc[data_ptr->cubeID][i].imzML_ID;
+      imzMLReaders[current_imzML_id]->InterpolateSpectrum( &(data_ptr->dataOriginal[i]), 0, mass.length(), data_ptr->dataInterpolated[i]);
+    }
   }
 }
 
