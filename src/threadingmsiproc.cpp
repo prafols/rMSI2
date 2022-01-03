@@ -164,7 +164,7 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         //If destination imzML is set then store the data
         if( (dataStoreMode == DataCubeIOMode::DATA_STORE) || (dataStoreMode == DataCubeIOMode::PEAKLIST_STORE) )
         {
-          ioObj->storeDataCube(iCube[iThread], cubes[iThread]);   
+          ioObj->storeDataCube(cubes[iThread]);   
           nextCubeStore++;
         }
         
@@ -191,6 +191,11 @@ void ThreadingMsiProc::runMSIProcessingCpp()
 
 void ThreadingMsiProc::ProcessingThread( int threadSlot )
 {
+  
+  //TODO Im working here!!!! test this! lets see if I get some improvment interpolating here instead of at the main thread!
+  //TODO check compiler errors
+  ioObj->interpolateDataCube(cubes[threadSlot]);
+  
   //Call the processing function for this thread
   ProcessingFunction(threadSlot);
   

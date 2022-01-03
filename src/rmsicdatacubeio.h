@@ -79,8 +79,11 @@ class CrMSIDataCubeIO
     DataCube *loadDataCube( int iCube);
     void freeDataCube(DataCube *data_ptr);
     
+    //Execute the interpolation for a thread
+    void interpolateDataCube(DataCube *data_ptr);
+    
     //Stores a datacube to the path assosiated with its ID
-    void storeDataCube(int iCube, DataCube *data_ptr);
+    void storeDataCube(DataCube *data_ptr);
     
     //Return the total number of cubes in the ramdisk
     int getNumberOfCubes();

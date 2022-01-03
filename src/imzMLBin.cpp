@@ -294,8 +294,8 @@ void ImzMLBin::convertDouble2Bytes(double* inPtr, char* outBytes, unsigned int N
   delete[] auxBuffer;
 }
 
-ImzMLBinRead::ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, bool openIbd, bool peakListrMSIformat):
-  ImzMLBin(ibd_fname, num_of_pixels, Str_mzType, Str_intType, continuous, Mode::Read), bForceResampling(false), bOriginalMassAxisOnMem(false), bPeakListInrMSIFormat(peakListrMSIformat)
+ImzMLBinRead::ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, bool openIbd, bool peakListrMSIformat, bool runLinearInterpolationOnLoad ):
+  ImzMLBin(ibd_fname, num_of_pixels, Str_mzType, Str_intType, continuous, Mode::Read), bForceResampling(false), bOriginalMassAxisOnMem(false), bPeakListInrMSIFormat(peakListrMSIformat), bRunLinearInterpolationOnLoad(runLinearInterpolationOnLoad)
 {
   if(openIbd)
   {
@@ -410,7 +410,7 @@ void ImzMLBinRead::readMzData(std::streampos offset, unsigned int N, double* ptr
       //Re-check if equals to the common mass axis
       checkCompareOriginalMassAxisAndCommonMassAxis();
     }
-    
+  
     //Mass axis already in mem so just copy from it
     memcpy( ptr, originalMassAxis.data(), N * sizeof(double) );
   }
@@ -510,15 +510,38 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
     }
     
     //Linear interpolation
-    mlinterp::interp(
-      &massLength, (int)ionCount, // Number of points (imzML original, interpolated )
-      imzMLSpc.imzMLintensity.data(), out, // Y axis  (imzML original, interpolated )
-      imzMLSpc.imzMLmass.data(), commonMassAxis.data() + ionIndex // X axis  (imzML original, interpolated )
-    );
-    
+    if(bRunLinearInterpolationOnLoad)
+    {
+      InterpolateSpectrum(&imzMLSpc, ionIndex, ionCount, out);
+    }
   }
   
   return imzMLSpc;
+}
+
+//imzMLSpc: pointer to a spectrum already read from the imzML file.
+//ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
+//ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
+//out: a pointer where data will be stored.
+void ImzMLBinRead::InterpolateSpectrum(imzMLSpectrum *imzMLSpc, unsigned int ionIndex, unsigned int ionCount, double *out)
+{
+  if(get_continuous() && !bForceResampling) 
+  {
+    //Data in continuous mode and no need to resampling
+    memcpy( out, imzMLSpc->imzMLintensity.data(),  ionCount* sizeof(double) );
+  }
+  else
+  {
+    //Only inpterpolate for data in processed mode or different mass axis
+    
+    //Linear interpolation
+    const int massLength = imzMLSpc->imzMLmass.size();
+    mlinterp::interp(
+      &massLength, (int)ionCount, // Number of points (imzML original, interpolated )
+      imzMLSpc->imzMLintensity.data(), out, // Y axis  (imzML original, interpolated )
+      imzMLSpc->imzMLmass.data(), commonMassAxis.data() + ionIndex // X axis  (imzML original, interpolated )
+    );
+  }
 }
 
 PeakPicking::Peaks *ImzMLBinRead::ReadPeakList(int pixelID)

@@ -95,7 +95,9 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
                                        as<String>(imzML["mz_dataType"]),
                                        as<String>(imzML["int_dataType"]) ,
                                        (as<bool>(imzML["continuous_mode"])),
-                                       false //Do not call the file open() on constructor
+                                       false, //Do not call the file open() on constructor
+                                       false, //Used to read spectral data so just keep the default
+                                       false //Do not run interpolation on load for processed imzML, will be exectued in the worker threads
                                        )); 
     
     //If data is in continuous mode but resampling is needed, then read the imzML in processed mode to enable interpolation.
@@ -348,9 +350,24 @@ void CrMSIDataCubeIO::freeDataCube(DataCube *data_ptr)
   delete data_ptr;
 }
 
-void CrMSIDataCubeIO::storeDataCube(int iCube, DataCube *data_ptr) 
+void CrMSIDataCubeIO::interpolateDataCube(DataCube *data_ptr)
 {
-  if(iCube >= dataCubesDesc.size())
+  if(data_ptr->cubeID >= dataCubesDesc.size())
+  {
+    throw std::runtime_error("Error: DataCube index out of range\n");
+  }
+  
+  int current_imzML_id;
+  for(unsigned int i = 0; i < data_ptr->nrows; i++) //For each spectrum belonging to the selected datacube
+  {
+    current_imzML_id = dataCubesDesc[data_ptr->cubeID][i].imzML_ID;
+    imzMLReaders[current_imzML_id]->InterpolateSpectrum( &(data_ptr->dataOriginal[i]), 0, mass.length(), data_ptr->dataInterpolated[i]);
+  }
+}
+
+void CrMSIDataCubeIO::storeDataCube(DataCube *data_ptr) 
+{
+  if(data_ptr->cubeID >= dataCubesDesc.size())
   {
     throw std::runtime_error("Error: DataCube index out of range\n");
   }
@@ -360,7 +377,7 @@ void CrMSIDataCubeIO::storeDataCube(int iCube, DataCube *data_ptr)
   
   for(unsigned int i = 0; i < data_ptr->nrows; i++) //For each spectrum belonging to the selected datacube
   {
-    current_imzML_id = dataCubesDesc[iCube][i].imzML_ID;
+    current_imzML_id = dataCubesDesc[data_ptr->cubeID][i].imzML_ID;
     
     //Rcpp::Rcout << "CrMSIDataCubeIO::storeDataCube()--> current_imzML_id=" << current_imzML_id << std::endl; //DEBUG line!
     //Rcpp::Rcout << "CrMSIDataCubeIO::storeDataCube()--> mzLength(0)=" << imzMLReaders[current_imzML_id]->get_mzLength(0)  << std::endl; //DEBUG line

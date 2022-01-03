@@ -103,7 +103,7 @@ class ImzMLBinRead : public ImzMLBin
 {
   public: 
     ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, 
-                 bool openIbd = true, bool peakListrMSIformat = false);
+                 bool openIbd = true, bool peakListrMSIformat = false, bool runLinearInterpolationOnLoad = true);
     ~ImzMLBinRead();
     
     //Open the ibd file in reading mode
@@ -145,6 +145,14 @@ class ImzMLBinRead : public ImzMLBin
     //Returns true if the peaklist is in rMSI dataformat
     bool get_rMSIPeakListFormat();
     
+    //Exectue the linear interpolation from a given spectrum. 
+    //This allows to exectue the interpolator from each thread instead of running it from the main thread.
+    //imzMLSpc: pointer to a spectrum already read from the imzML file.
+    //ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
+    //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
+    //out: a pointer where data will be stored.
+    void InterpolateSpectrum(imzMLSpectrum *imzMLSpc, unsigned int ionIndex, unsigned int ionCount, double *out);
+    
   private:
     //Read N elements from the ibd file and decode them.
     //offset: offset in bytes at which the reading operation is started.
@@ -163,6 +171,7 @@ class ImzMLBinRead : public ImzMLBin
     std::vector<double> commonMassAxis; //A local copy of the common mass axis used for data interpolation when needed.
     
     bool bPeakListInrMSIFormat; //If peak list must be readed using rMSI trick of appending Area, SNR and binsize after intensity
+    bool bRunLinearInterpolationOnLoad; //If set to true (the default) linear interpolation is auto executed each time a spectrum from processed imzML data is loaded.
 };
 
 class ImzMLBinWrite : public ImzMLBin
