@@ -20,6 +20,8 @@
 #include "progressbar.h"
 #include <stdexcept>
 
+//#define __DEBUG__ // comment out in the final release!
+
 ThreadingMsiProc::ThreadingMsiProc(Rcpp::List rMSIObj_list, int numberOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis,
                                    DataCubeIOMode storeDataModeimzml, Rcpp::StringVector uuid, Rcpp::String outputImzMLPath, Rcpp::StringVector outputImzMLfnames):
   dataStoreMode(storeDataModeimzml), massAxis(commonMassAxis)
@@ -117,6 +119,10 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         progressBar(nextCubeLoad, ioObj->getNumberOfCubes(), "=", " ");
         iCube[iThread] = nextCubeLoad;
         nextCubeLoad++;
+        
+#ifdef __DEBUG__
+        Rcpp::Rcout << "DBG: Loading data for cube = " << iCube[iThread] << " on thread " << iThread << "\n";
+#endif
         cubes[iThread] = ioObj->loadDataCube(iCube[iThread]);
         if(2*runningThreads < numOfThreadsDouble)
         {
@@ -124,13 +130,28 @@ void ThreadingMsiProc::runMSIProcessingCpp()
           tworkers[iThread] = std::thread(std::bind(&ThreadingMsiProc::ProcessingThread, this, iThread)); //Start Thread 
           runningThreads++;
         }
+#ifdef __DEBUG__
+        Rcpp::Rcout << "DBG: Started work for cube = " << iCube[iThread] << " on thread " << iThread << "\n";
+#endif
       }
     }
 
     //Wait for thread ends
-    WaitForSomeThreadEnd();
+#ifdef __DEBUG__
+    Rcpp::Rcout << "DBG: waiting for some thread...\n"; 
+#endif
+    if(runningThreads > 0 )
+    {
+      WaitForSomeThreadEnd();
+    }
+#ifdef __DEBUG__
+    Rcpp::Rcout << "DBG: waiting for data mutex...\n";
+#endif
     mtx.lock(); //Any thread locked to this mutex is actually waiting to save data
-
+#ifdef __DEBUG__
+    Rcpp::Rcout << "DBG: got the data mutex\n";
+#endif
+    
     //Update number of running threads
     for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
     {
@@ -164,17 +185,42 @@ void ThreadingMsiProc::runMSIProcessingCpp()
         //If destination imzML is set then store the data
         if( (dataStoreMode == DataCubeIOMode::DATA_STORE) || (dataStoreMode == DataCubeIOMode::PEAKLIST_STORE) )
         {
-          ioObj->storeDataCube(cubes[iThread]);   
+#ifdef __DEBUG__
+          Rcpp::Rcout << "DBG: Storing cube = " << cubes[iThread]->cubeID << " on thread " << iThread << "\n";
+#endif
+          ioObj->storeDataCube(cubes[iThread]);
           nextCubeStore++;
+          
+#ifdef __DEBUG__
+          Rcpp::Rcout << "DBG: Storeing completed\n";
+#endif
         }
         
+#ifdef __DEBUG__
+        Rcpp::Rcout << "DBG: Frree cube = " << cubes[iThread]->cubeID << " on thread " << iThread << "\n";
+#endif
         ioObj->freeDataCube(cubes[iThread]);
         iCube[iThread] = -1; //Mark thread as stopped
         bDataReady[iThread] = false; //Reset data ready state;
+#ifdef __DEBUG__
+        Rcpp::Rcout << "DBG: Free completed, joning thread...\n";
+#endif
         tworkers[iThread].join();
+#ifdef __DEBUG__
+        Rcpp::Rcout << "DBG: Join completed\n";
+#endif
       } 
     }
 
+#ifdef __DEBUG__
+    Rcpp::Rcout <<"\nDBG Thread report:\n"; 
+    for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
+    {
+      Rcpp::Rcout <<"Thread "<< iThread <<" : iCube = " << iCube[iThread] << " : running = " << bRunningThread[iThread] << " : dataReady = " << bDataReady[iThread]<<"\n";
+    }
+    Rcpp::Rcout <<"\n\n\n";
+#endif
+    
     //Check end condition
     if( nextCubeLoad >= ioObj->getNumberOfCubes() )
     {
@@ -186,12 +232,15 @@ void ThreadingMsiProc::runMSIProcessingCpp()
     }
     mtx.unlock();
   }
+#ifdef __DEBUG__
+  Rcpp::Rcout << "DBG: MT proc END\n";
+#endif
   Rcpp::Rcout<<"\n";
 }
 
 void ThreadingMsiProc::ProcessingThread( int threadSlot )
 {
-  ioObj->interpolateDataCube(cubes[threadSlot]);
+  ioObj->interpolateDataCube(cubes[threadSlot]); 
   
   //Call the processing function for this thread
   ProcessingFunction(threadSlot);

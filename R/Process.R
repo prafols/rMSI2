@@ -26,6 +26,7 @@
 #' @param verifyImzMLChecksums a boolean indicating whether imzML checksums must be validated or not (default is not since it takes a long time).
 #' @param numOfThreads the number number of threads used to process the data.
 #' @param memoryPerThreadMB maximum allowed memory by each thread. The total number of trehad will be two times numOfThreads, so the total memory usage will be: 2*numOfThreads*memoryPerThreadMB.
+#' @param create_rMSIXBin_files a boolean indicating if the rMSI XBin files (.XrMSI and .BrMSI) must be created after the processing. 
 #' 
 #' @return a list with the processed data and the peak matrix.
 #' @export
@@ -34,8 +35,9 @@
 ProcessImages <- function(proc_params,
                           data_description,
                           verifyImzMLChecksums = F,
-                          numOfThreads = min(parallel::detectCores()/2, 6),
-                          memoryPerThreadMB = 100 )
+                          numOfThreads = max(parallel::detectCores() - 2, 2),
+                          memoryPerThreadMB = 100,
+                          create_rMSIXBin_files = T)
 {
   if(class(proc_params) != "ProcParams")
   {
@@ -171,18 +173,21 @@ ProcessImages <- function(proc_params,
   StoreProcParams(file.path(data_description$outputpath, "proc_parameters.params"), proc_params)
   
   #Create the rMSIXbin objects
-  for( i in 1:length(result$processed_data))
+  if(create_rMSIXBin_files)
   {
-    if(!is.null(result$processed_data[[i]]$data$imzML))
+    for( i in 1:length(result$processed_data))
     {
-      cat(paste0("Writing .XrMSI file ", i, " of ", length(result$processed_data), "...\n"))
-      result$processed_data[[i]] <- Ccreate_rMSIXBinData(result$processed_data[[i]], numOfThreads) #TODO include information for the peaklists in the XML if available!
+      if(!is.null(result$processed_data[[i]]$data$imzML))
+      {
+        cat(paste0("Writing .XrMSI file ", i, " of ", length(result$processed_data), "...\n"))
+        result$processed_data[[i]] <- Ccreate_rMSIXBinData(result$processed_data[[i]], numOfThreads) #TODO include information for the peaklists in the XML if available!
+      }
+      else
+      {
+        cat(paste0("Skipping .XrMSI file (no spectral data) ", i, " of ", length(result$processed_data), "...\n"))
+      }
+      cat("\n")
     }
-    else
-    {
-      cat(paste0("Skipping .XrMSI file (no spectral data) ", i, " of ", length(result$processed_data), "...\n"))
-    }
-    cat("\n")
   }
   
   #Display the used processing time

@@ -281,6 +281,7 @@ CrMSIDataCubeIO::DataCube *CrMSIDataCubeIO::loadDataCube(int iCube)
           imzMLReaders[previous_imzML_id]->close();
         }
       }
+      
       if( (dataMode == DataCubeIOMode::PEAKLIST_READ) || (dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ))
       {
         imzMLPeaksReaders[current_imzML_id]->open();

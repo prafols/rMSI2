@@ -27,7 +27,7 @@ ImportWizardGui <- function()
   
   ##Class data members
   abort_GUI <- T
-  ParamList <- list( procparams = ProcessingParameters(), datadesc = ImzMLDataDescription(), numberOfThread = parallel::detectCores() - 2, memoryPerThreadMB = 100) #Start with defaults!
+  ParamList <- list( procparams = ProcessingParameters(), datadesc = ImzMLDataDescription(), numberOfThread = max(parallel::detectCores() - 2, 2), memoryPerThreadMB = 100) #Start with defaults!
   workdir <- path.expand("~/")
   
     
