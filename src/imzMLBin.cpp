@@ -19,10 +19,13 @@
 #include "imzMLBin.h"
 #include "mlinterp.hpp" //Used for linear interpolation
 #include <stdexcept>
+#include <future>
+#include <chrono>
 #include <Rcpp.h>
 
 //#define __DEBUG__
 #define MAX_MEMORY_MB 250 //Maxim usable memory
+#define INTERPOLATION_TIMEOUT 10 //Timeout for interpolation theads ins ms
 
 ImzMLBin::ImzMLBin(const char* ibd_fname,  unsigned int num_of_pixels,Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, Mode mode):
   ibdFname(ibd_fname), Npixels(num_of_pixels), bContinuous(continuous), fileMode(mode)
@@ -294,8 +297,8 @@ void ImzMLBin::convertDouble2Bytes(double* inPtr, char* outBytes, unsigned int N
   delete[] auxBuffer;
 }
 
-ImzMLBinRead::ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, bool openIbd, bool peakListrMSIformat, bool runLinearInterpolationOnLoad ):
-  ImzMLBin(ibd_fname, num_of_pixels, Str_mzType, Str_intType, continuous, Mode::Read), bForceResampling(false), bOriginalMassAxisOnMem(false), bPeakListInrMSIFormat(peakListrMSIformat), bRunLinearInterpolationOnLoad(runLinearInterpolationOnLoad)
+ImzMLBinRead::ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, bool openIbd, bool peakListrMSIformat):
+  ImzMLBin(ibd_fname, num_of_pixels, Str_mzType, Str_intType, continuous, Mode::Read), bForceResampling(false), bOriginalMassAxisOnMem(false), bPeakListInrMSIFormat(peakListrMSIformat)
 {
   if(openIbd)
   {
@@ -465,7 +468,8 @@ void ImzMLBinRead::checkCompareOriginalMassAxisAndCommonMassAxis()
 //ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
 //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
 //out: a pointer where data will be stored.
-imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out)
+//bRunLinearInterpolationOnLoad: set this boolean to true to run linear interpolation on load automatically
+imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out, bool bRunLinearInterpolationOnLoad)
 {
   if(commonMassAxis.size() == 0)
   {
@@ -517,6 +521,62 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
   }
   
   return imzMLSpc;
+}
+
+//Read multiple specta from the imzML data
+//If data is in processed mode the spectrum will be interpolated to the common mass axis using a multi-threaded approach.
+//pixelIDs: the pixel IDs of the spectra to read.
+//ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
+//ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
+//out: a pointer where data will be stored (m)ultiple spectra will be concatenated).
+//number_of_threads: number of threads used during interpolation.
+void ImzMLBinRead::ReadSpectra(std::vector<int> &pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads)
+{
+  std::vector<imzMLSpectrum> thread_spectrum(number_of_threads);
+  std::vector<std::future<void> > futures(number_of_threads);
+  unsigned int current_pixel = 0;
+  std::chrono::milliseconds timeout(INTERPOLATION_TIMEOUT);
+  
+  while(true)
+  {
+    //Start threads
+    for( int ithread = 0; ithread < number_of_threads; ithread++)
+    {
+      if(!futures[ithread].valid() && current_pixel < pixelIDs.size())
+      {
+        thread_spectrum[ithread] = ReadSpectrum( pixelIDs[current_pixel], ionIndex, ionCount, out + (current_pixel*ionCount), false);
+        if(!get_continuous() || bForceResampling)
+        {
+          //Only run threads for data in processed mode or resampling
+          futures[ithread] = std::async(std::launch::async, &ImzMLBinRead::InterpolateSpectrum, this, &thread_spectrum[ithread], ionIndex, ionCount, out + (current_pixel*ionCount));
+        }
+        current_pixel++;
+      }
+    }
+    
+    //Wait for threads to finish
+    for( int ithread = 0; ithread < number_of_threads; ithread++)
+    {
+      if(futures[ithread].valid() && (futures[ithread].wait_for(timeout) == std::future_status::ready) )
+      {
+        futures[ithread].get();
+      }
+    }
+    
+    //Calculate the end condition
+    if(current_pixel >= pixelIDs.size())
+    {
+      bool bExit = true;
+      for( int ithread = 0; ithread < number_of_threads; ithread++)
+      {
+        bExit &= !futures[ithread].valid();
+      }
+      if(bExit)
+      {
+        return;
+      }
+    }
+  }
 }
 
 //imzMLSpc: pointer to a spectrum already read from the imzML file.

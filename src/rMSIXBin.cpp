@@ -247,6 +247,12 @@ void rMSIXBin::CreateImgStream()
     double *EncodeBuffer_ptr = nullptr;
     std::future <void> future;
     
+    std::vector<int> pixelIDs(_rMSIXBin->numOfPixels);
+    for(unsigned int i = 0; i < pixelIDs.size(); i++)
+    {
+      pixelIDs[i] = i; //Fill all pixel ID for the spectra reader
+    }
+    
     while( true )
     {
       //Refresh progress...
@@ -258,10 +264,22 @@ void rMSIXBin::CreateImgStream()
         
         LoadBuffer_ptr = new double[iIonImgCount*_rMSIXBin->numOfPixels];
         
+        //TODO testing...   foo <- rMSI2::LoadMsiData("~/MSI_DATASETS/imzML_test_Data/LlucsrMSIDemoData/rM2.imzML")  its crashing for this data!!!!
+        //TODO testing...     foo <- rMSI2::LoadMsiData("~/MSI_DATASETS/imzML_test_Data/171002_50829_PC_1_PE_1_pos_PBS_64_image.imzML") 5.778 seconds new implem
+        
+        imzMLReader->ReadSpectra(pixelIDs, iIon, iIonImgCount, LoadBuffer_ptr, number_of_encoding_threads); //TODO im testing the new implementation
+        
+        //TODO old implementation 8.75 seconds for llucs rMS2 dataset
+        //TODO old implementation 6.04 seconds for orbitrap data
+        
+        /*
         for(int i=0; i < _rMSIXBin->numOfPixels; i++)
         {
-          imzMLReader->ReadSpectrum(i, iIon, iIonImgCount, LoadBuffer_ptr + (i*iIonImgCount));
+          imzMLReader->ReadSpectrum(i, iIon, iIonImgCount, LoadBuffer_ptr + (i*iIonImgCount)); //TODO replace with the new multi-threaded approach and revise other calls to ReadSpectrum
         }
+        */
+        
+         
         iRemainingIons = iRemainingIons - iIonImgCount;
       }
       else

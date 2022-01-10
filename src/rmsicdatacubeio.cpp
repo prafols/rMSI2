@@ -96,8 +96,7 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
                                        as<String>(imzML["int_dataType"]) ,
                                        (as<bool>(imzML["continuous_mode"])),
                                        false, //Do not call the file open() on constructor
-                                       false, //Used to read spectral data so just keep the default
-                                       false //Do not run interpolation on load for processed imzML, will be exectued in the worker threads
+                                       false //Used to read spectral data so just keep the default
                                        )); 
     
     //If data is in continuous mode but resampling is needed, then read the imzML in processed mode to enable interpolation.
@@ -298,7 +297,8 @@ CrMSIDataCubeIO::DataCube *CrMSIDataCubeIO::loadDataCube(int iCube)
       data_ptr->dataOriginal[i] = imzMLReaders[current_imzML_id]->ReadSpectrum(dataCubesDesc[iCube][i].pixel_ID, //pixel id to read
                                                   0, //unsigned int ionIndex
                                                   mass.length(),//unsigned int ionCount
-                                                  data_ptr->dataInterpolated[i] //Store data directely at the datacube mem
+                                                  data_ptr->dataInterpolated[i], //Store data directely at the datacube mem
+                                                  false //Disable auto-interpolation
                                                   );
     }
     

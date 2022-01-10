@@ -8,8 +8,9 @@ ProcessImages(
   proc_params,
   data_description,
   verifyImzMLChecksums = F,
-  numOfThreads = min(parallel::detectCores()/2, 6),
-  memoryPerThreadMB = 100
+  numOfThreads = max(parallel::detectCores() - 2, 2),
+  memoryPerThreadMB = 100,
+  create_rMSIXBin_files = T
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ ProcessImages(
 \item{numOfThreads}{the number number of threads used to process the data.}
 
 \item{memoryPerThreadMB}{maximum allowed memory by each thread. The total number of trehad will be two times numOfThreads, so the total memory usage will be: 2*numOfThreads*memoryPerThreadMB.}
+
+\item{create_rMSIXBin_files}{a boolean indicating if the rMSI XBin files (.XrMSI and .BrMSI) must be created after the processing.}
 }
 \value{
 a list with the processed data and the peak matrix.
