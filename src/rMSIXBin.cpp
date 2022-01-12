@@ -261,25 +261,8 @@ void rMSIXBin::CreateImgStream()
       if( iRemainingIons > 0 ) //check if there is available imzML data
       {
         iIonImgCount = iIonImgCount <  iRemainingIons ? iIonImgCount :  iRemainingIons;
-        
         LoadBuffer_ptr = new double[iIonImgCount*_rMSIXBin->numOfPixels];
-        
-        //TODO testing...   foo <- rMSI2::LoadMsiData("~/MSI_DATASETS/imzML_test_Data/LlucsrMSIDemoData/rM2.imzML")  its crashing for this data!!!!
-        //TODO testing...     foo <- rMSI2::LoadMsiData("~/MSI_DATASETS/imzML_test_Data/171002_50829_PC_1_PE_1_pos_PBS_64_image.imzML") 5.778 seconds new implem
-        
-        imzMLReader->ReadSpectra(pixelIDs, iIon, iIonImgCount, LoadBuffer_ptr, number_of_encoding_threads); //TODO im testing the new implementation
-        
-        //TODO old implementation 8.75 seconds for llucs rMS2 dataset
-        //TODO old implementation 6.04 seconds for orbitrap data
-        
-        /*
-        for(int i=0; i < _rMSIXBin->numOfPixels; i++)
-        {
-          imzMLReader->ReadSpectrum(i, iIon, iIonImgCount, LoadBuffer_ptr + (i*iIonImgCount)); //TODO replace with the new multi-threaded approach and revise other calls to ReadSpectrum
-        }
-        */
-        
-         
+        imzMLReader->ReadSpectra(pixelIDs.size(), (unsigned int *) pixelIDs.data(), iIon, iIonImgCount, LoadBuffer_ptr, number_of_encoding_threads); 
         iRemainingIons = iRemainingIons - iIonImgCount;
       }
       else
@@ -353,7 +336,8 @@ void rMSIXBin::CalculateAverageBaseNormalizations(ImzMLBinRead *imzMLreader)
     try
     {
       intensity_load = new double[massAxis.length()];
-      imzMLreader->ReadSpectrum(i, 0, massAxis.length(), intensity_load);
+      imzMLreader->ReadSpectrum(i, 0, massAxis.length(), intensity_load); //TODO analysze this botleneck using data in processed mode, how bad is the interpolation?
+      //TODO maybe... I can make it within the ion encoding...
     }
     catch(std::runtime_error &e)
     {
@@ -1544,72 +1528,4 @@ NumericMatrix Cload_rMSIXBinIonImage(List rMSIobj, unsigned int ionIndex, unsign
     stop(e.what());
   }
   return NumericMatrix(); //Returning empty matrix in cas of error
-}
-
-//' Cload_imzMLSpectra
-//' Load spectra into a Matrix object interpolating to the common mass axis when necessary.
-//' @param rMSIobj: an rMSI object prefilled with a parsed imzML.
-//' @param pixelIDs: pixel ID's of the spectra to load in C-style indexing (starting at 0).
-//' @param commonMassAxis: a common mass axis that may be different than the mass axis in the rMSI object
-// [[Rcpp::export]]
-NumericMatrix Cload_imzMLSpectra(List rMSIobj, IntegerVector pixelIDs, NumericVector commonMassAxis)
-{
-  NumericMatrix m_spc;
-  double *buffer;
-  
-  try
-  {
-    //Allocate the spectra reading buffer
-    buffer = new double[commonMassAxis.length()];
-    
-    //Allocate the output matrix
-    if( ((pixelIDs.length() * commonMassAxis.length() * sizeof(double))/ (1024 * 1024 )) > IONIMG_BUFFER_MB )
-    {
-      throw std::runtime_error("Error in Cload_imzMLSpectra(): loading data required too much memory.");
-    }
-    m_spc = NumericMatrix(pixelIDs.length(), commonMassAxis.length());
-    
-    //Set the imzML reader
-    List data = rMSIobj["data"];
-    List imzML = data["imzML"];
-    DataFrame imzMLrun = as<DataFrame>(imzML["run"]);
-    std::string sFilePath = as<std::string>(data["path"]);
-    std::string sFnameImzML = as<std::string>(imzML["file"]);
-    sFnameImzML= sFilePath + "/" + sFnameImzML + ".ibd";
-    ImzMLBinRead imzMLReader(sFnameImzML.c_str(), 
-                              imzMLrun.nrows(), 
-                              as<String>(imzML["mz_dataType"]),
-                              as<String>(imzML["int_dataType"]) ,
-                              as<bool>(imzML["continuous_mode"]));
-    
-    imzMLReader.setCommonMassAxis(commonMassAxis.length(), commonMassAxis.begin());
-    
-    NumericVector imzML_mzLength = imzMLrun["mzLength"];
-    NumericVector imzML_mzOffsets = imzMLrun["mzOffset"];
-    NumericVector imzML_intLength = imzMLrun["intLength"];
-    NumericVector imzML_intOffsets = imzMLrun["intOffset"];
-    imzMLReader.set_mzLength(&imzML_mzLength);  
-    imzMLReader.set_mzOffset(&imzML_mzOffsets);
-    imzMLReader.set_intLength(&imzML_intLength);
-    imzMLReader.set_intOffset(&imzML_intOffsets);
-    
-    //Load spectra and copy to the output array
-    for(int i=0; i < pixelIDs.length(); i++)
-    {
-      imzMLReader.ReadSpectrum(pixelIDs[i], 0, commonMassAxis.length(), buffer ); 
-      for(int j = 0; j < commonMassAxis.length(); j++)
-      {
-        m_spc(i,j) = buffer[j];
-      }
-    }
-    
-    delete[] buffer;
-  }
-  catch(std::runtime_error &e)
-  {
-    delete[] buffer;
-    stop(e.what());
-  }
-
-  return m_spc;
 }

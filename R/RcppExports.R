@@ -93,6 +93,16 @@ overwriteIbdUUid <- function(ibdFname, newUUID) {
     invisible(.Call('_rMSI2_overwriteIbdUUid', PACKAGE = 'rMSI2', ibdFname, newUUID))
 }
 
+#' Cload_imzMLSpectra
+#' Load spectra into a Matrix object interpolating to the common mass axis when necessary.
+#' @param rMSIobj: an rMSI object prefilled with a parsed imzML.
+#' @param pixelIDs: pixel ID's of the spectra to load in C-style indexing (starting at 0).
+#' @param commonMassAxis: a common mass axis that may be different than the mass axis in the rMSI object.
+#' @param number_of_threads: number of thread to use during interpolation
+Cload_imzMLSpectra <- function(rMSIobj, pixelIDs, commonMassAxis, number_of_threads) {
+    .Call('_rMSI2_Cload_imzMLSpectra', PACKAGE = 'rMSI2', rMSIobj, pixelIDs, commonMassAxis, number_of_threads)
+}
+
 CimzMLParse <- function(xml_path) {
     .Call('_rMSI2_CimzMLParse', PACKAGE = 'rMSI2', xml_path)
 }
@@ -344,15 +354,6 @@ Cload_rMSIXBinData <- function(path, fname) {
 #' @return the ion image as a NumericMatrix using max operator with all the ion images of the mass channels. 
 Cload_rMSIXBinIonImage <- function(rMSIobj, ionIndex, ionCount, normalization_coefs, number_of_threads) {
     .Call('_rMSI2_Cload_rMSIXBinIonImage', PACKAGE = 'rMSI2', rMSIobj, ionIndex, ionCount, normalization_coefs, number_of_threads)
-}
-
-#' Cload_imzMLSpectra
-#' Load spectra into a Matrix object interpolating to the common mass axis when necessary.
-#' @param rMSIobj: an rMSI object prefilled with a parsed imzML.
-#' @param pixelIDs: pixel ID's of the spectra to load in C-style indexing (starting at 0).
-#' @param commonMassAxis: a common mass axis that may be different than the mass axis in the rMSI object
-Cload_imzMLSpectra <- function(rMSIobj, pixelIDs, commonMassAxis) {
-    .Call('_rMSI2_Cload_imzMLSpectra', PACKAGE = 'rMSI2', rMSIobj, pixelIDs, commonMassAxis)
 }
 
 #' Smoothing_SavitzkyGolay.

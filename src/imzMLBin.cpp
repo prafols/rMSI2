@@ -525,12 +525,13 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
 
 //Read multiple specta from the imzML data
 //If data is in processed mode the spectrum will be interpolated to the common mass axis using a multi-threaded approach.
-//pixelIDs: the pixel IDs of the spectra to read.
+//numOfPixels: number of pixels to read.
+//pixelIDs: pointer to the pixel IDs of the spectra to read.
 //ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
 //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
 //out: a pointer where data will be stored (m)ultiple spectra will be concatenated).
 //number_of_threads: number of threads used during interpolation.
-void ImzMLBinRead::ReadSpectra(std::vector<int> &pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads)
+void ImzMLBinRead::ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads)
 {
   std::vector<imzMLSpectrum> thread_spectrum(number_of_threads);
   std::vector<std::future<void> > futures(number_of_threads);
@@ -542,7 +543,7 @@ void ImzMLBinRead::ReadSpectra(std::vector<int> &pixelIDs, unsigned int ionIndex
     //Start threads
     for( int ithread = 0; ithread < number_of_threads; ithread++)
     {
-      if(!futures[ithread].valid() && current_pixel < pixelIDs.size())
+      if(!futures[ithread].valid() && current_pixel < numOfPixels)
       {
         thread_spectrum[ithread] = ReadSpectrum( pixelIDs[current_pixel], ionIndex, ionCount, out + (current_pixel*ionCount), false);
         if(!get_continuous() || bForceResampling)
@@ -564,7 +565,7 @@ void ImzMLBinRead::ReadSpectra(std::vector<int> &pixelIDs, unsigned int ionIndex
     }
     
     //Calculate the end condition
-    if(current_pixel >= pixelIDs.size())
+    if(current_pixel >= numOfPixels)
     {
       bool bExit = true;
       for( int ithread = 0; ithread < number_of_threads; ithread++)
@@ -1166,3 +1167,75 @@ void overwriteIbdUUid(const char* ibdFname, Rcpp::String newUUID)
     Rcpp::Rcout << "Catch Error: "<< e.what() << "\n";
   }
 }
+
+#define SPECTRA_BUFFER_MB 1024 //I think 1024 MB of RAM is a good limit for spectra loading
+
+//' Cload_imzMLSpectra
+//' Load spectra into a Matrix object interpolating to the common mass axis when necessary.
+//' @param rMSIobj: an rMSI object prefilled with a parsed imzML.
+//' @param pixelIDs: pixel ID's of the spectra to load in C-style indexing (starting at 0).
+//' @param commonMassAxis: a common mass axis that may be different than the mass axis in the rMSI object.
+//' @param number_of_threads: number of thread to use during interpolation
+// [[Rcpp::export]]
+Rcpp::NumericMatrix Cload_imzMLSpectra(Rcpp::List rMSIobj, Rcpp::IntegerVector pixelIDs, Rcpp::NumericVector commonMassAxis, unsigned int number_of_threads)
+{
+  Rcpp::NumericMatrix m_spc;
+  double *buffer;
+  
+  try
+  {
+    //Allocate the spectra reading buffer
+    buffer = new double[commonMassAxis.length() * pixelIDs.length()];
+    
+    //Allocate the output matrix
+    if( ((pixelIDs.length() * commonMassAxis.length() * sizeof(double))/ (1024 * 1024 )) > SPECTRA_BUFFER_MB )
+    {
+      throw std::runtime_error("Error in Cload_imzMLSpectra(): loading data required too much memory.");
+    }
+    m_spc = Rcpp::NumericMatrix(pixelIDs.length(), commonMassAxis.length());
+    
+    //Set the imzML reader
+    Rcpp::List data = rMSIobj["data"];
+    Rcpp::List imzML = data["imzML"];
+    Rcpp::DataFrame imzMLrun = Rcpp::as<Rcpp::DataFrame>(imzML["run"]);
+    std::string sFilePath = Rcpp::as<std::string>(data["path"]);
+    std::string sFnameImzML = Rcpp::as<std::string>(imzML["file"]);
+    sFnameImzML= sFilePath + "/" + sFnameImzML + ".ibd";
+    ImzMLBinRead imzMLReader(sFnameImzML.c_str(), 
+                             imzMLrun.nrows(), 
+                             Rcpp::as<Rcpp::String>(imzML["mz_dataType"]),
+                             Rcpp::as<Rcpp::String>(imzML["int_dataType"]) ,
+                             Rcpp::as<bool>(imzML["continuous_mode"]));
+    
+    imzMLReader.setCommonMassAxis(commonMassAxis.length(), commonMassAxis.begin());
+    
+    Rcpp::NumericVector imzML_mzLength = imzMLrun["mzLength"];
+    Rcpp::NumericVector imzML_mzOffsets = imzMLrun["mzOffset"];
+    Rcpp::NumericVector imzML_intLength = imzMLrun["intLength"];
+    Rcpp::NumericVector imzML_intOffsets = imzMLrun["intOffset"];
+    imzMLReader.set_mzLength(&imzML_mzLength);  
+    imzMLReader.set_mzOffset(&imzML_mzOffsets);
+    imzMLReader.set_intLength(&imzML_intLength);
+    imzMLReader.set_intOffset(&imzML_intOffsets);
+    
+    //Load spectra and copy to the output array
+    imzMLReader.ReadSpectra(pixelIDs.length(), (unsigned int *) pixelIDs.begin(), 0, commonMassAxis.length(), buffer, number_of_threads); 
+    for(int i=0; i < pixelIDs.length(); i++)
+    {
+      for(int j = 0; j < commonMassAxis.length(); j++)
+      {
+        m_spc(i,j) = buffer[j + i*commonMassAxis.length()];
+      }
+    }
+    
+    delete[] buffer;
+  }
+  catch(std::runtime_error &e)
+  {
+    delete[] buffer;
+    Rcpp::stop(e.what());
+  }
+  
+  return m_spc;
+}
+

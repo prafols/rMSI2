@@ -43,7 +43,7 @@ loadImgChunkFromIds<-function(Img, Ids, MassAxis = Img$mass)
     stop("imzML data is not available")
   }
       
-  return (Cload_imzMLSpectra(Img, Ids - 1, MassAxis)) #Ids-1 to translate from R-style indexting to C indexing
+  return (Cload_imzMLSpectra(Img, Ids - 1, MassAxis, parallel::detectCores())) #Ids-1 to translate from R-style indexting to C indexing
 }
 
 

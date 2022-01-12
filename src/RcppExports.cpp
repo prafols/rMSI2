@@ -109,6 +109,20 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// Cload_imzMLSpectra
+Rcpp::NumericMatrix Cload_imzMLSpectra(Rcpp::List rMSIobj, Rcpp::IntegerVector pixelIDs, Rcpp::NumericVector commonMassAxis, unsigned int number_of_threads);
+RcppExport SEXP _rMSI2_Cload_imzMLSpectra(SEXP rMSIobjSEXP, SEXP pixelIDsSEXP, SEXP commonMassAxisSEXP, SEXP number_of_threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type rMSIobj(rMSIobjSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type pixelIDs(pixelIDsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type commonMassAxis(commonMassAxisSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type number_of_threads(number_of_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(Cload_imzMLSpectra(rMSIobj, pixelIDs, commonMassAxis, number_of_threads));
+    return rcpp_result_gen;
+END_RCPP
+}
 // CimzMLParse
 List CimzMLParse(String xml_path);
 RcppExport SEXP _rMSI2_CimzMLParse(SEXP xml_pathSEXP) {
@@ -450,19 +464,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Cload_imzMLSpectra
-NumericMatrix Cload_imzMLSpectra(List rMSIobj, IntegerVector pixelIDs, NumericVector commonMassAxis);
-RcppExport SEXP _rMSI2_Cload_imzMLSpectra(SEXP rMSIobjSEXP, SEXP pixelIDsSEXP, SEXP commonMassAxisSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type rMSIobj(rMSIobjSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type pixelIDs(pixelIDsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type commonMassAxis(commonMassAxisSEXP);
-    rcpp_result_gen = Rcpp::wrap(Cload_imzMLSpectra(rMSIobj, pixelIDs, commonMassAxis));
-    return rcpp_result_gen;
-END_RCPP
-}
 // Smoothing_SavitzkyGolay
 NumericVector Smoothing_SavitzkyGolay(NumericVector x, int sgSize);
 RcppExport SEXP _rMSI2_Smoothing_SavitzkyGolay(SEXP xSEXP, SEXP sgSizeSEXP) {
@@ -484,6 +485,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CimzMLBinReadIntensity", (DL_FUNC) &_rMSI2_CimzMLBinReadIntensity, 6},
     {"_rMSI2_CimzMLReadPeakList", (DL_FUNC) &_rMSI2_CimzMLReadPeakList, 3},
     {"_rMSI2_overwriteIbdUUid", (DL_FUNC) &_rMSI2_overwriteIbdUUid, 2},
+    {"_rMSI2_Cload_imzMLSpectra", (DL_FUNC) &_rMSI2_Cload_imzMLSpectra, 4},
     {"_rMSI2_CimzMLParse", (DL_FUNC) &_rMSI2_CimzMLParse, 1},
     {"_rMSI2_CimzMLStore", (DL_FUNC) &_rMSI2_CimzMLStore, 3},
     {"_rMSI2_AlignSpectrumToReference", (DL_FUNC) &_rMSI2_AlignSpectrumToReference, 13},
@@ -508,7 +510,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_Ccreate_rMSIXBinData", (DL_FUNC) &_rMSI2_Ccreate_rMSIXBinData, 2},
     {"_rMSI2_Cload_rMSIXBinData", (DL_FUNC) &_rMSI2_Cload_rMSIXBinData, 2},
     {"_rMSI2_Cload_rMSIXBinIonImage", (DL_FUNC) &_rMSI2_Cload_rMSIXBinIonImage, 5},
-    {"_rMSI2_Cload_imzMLSpectra", (DL_FUNC) &_rMSI2_Cload_imzMLSpectra, 3},
     {"_rMSI2_Smoothing_SavitzkyGolay", (DL_FUNC) &_rMSI2_Smoothing_SavitzkyGolay, 2},
     {NULL, NULL, 0}
 };
