@@ -191,19 +191,6 @@ void rMSIXBin::CreateImgStream()
     stop(e.what());
   }
   
-  //Calculate the average spectrum, base spectrum and normalizations
-  Rcout<< "Processing imzML data..." << std::endl;
-  try
-  {
-    CalculateAverageBaseNormalizations(imzMLReader);
-  }
-  catch(std::runtime_error &e)
-  {
-    delete imzMLReader;
-    stop(e.what());
-  }
-  Rcout << std::endl;
-  
   //Create the binary file (.BrMSI) any previous file will be deleted.
   std::ofstream fBrMSI;
   fBrMSI.open (_rMSIXBin->Bin_file, std::ios::out | std::ios::trunc | std::ios::binary);
@@ -216,17 +203,22 @@ void rMSIXBin::CreateImgStream()
   fBrMSI.write(UUID_imzML, 16); //Write imzML UUID;
   fBrMSI.write(UUID_rMSIXBin, 16); //Write rMSIXBin UUID;
   
-  //Store mass, average and base spectrum
+  //Prepare normalization and mean spectra vectors
+  averageSpectrum = NumericVector(massAxis.length());
+  baseSpectrum = NumericVector(massAxis.length());
+  normTIC = NumericVector(_rMSIXBin->numOfPixels);
+  normRMS = NumericVector(_rMSIXBin->numOfPixels);
+  normMAX= NumericVector(_rMSIXBin->numOfPixels);
+  
+  //Store mass, average and base spectrum empty. Them will be overwriten after the processing
   fBrMSI.write((const char*)(massAxis.begin()), sizeof(double) * massAxis.length());
-  NumericVector meanR = rMSIObj["mean"];
-  fBrMSI.write((const char*)(meanR.begin()), sizeof(double) * massAxis.length());
-  NumericVector baseR = rMSIObj["base"];
-  fBrMSI.write((const char*)(baseR.begin()), sizeof(double) * massAxis.length());
+  fBrMSI.write((const char*)(averageSpectrum.begin()), sizeof(double) * massAxis.length());
+  fBrMSI.write((const char*)(baseSpectrum.begin()), sizeof(double) * massAxis.length());
   
   fBrMSI.close();
   if(fBrMSI.fail() || fBrMSI.bad())
   {
-    throw std::runtime_error("FATAL ERROR: ImzMLBin got fail or bad bit condition reading the imzML ibd file.\n"); 
+    throw std::runtime_error("FATAL ERROR: got fail or bad bit condition writing the BrMSI file.\n"); 
   }
   
   //Loop to create each ion image
@@ -237,11 +229,11 @@ void rMSIXBin::CreateImgStream()
    */
   unsigned int iIonImgCount = (unsigned int)(  ((double)(IONIMG_BUFFER_MB * 1024 * 1024)) / ((double)( img_width *img_height * ENCODING_BITS/8 + 4 )) );
   unsigned int iRemainingIons = massAxis.length();
-
+  
   try
   {
     unsigned int iIon = 0;
-    Rcout << "Encoding ion images..." << std::endl;
+    Rcout << "Processing imzML data..." << std::endl;
     
     double *LoadBuffer_ptr = nullptr;
     double *EncodeBuffer_ptr = nullptr;
@@ -298,11 +290,37 @@ void rMSIXBin::CreateImgStream()
     delete imzMLReader;
     stop(e.what());
   }
+  
+  //Compute the square root for the RMS normalizations
+  for(int i = 0; i < normRMS.length(); i++)
+  {
+    normRMS[i] = sqrt(normRMS[i]);
+  }
 
   delete imzMLReader;
   
+  //Store average and base spectra.
+  Rcout << "Storing mean and base spectra..." << std::endl;
+  fBrMSI.open(_rMSIXBin->Bin_file, std::fstream::in | std::fstream::out | std::ios::binary); 
+  fBrMSI.seekp(32 + massAxis.length()*sizeof(double));
+  fBrMSI.write((const char*)(averageSpectrum.begin()), sizeof(double) * massAxis.length());
+  fBrMSI.write((const char*)(baseSpectrum.begin()), sizeof(double) * massAxis.length());
+  fBrMSI.close();
+  if(fBrMSI.fail() || fBrMSI.bad())
+  {
+    throw std::runtime_error("FATAL ERROR: got fail or bad bit condition writing the BrMSI file.\n"); 
+  }
+  
+  //Copy normalizations and mean spectra to rMSIObject
   Rcout << "Storing normalizations..." << std::endl;
+  rMSIObj["mean"] = averageSpectrum;
+  rMSIObj["base"] = baseSpectrum;
+  DataFrame normDF = DataFrame::create( Named("TIC") = normTIC, 
+                                        Named("RMS") = normRMS,
+                                        Named("MAX") = normMAX);
+  rMSIObj["normalizations"] = normDF;
   storeNormalizations2Binary();
+  
   
   //Copy the _rMSIXBin C style offset to the R rMSIObj
   copyimgStream2rMSIObj(); 
@@ -312,77 +330,6 @@ void rMSIXBin::CreateImgStream()
   {
     Rcout << ".XrMSI write error, stopped\n";
   }
-  
-}
-
-//Calculate average spectrum, base spectrum and normalizations
-void rMSIXBin::CalculateAverageBaseNormalizations(ImzMLBinRead *imzMLreader)
-{
-  double *intensity_load;
-  double *intensity_process;
-  NumericVector averageSpectrum(massAxis.length());
-  NumericVector baseSpectrum(massAxis.length());
-  NumericVector normTIC(_rMSIXBin->numOfPixels);
-  NumericVector normRMS(_rMSIXBin->numOfPixels);
-  NumericVector normMAX(_rMSIXBin->numOfPixels);
-  std::future <void> future;
-  bool bFutureWorking = false;
-  //TODO TICacq normalisation is not implemented yet!, it must be calculated after TIC calculation appling a sliding window
-
-  for(int i=0; i < _rMSIXBin->numOfPixels; i++)
-  {
-    progressBar(i, _rMSIXBin->numOfPixels, "=", " ");
-    
-    try
-    {
-      intensity_load = new double[massAxis.length()];
-      imzMLreader->ReadSpectrum(i, 0, massAxis.length(), intensity_load); //TODO analysze this botleneck using data in processed mode, how bad is the interpolation?
-      //TODO maybe... I can make it within the ion encoding...
-    }
-    catch(std::runtime_error &e)
-    {
-      delete[] intensity_load;
-      throw std::runtime_error(e.what());
-    }
-
-    if(bFutureWorking)
-    {
-      //Wait for working thread to complete
-      future.get();
-      bFutureWorking = false;
-    }
-    
-    intensity_process = intensity_load;
-    future = std::async(std::launch::async, &rMSIXBin::startThreadedAverageBaseNormalizations, this,
-                        intensity_process, i,
-                        &averageSpectrum, &baseSpectrum,
-                        &normTIC, &normRMS, &normMAX);
-    bFutureWorking = true;
-  }
-
-  rMSIObj["mean"] = averageSpectrum;
-  rMSIObj["base"] = baseSpectrum;
-  DataFrame normDF = DataFrame::create( Named("TIC") = normTIC, 
-                            Named("RMS") = normRMS,
-                            Named("MAX") = normMAX);
-  rMSIObj["normalizations"] = normDF;
-}
-
-//Threaded normalizations and average spectrum
-void rMSIXBin::startThreadedAverageBaseNormalizations(double *intensity, int pixel,
-                                            NumericVector *averageSpectrum, NumericVector *baseSpectrum,
-                                            NumericVector *normTIC, NumericVector *normRMS, NumericVector *normMAX )
-{
-  for( int j=0; j < massAxis.length(); j++)
-  {
-    (*averageSpectrum)(j) += intensity[j] / (double)(_rMSIXBin->numOfPixels);
-    (*baseSpectrum)(j) = intensity[j] > (*baseSpectrum)(j) ? intensity[j] : (*baseSpectrum)(j);
-    (*normTIC)(pixel) += intensity[j];
-    (*normRMS)(pixel) += intensity[j]*intensity[j];
-    (*normMAX)(pixel) =  intensity[j] > (*normMAX)(pixel) ? intensity[j]: (*normMAX)(pixel);
-  }
-  (*normRMS)(pixel) = sqrt((*normRMS)(pixel));
-  delete[] intensity;
 }
 
 //Method to be run in multithreading
@@ -399,14 +346,18 @@ rMSIXBin::ImgStreamEncoder_result rMSIXBin::encodeBuffer2SingleImgStream(double 
   //Prepare the image buffer to encode
   //Init with zeros, observe that non-existing MSI pixels will be zero for all spectra, so there is no need to initialize zeros each time
   std::vector<imgstreamencoding_type> image(img_width * img_height, 0);
-  double max;
   
-  //Calculate the scaling factors
-  max = 0.0;
+  //Calculate the scaling factors and spectral means
+  double max = 0.0;
+  double sum = 0.0;
   for(int j=0; j < _rMSIXBin->numOfPixels; j++)
   {
     max = buffer[j*bufferIonCount + bufferIonIndex] > max ? buffer[j*bufferIonCount + bufferIonIndex] : max;
+    sum += buffer[j*bufferIonCount + bufferIonIndex];
   }
+  
+  averageSpectrum[ionIndex] = sum / ((double) _rMSIXBin->numOfPixels);
+  baseSpectrum[ionIndex] = max;
   result.scaling = (float) max;
   
   //Prepare the ion image
@@ -441,6 +392,17 @@ void rMSIXBin::startThreadedEncoding(double *buffer, unsigned int ionIndex, unsi
   if(!fBrMSI.is_open())
   {
     throw std::runtime_error("Error: rMSIXBin could not open the BrMSI file.\n");
+  }
+  
+  //Calculate normalizations
+  for( int i=0; i < _rMSIXBin->numOfPixels; i++)
+  {
+    for( int j=0; j < ionCount; j++)
+    {
+      normTIC[i] += buffer[j + i*ionCount];
+      normRMS[i] += (buffer[j + i*ionCount] * buffer[j + i*ionCount]);
+      normMAX[i] = buffer[j + i*ionCount] > normMAX[i] ? buffer[j + i*ionCount] : normMAX[i];
+    }
   }
   
   std::vector< std::future <ImgStreamEncoder_result> > futures;

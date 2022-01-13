@@ -506,7 +506,13 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
     try
     {
       readMzData(get_mzOffset(pixelID),  get_mzLength(pixelID),  imzMLSpc.imzMLmass.data());
-      readIntData(get_intOffset(pixelID), get_intLength(pixelID), imzMLSpc.imzMLintensity.data());  
+      readIntData(get_intOffset(pixelID), get_intLength(pixelID), imzMLSpc.imzMLintensity.data());
+      
+      if(get_continuous())
+      {
+        //When data in continuous mode, just the first readed spectrum, so directely copy to out pointer
+        memcpy( out, imzMLSpc.imzMLintensity.data(),  ionCount* sizeof(double) );
+      }
     }
     catch(std::runtime_error &e)
     {

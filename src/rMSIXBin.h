@@ -68,10 +68,6 @@ class rMSIXBin
     //Get multiple ion image in a matrix object by decoding the ImgStream
     //The MAX operator will be used to merge all ion images in a single image matrix
     Rcpp::NumericMatrix decodeImgStream2IonImages(unsigned int ionIndex, unsigned int ionCount, Rcpp::NumericVector normalization_coefs);
-      
-    //Calculate average spectrum, base spectrum and normalizations
-    //imzMLreader: pointer to an imzMLreader initialized object
-    void CalculateAverageBaseNormalizations(ImzMLBinRead *imzMLreader);
     
   private:
     unsigned int irMSIFormatVersion; //An integer to record the rMSI format version
@@ -112,15 +108,17 @@ class rMSIXBin
       std::vector<unsigned char> png_stream; //the encoded png stream
     }ImgStreamEncoder_result;
     
+    //Normalizations and mean spectra
+    Rcpp::NumericVector averageSpectrum;
+    Rcpp::NumericVector baseSpectrum;
+    Rcpp::NumericVector normTIC;
+    Rcpp::NumericVector normRMS;
+    Rcpp::NumericVector normMAX;
+    
     //Threaded encoding model 
     ImgStreamEncoder_result encodeBuffer2SingleImgStream(double *buffer, unsigned int ionIndex, unsigned int bufferIonIndex, unsigned int bufferIonCount); //Threaded method
     void startThreadedEncoding(double *buffer, unsigned int ionIndex, unsigned int ionCount); //Threaded method
-    
-    //Threaded normalizations and average spectrum
-    void startThreadedAverageBaseNormalizations(double *intensity, int pixel, 
-                                                Rcpp::NumericVector *averageSpectrum, Rcpp::NumericVector *baseSpectrum,
-                                                Rcpp::NumericVector *normTIC, Rcpp::NumericVector *normRMS, Rcpp::NumericVector *normMAX );
-    
+
     //Threaded decoding method
     //buffer: pointer to char with the raw imgStream readed form hdd
     //bufferOffset: buffer offsets in bytes to read the corresponfing scaling factor
