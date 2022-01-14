@@ -592,12 +592,7 @@ void ImzMLBinRead::ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs,
 //out: a pointer where data will be stored.
 void ImzMLBinRead::InterpolateSpectrum(imzMLSpectrum *imzMLSpc, unsigned int ionIndex, unsigned int ionCount, double *out)
 {
-  if(get_continuous() && !bForceResampling) 
-  {
-    //Data in continuous mode and no need to resampling
-    memcpy( out, imzMLSpc->imzMLintensity.data(),  ionCount* sizeof(double) );
-  }
-  else
+  if(!get_continuous() || bForceResampling) 
   {
     //Only inpterpolate for data in processed mode or different mass axis
     

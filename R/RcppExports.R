@@ -172,6 +172,10 @@ CRunFillPeaks <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProc
     invisible(.Call('_rMSI2_CRunFillPeaks', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix))
 }
 
+CInternalReferenceSpectrum <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, referenceSpectrum, commonMassAxis) {
+    .Call('_rMSI2_CInternalReferenceSpectrum', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, referenceSpectrum, commonMassAxis)
+}
+
 CNormalizations <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis) {
     .Call('_rMSI2_CNormalizations', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis)
 }

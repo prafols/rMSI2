@@ -265,10 +265,10 @@ RunPreProcessing <- function(proc_params,
       
       #Calculate the internal reference for alignment and mass calibration
       AverageSpectrum <- COverallAverageSpectrum(img_lst, numOfThreads, memoryPerThreadMB, common_mass, ticMin, ticMax) 
+      refSpc <- CInternalReferenceSpectrum(img_lst, numOfThreads, memoryPerThreadMB, AverageSpectrum, common_mass)
       
-      refSpc <- InternalReferenceSpectrumMultipleDatasets(img_lst, AverageSpectrum, common_mass)
       cat(paste0("Pixel with ID ", refSpc$ID, " from image indexed as ", refSpc$imgIndex, " (", img_lst[[ refSpc$imgIndex]]$name, ") selected as internal reference.\n"))
-      refSpc <- refSpc$spectrum
+      refSpc <- rMSI2::loadImgChunkFromIds(img_lst[[ refSpc$imgIndex]], Ids = refSpc$ID)[1, ]
       
       #TODO refSpc must be baseline corrected the same as the rest of the data
       

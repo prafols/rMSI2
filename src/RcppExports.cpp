@@ -239,6 +239,21 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// CInternalReferenceSpectrum
+List CInternalReferenceSpectrum(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector referenceSpectrum, Rcpp::NumericVector commonMassAxis);
+RcppExport SEXP _rMSI2_CInternalReferenceSpectrum(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP referenceSpectrumSEXP, SEXP commonMassAxisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type rMSIObj_list(rMSIObj_listSEXP);
+    Rcpp::traits::input_parameter< int >::type numOfThreads(numOfThreadsSEXP);
+    Rcpp::traits::input_parameter< double >::type memoryPerThreadMB(memoryPerThreadMBSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type referenceSpectrum(referenceSpectrumSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type commonMassAxis(commonMassAxisSEXP);
+    rcpp_result_gen = Rcpp::wrap(CInternalReferenceSpectrum(rMSIObj_list, numOfThreads, memoryPerThreadMB, referenceSpectrum, commonMassAxis));
+    return rcpp_result_gen;
+END_RCPP
+}
 // CNormalizations
 List CNormalizations(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis);
 RcppExport SEXP _rMSI2_CNormalizations(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP) {
@@ -494,6 +509,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_MergeMassAxisAutoBinSize", (DL_FUNC) &_rMSI2_MergeMassAxisAutoBinSize, 2},
     {"_rMSI2_COverallAverageSpectrum", (DL_FUNC) &_rMSI2_COverallAverageSpectrum, 6},
     {"_rMSI2_CRunFillPeaks", (DL_FUNC) &_rMSI2_CRunFillPeaks, 6},
+    {"_rMSI2_CInternalReferenceSpectrum", (DL_FUNC) &_rMSI2_CInternalReferenceSpectrum, 5},
     {"_rMSI2_CNormalizations", (DL_FUNC) &_rMSI2_CNormalizations, 4},
     {"_rMSI2_CRunPeakPicking", (DL_FUNC) &_rMSI2_CRunPeakPicking, 8},
     {"_rMSI2_CRunPreProcessing", (DL_FUNC) &_rMSI2_CRunPreProcessing, 9},
