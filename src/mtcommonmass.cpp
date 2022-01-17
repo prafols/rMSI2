@@ -368,8 +368,6 @@ void MTCommonMass::ProcessingFunction(int threadSlot)
   commonMutex.unlock();
 }
 
-//TODO when this works delete the previous methods but revise which methods are used to combine multiple imzML files in a single mass axis by the processing workflow.
-
 // Calculate the common mass axis for imzML data in processed mode.
 // [[Rcpp::export]]
 List CcommonMassAxis(List rMSIObj_list, 

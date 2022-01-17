@@ -170,32 +170,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// CalcMassAxisBinSize
-NumericVector CalcMassAxisBinSize(NumericVector mass, NumericVector intensity);
-RcppExport SEXP _rMSI2_CalcMassAxisBinSize(SEXP massSEXP, SEXP intensitySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type mass(massSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type intensity(intensitySEXP);
-    rcpp_result_gen = Rcpp::wrap(CalcMassAxisBinSize(mass, intensity));
-    return rcpp_result_gen;
-END_RCPP
-}
-// MergeMassAxis
-List MergeMassAxis(NumericVector mz1, NumericVector bins1, NumericVector mz2, NumericVector bins2);
-RcppExport SEXP _rMSI2_MergeMassAxis(SEXP mz1SEXP, SEXP bins1SEXP, SEXP mz2SEXP, SEXP bins2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type mz1(mz1SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type bins1(bins1SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type mz2(mz2SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type bins2(bins2SEXP);
-    rcpp_result_gen = Rcpp::wrap(MergeMassAxis(mz1, bins1, mz2, bins2));
-    return rcpp_result_gen;
-END_RCPP
-}
 // MergeMassAxisAutoBinSize
 List MergeMassAxisAutoBinSize(NumericVector mz1, NumericVector mz2);
 RcppExport SEXP _rMSI2_MergeMassAxisAutoBinSize(SEXP mz1SEXP, SEXP mz2SEXP) {
@@ -517,8 +491,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CimzMLParse", (DL_FUNC) &_rMSI2_CimzMLParse, 1},
     {"_rMSI2_CimzMLStore", (DL_FUNC) &_rMSI2_CimzMLStore, 3},
     {"_rMSI2_AlignSpectrumToReference", (DL_FUNC) &_rMSI2_AlignSpectrumToReference, 13},
-    {"_rMSI2_CalcMassAxisBinSize", (DL_FUNC) &_rMSI2_CalcMassAxisBinSize, 2},
-    {"_rMSI2_MergeMassAxis", (DL_FUNC) &_rMSI2_MergeMassAxis, 4},
     {"_rMSI2_MergeMassAxisAutoBinSize", (DL_FUNC) &_rMSI2_MergeMassAxisAutoBinSize, 2},
     {"_rMSI2_COverallAverageSpectrum", (DL_FUNC) &_rMSI2_COverallAverageSpectrum, 6},
     {"_rMSI2_CcommonMassAxis", (DL_FUNC) &_rMSI2_CcommonMassAxis, 3},

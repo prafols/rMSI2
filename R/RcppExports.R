@@ -115,38 +115,6 @@ AlignSpectrumToReference <- function(mass, ref, spectrumInterpolated, massProces
     .Call('_rMSI2_AlignSpectrumToReference', PACKAGE = 'rMSI2', mass, ref, spectrumInterpolated, massProcessedMode, intensityProcessedMode, bilinear, lagRefLow, lagRefMid, lagRefHigh, iterations, lagLimitppm, fftOverSampling, winSizeRelative)
 }
 
-#' CalcMassAxisBinSize.
-#' 
-#' Calc the bin size of a mass axis at each mass channels using simple peak-picking information.
-#' 
-#' @param mass the mass axis.
-#' @param intensity the intensity of a given spectrum.
-#' 
-#' @return the bin size of each m/z channel.
-#' @export
-#' 
-CalcMassAxisBinSize <- function(mass, intensity) {
-    .Call('_rMSI2_CalcMassAxisBinSize', PACKAGE = 'rMSI2', mass, intensity)
-}
-
-#' MergeMassAxis.
-#' 
-#' Merges two mass axis in a single one using an apropiate bin size.
-#' The resulting mass axis will display a bin size equal to the minimum of two supplied vectors. 
-#' The bin size must be supplied along each input mass axis.
-#' The first mass axis (mz1) can be a zero-length vector.
-#' 
-#' @param mz1 the first mass axis to merge.
-#' @param bins1 the bins size for the first mass axis.
-#' @param mz2 the second mass axis to merge.
-#' @param intensity2 the spectral intensities corresponding to the second mass axis.
-#' 
-#' @return a list containing the common mass axis that represents mz1 and mz1 accurately and a boolean indicating if and error was raised.
-#' 
-MergeMassAxis <- function(mz1, bins1, mz2, bins2) {
-    .Call('_rMSI2_MergeMassAxis', PACKAGE = 'rMSI2', mz1, bins1, mz2, bins2)
-}
-
 #' MergeMassAxisAutoBinSize.
 #' 
 #' Merges two mass axis in a single one using an apropiate bin size without having to specify the bin sizes.

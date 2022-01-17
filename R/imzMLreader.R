@@ -162,9 +162,11 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   if(xmlRes$continuous_mode)
   {
     mzAxis <- readBin(bincon, dataPointEncoding_Mz$dataType, xmlRes$run_data[1, "mzLength"], size = dataPointEncoding_Mz$bytes, signed = T)
+    close(bincon)
   }
   else
   {
+    close(bincon) #The file open in R must be close before going to c++
     if(convertProcessed2Continuous)
     {
       #Processed mode, so a common mass axis must be calculated and stored in mzAxis var
@@ -191,7 +193,6 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
       mzAxis <- NULL #Setting the common mass axis to NULL since data will be a peak list so it is not possible to directely create an rMSIXBin object
     }
   }
-  close(bincon)
  
   #5- Create the rMSIXBin
   if( is.null(subImg_rename))
