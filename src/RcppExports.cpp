@@ -224,6 +224,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// CcommonMassAxis
+List CcommonMassAxis(List rMSIObj_list, int numOfThreads, double memoryPerThreadMB);
+RcppExport SEXP _rMSI2_CcommonMassAxis(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type rMSIObj_list(rMSIObj_listSEXP);
+    Rcpp::traits::input_parameter< int >::type numOfThreads(numOfThreadsSEXP);
+    Rcpp::traits::input_parameter< double >::type memoryPerThreadMB(memoryPerThreadMBSEXP);
+    rcpp_result_gen = Rcpp::wrap(CcommonMassAxis(rMSIObj_list, numOfThreads, memoryPerThreadMB));
+    return rcpp_result_gen;
+END_RCPP
+}
 // CRunFillPeaks
 void CRunFillPeaks(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams, Rcpp::NumericVector commonMassAxis, Rcpp::List peakMatrix);
 RcppExport SEXP _rMSI2_CRunFillPeaks(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP commonMassAxisSEXP, SEXP peakMatrixSEXP) {
@@ -508,6 +521,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_MergeMassAxis", (DL_FUNC) &_rMSI2_MergeMassAxis, 4},
     {"_rMSI2_MergeMassAxisAutoBinSize", (DL_FUNC) &_rMSI2_MergeMassAxisAutoBinSize, 2},
     {"_rMSI2_COverallAverageSpectrum", (DL_FUNC) &_rMSI2_COverallAverageSpectrum, 6},
+    {"_rMSI2_CcommonMassAxis", (DL_FUNC) &_rMSI2_CcommonMassAxis, 3},
     {"_rMSI2_CRunFillPeaks", (DL_FUNC) &_rMSI2_CRunFillPeaks, 6},
     {"_rMSI2_CInternalReferenceSpectrum", (DL_FUNC) &_rMSI2_CInternalReferenceSpectrum, 5},
     {"_rMSI2_CNormalizations", (DL_FUNC) &_rMSI2_CNormalizations, 4},

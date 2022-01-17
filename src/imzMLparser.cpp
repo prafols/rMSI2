@@ -81,7 +81,7 @@ List CimzMLParse( String xml_path )
   String sMzDataType = "";
   String sIntDataType = "";
   double dPixelSize = 0.0;
-  bool bDataIsAPeakListInRMSIFormat;
+  bool bDataIsAPeakListInRMSIFormat = false;
   
   // Error control
   bool bUUID_present = false;

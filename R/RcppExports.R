@@ -168,6 +168,24 @@ COverallAverageSpectrum <- function(rMSIObj_list, numOfThreads, memoryPerThreadM
     .Call('_rMSI2_COverallAverageSpectrum', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis, minTIC, maxTic)
 }
 
+#' MergeMassAxis.
+#' 
+#' Merges two mass axis in a single one using an apropiate bin size.
+#' The resulting mass axis will display a bin size equal to the minimum of two supplied vectors. 
+#' The bin size must be supplied along each input mass axis.
+#' The first mass axis (mz1) can be a zero-length vector.
+#' 
+#' @param mz1 the first mass axis to merge.
+#' @param mz2 the second mass axis to merge.
+#' 
+#' @return the common mass axis that represents mz1 and mz1 accurately.
+#' 
+NULL
+
+CcommonMassAxis <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB) {
+    .Call('_rMSI2_CcommonMassAxis', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB)
+}
+
 CRunFillPeaks <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix) {
     invisible(.Call('_rMSI2_CRunFillPeaks', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams, commonMassAxis, peakMatrix))
 }

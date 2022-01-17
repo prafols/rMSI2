@@ -168,156 +168,19 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
     if(convertProcessed2Continuous)
     {
       #Processed mode, so a common mass axis must be calculated and stored in mzAxis var
-      cat("Calculating the new mass axis...\n")
-      if(!is.null(fun_text))
-      {
-        fun_text("Process mode, re-calculating mass axis...")
-      }
-      
-      if(is.null(fun_progress))
-      {
-        pb<-txtProgressBar(min = 0, max = 100, style = 3 )
-        fun_progress <- setPbarValue
-      }
-      else
-      {
-        pb<-NULL
-      }
-      
-      ppStep<-100/nrow(xmlRes$run_data)
-      pp<-0
-      #Update progress bar
-      if( !fun_progress(pp) )
-      {
-        return(NULL) #progress bar function must return true if the loading process is to be continued.
-      }
-      
-      icurr <- 1
-      bLoad <- TRUE
-      MergedSpc <- list()
-      
-      #Read only the first mass axis to compare if others are identical, this is the case for Bruker FTICR
-      seek(bincon, rw = "read", where = xmlRes$run_data[1, "mzOffset"] )
-      mzdd <- readBin(bincon,  dataPointEncoding_Mz$dataType, xmlRes$run_data[1, "mzLength"], size = dataPointEncoding_Mz$bytes, signed = T)
-      
-      #Read the intensity of the first mass axis 
-      seek(bincon, rw = "read", where = xmlRes$run_data[1, "intOffset"] )
-      dd <- readBin(bincon, dataPointEncoding_Int$dataType, xmlRes$run_data[1, "intLength"], size = dataPointEncoding_Int$bytes, signed = T)
-      
-      #Fix duplicates and zero drops
-      FirstSpectrumFixed <- fixImzMLDuplicates(mzdd, dd)
-      
-      #Calculate first mass axis bin size to avoid having to calculate it at each iteration
-      firstMassAxis <- FirstSpectrumFixed$mass
-      firstMassAxisBinSize <- rMSI::CalcMassAxisBinSize( firstMassAxis, FirstSpectrumFixed$intensity )
-      rm(FirstSpectrumFixed)
-      
-      while(TRUE)
-      {
-        if(bLoad)
-        {
-          #Read mass axis for the current spectrum 
-          seek(bincon, rw = "read", where = xmlRes$run_data[icurr, "mzOffset"] )
-          mzdd <- readBin(bincon, dataPointEncoding_Mz$dataType, xmlRes$run_data[icurr, "mzLength"], size = dataPointEncoding_Mz$bytes, signed = T)
-          
-          #Read intensity of current spectrum
-          seek(bincon, rw = "read", where = xmlRes$run_data[icurr, "intOffset"] )
-          dd <- readBin(bincon, dataPointEncoding_Int$dataType, xmlRes$run_data[icurr, "intLength"], size = dataPointEncoding_Int$bytes, signed = T)
-          
-          #Fix duplicates and zero drops
-          CurrSpectrumFixed <- fixImzMLDuplicates(mzdd, dd)
-          
-          #Get Bin size at peaks
-          LoadMass <- CurrSpectrumFixed$mass
-          
-          if(identical(firstMassAxis, LoadMass))
-          {
-            bMassMerge <- F
-            LoadBins <- firstMassAxisBinSize
-          }
-          else
-          {
-            bMassMerge <- T
-            LoadBins <- CalcMassAxisBinSize( LoadMass, CurrSpectrumFixed$intensity)
-          }
-          
-          bNoNeed2Resample <- bNoNeed2Resample & (!bMassMerge)
-          
-          #Shift register
-          if(length(MergedSpc) > 0)
-          {
-            for(i in length(MergedSpc):1)
-            {
-              MergedSpc[[i+1]] <- MergedSpc[[i]]
-            }
-          }
-          
-          MergedSpc[[1]] <- list( level = 0, mass = LoadMass, bins =  LoadBins, merge = bMassMerge )
-          icurr <- icurr + 1
-          bLoad <- FALSE
-          
-          #Update progress bar
-          pp_ant<-pp
-          pp<-pp+ppStep
-          if(!is.null(fun_progress) && (round(pp) > round(pp_ant)) )
-          {
-            #Update progress bar
-            if( !fun_progress(pp) )
-            {
-              return(NULL) #progress bar function must return true if the loading process is to be continued.
-            }
-          }
-        }
-        
-        if(length(MergedSpc) > 1)
-        {
-          if(MergedSpc[[1]]$level == MergedSpc[[2]]$level || icurr > nrow(xmlRes$run_data))
-          { 
-            #Merge!
-            if( MergedSpc[[2]]$merge)
-            {
-              mam <- MergeMassAxis(MergedSpc[[1]]$mass, MergedSpc[[1]]$bins, MergedSpc[[2]]$mass, MergedSpc[[2]]$bins )
-            }
-            else
-            {
-              #Both mass axes are identical so there is no need to merge them, this is the case for Bruker FTICR data
-              mam <- list(mass = MergedSpc[[1]]$mass, bins = MergedSpc[[1]]$bins )
-            }
-            MergedSpc[[1]] <- list( level = MergedSpc[[1]]$level + 1, mass = mam$mass, bins =  mam$bins, merge = MergedSpc[[2]]$merge )
-            
-            #Shift register
-            if(length(MergedSpc) > 2)
-            {
-              for(i in 2:(length(MergedSpc)-1))
-              {
-                MergedSpc[[i]] <- MergedSpc[[i+1]]
-              }
-            }
-            MergedSpc[[length(MergedSpc)]] <- NULL #Delete the last element
-            
-            #End Condition
-            if(icurr > nrow(xmlRes$run_data) && length(MergedSpc) == 1)
-            {
-              break
-            }
-          }
-          else
-          {
-            bLoad <- TRUE
-          }
-        }
-        else
-        {
-          bLoad <- TRUE
-        }
-      }
-      
-      mzAxis <-  MergedSpc[[1]]$mass
-      rm(MergedSpc)
-      if(!is.null(pb))
-      {
-        close(pb)
-      }
+      rMSIDummyObj <- list(data = list( peaklist = xmlRes ))
+      rMSIDummyObj$data$path <- dirname(ibd_File)
+      rMSIDummyObj$data$peaklist$path <- dirname(path.expand( ibd_File))
+      fname_noExtension <- basename(ibd_File)
+      fname_noExtension <- (unlist(strsplit(fname_noExtension, split = ".", fixed = T)))[1]
+      rMSIDummyObj$data$peaklist$file <- fname_noExtension
+      img_Dummylst <- list(rMSIDummyObj)
+      newCommonMassSingleImzML <- rMSI2:::CcommonMassAxis(img_Dummylst, parallel::detectCores(), 100) 
+      mzAxis <-  newCommonMassSingleImzML$mass
+      bNoNeed2Resample <- newCommonMassSingleImzML$NoNeed2Resample
+      rm(newCommonMassSingleImzML)
+      rm(rMSIDummyObj)
+      rm(img_Dummylst)
       gc()
       pt<-proc.time() - pt
       cat(paste("\nMass axis calculation time:",round(pt["elapsed"], digits = 1),"seconds\n"))
