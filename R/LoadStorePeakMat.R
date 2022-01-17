@@ -11,7 +11,7 @@ LoadPeakMatrix <- function( data_path )
 {
   #Remove extension if supplied
   fname <- basename(data_path)
-  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- sub("\\.[^.]*$", "", fname)
   fname <- paste0(fname, ".pkmat")
   data <- readRDS(file = file.path(dirname(data_path), fname))
   
@@ -43,7 +43,7 @@ StorePeakMatrix <- function( data_path, data )
   
   #Remove extension if supplied
   fname <- basename(data_path)
-  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- sub("\\.[^.]*$", "", fname)
   fname <- paste0(fname, ".pkmat")
   
   dir.create(dirname(data_path), recursive = T, showWarnings = F)

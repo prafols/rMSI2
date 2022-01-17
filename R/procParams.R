@@ -350,7 +350,7 @@ LoadProcParams <- function( filename )
 {
   #Remove extension if supplied
   fname <- basename(filename)
-  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- sub("\\.[^.]*$", "", fname)
   fname <- paste0(fname, ".params")
   data <- readRDS(file = file.path(dirname(filename), fname))
   
@@ -382,7 +382,7 @@ StoreProcParams <- function( filename, params )
   
   #Remove extension if supplied
   fname <- basename(filename)
-  fname <- (unlist(strsplit(fname, split = ".", fixed = T)))[1]
+  fname <- sub("\\.[^.]*$", "", fname)
   fname <- paste0(fname, ".params")
   
   dir.create(dirname(filename), recursive = T, showWarnings = F)

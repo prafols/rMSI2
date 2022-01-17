@@ -173,9 +173,7 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
       rMSIDummyObj <- list(data = list( peaklist = xmlRes ))
       rMSIDummyObj$data$path <- dirname(ibd_File)
       rMSIDummyObj$data$peaklist$path <- dirname(path.expand( ibd_File))
-      fname_noExtension <- basename(ibd_File)
-      fname_noExtension <- (unlist(strsplit(fname_noExtension, split = ".", fixed = T)))[1]
-      rMSIDummyObj$data$peaklist$file <- fname_noExtension
+      rMSIDummyObj$data$peaklist$file <- sub("\\.[^.]*$", "", basename(ibd_File))
       img_Dummylst <- list(rMSIDummyObj)
       newCommonMassSingleImzML <- rMSI2:::CcommonMassAxis(img_Dummylst, parallel::detectCores(), 100) 
       mzAxis <-  newCommonMassSingleImzML$mass
