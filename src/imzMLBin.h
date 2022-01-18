@@ -28,6 +28,7 @@
 typedef struct
 {
   int pixelID;
+  unsigned int last_offset; //The last position in the ibd file when the spectrum was read
   std::vector<double> imzMLmass; 
   std::vector<double> imzMLintensity; 
 }imzMLSpectrum; //If data is in continuous mode the std::vectors will be empty
@@ -136,7 +137,7 @@ class ImzMLBinRead : public ImzMLBin
     //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
     //out: a pointer where data will be stored.
     //bRunLinearInterpolationOnLoad: set this boolean to true to run linear interpolation on load automatically
-    imzMLSpectrum ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out, bool bRunLinearInterpolationOnLoad = true);
+    imzMLSpectrum ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out, bool bRunLinearInterpolationOnLoad = true, unsigned int offset_proc_data = 0);
     
     //Read multiple specta from the imzML data
     //If data is in processed mode the spectrum will be interpolated to the common mass axis using a multi-threaded approach.
@@ -146,7 +147,8 @@ class ImzMLBinRead : public ImzMLBin
     //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
     //out: a pointer where data will be stored (m)ultiple spectra will be concatenated).
     //number_of_threads: number of threads used during interpolation.
-    void ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads);
+    //bUpdate_pixel_read_offsets: is set to true further reading operation will start at the last reading offsets
+    void ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads, bool bUpdate_pixel_read_offsets = false);
     
     //Read a spectrum of a imzML in processed mode as a peak list.
     // pixelID: the pixel ID of the peaklist to read.
@@ -166,7 +168,7 @@ class ImzMLBinRead : public ImzMLBin
     
   private:
     //Read N elements from the ibd file and decode them.
-    //offset: offset in bytes at which the reading operation is started.
+    //offset: offset in bytes at which the reading operation is started. If set to -1 no seek operation is used.
     //N: number of elements to read from the ibd file (N is elements, not bytes!)
     //ptr: Data will be stored at the ptr pointer
     //dataPointBytes: number of bytes used to encode a single data point.
@@ -180,6 +182,8 @@ class ImzMLBinRead : public ImzMLBin
     bool bOriginalMassAxisOnMem; //A boolean to signal when the original mass axis is already available in memory for continuous mode
     std::vector<double> originalMassAxis; //A local copy of the original mass axis for continuous data interpolation (obtained from the rMSI object)
     std::vector<double> commonMassAxis; //A local copy of the common mass axis used for data interpolation when needed.
+    
+    std::vector<unsigned int>  pixels_read_offsets; //A vector to store all the previous offset readed to allow a faster acces in processed mode;
     
     bool bPeakListInrMSIFormat; //If peak list must be readed using rMSI trick of appending Area, SNR and binsize after intensity
 };

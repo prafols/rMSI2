@@ -300,6 +300,8 @@ void ImzMLBin::convertDouble2Bytes(double* inPtr, char* outBytes, unsigned int N
 ImzMLBinRead::ImzMLBinRead(const char* ibd_fname, unsigned int num_of_pixels, Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, bool openIbd, bool peakListrMSIformat):
   ImzMLBin(ibd_fname, num_of_pixels, Str_mzType, Str_intType, continuous, Mode::Read), bForceResampling(false), bOriginalMassAxisOnMem(false), bPeakListInrMSIFormat(peakListrMSIformat)
 {
+  pixels_read_offsets.resize(num_of_pixels);
+  
   if(openIbd)
   {
     open();
@@ -332,14 +334,17 @@ void ImzMLBinRead::readDataCommon(std::streampos offset, unsigned int N, double*
   unsigned int byteCount = N*dataPointBytes;
   char* buffer = new char [byteCount];
   
-  ibdFile.seekg(offset);
-  if(ibdFile.eof())
+  if(offset >= 0)
   {
-    throw std::runtime_error("ERROR: ImzMLBinRead reached EOF seeking the imzML ibd file.\n"); 
-  }
-  if(ibdFile.fail() || ibdFile.bad())
-  {
-    throw std::runtime_error("FATAL ERROR: ImzMLBinRead got fail or bad bit condition seeking the imzML ibd file.\n"); 
+    ibdFile.seekg(offset);
+    if(ibdFile.eof())
+    {
+      throw std::runtime_error("ERROR: ImzMLBinRead reached EOF seeking the imzML ibd file.\n"); 
+    }
+    if(ibdFile.fail() || ibdFile.bad())
+    {
+      throw std::runtime_error("FATAL ERROR: ImzMLBinRead got fail or bad bit condition seeking the imzML ibd file.\n"); 
+    }
   }
   
   ibdFile.read (buffer, byteCount);
@@ -469,7 +474,9 @@ void ImzMLBinRead::checkCompareOriginalMassAxisAndCommonMassAxis()
 //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
 //out: a pointer where data will be stored.
 //bRunLinearInterpolationOnLoad: set this boolean to true to run linear interpolation on load automatically
-imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out, bool bRunLinearInterpolationOnLoad)
+//offset_proc_data: offset to start reading spectra in processed mode to skip all the inital mass axis. It will be modified with the last readed mass offset.
+imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, unsigned int ionCount, double *out, 
+                                         bool bRunLinearInterpolationOnLoad, unsigned int offset_proc_data)
 {
   if(commonMassAxis.size() == 0)
   {
@@ -489,30 +496,82 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
     //Continuous mode, just load the spectrum intensity vector
     readIntData(get_intOffset(pixelID) + (std::streampos)(ionIndex*get_intEncodingBytes()), ionCount, out);  
   }
+  else if(get_continuous())
+  {
+    //TODO think about this! Im not happy with this anymore!!!! pffff i el force resampling? com u farem aixo???? revisar tot el codi incolucrat amb el force resampling
+    //When data in continuous mode, just the first readed spectrum, so directely copy to out pointer
+    memcpy( out, imzMLSpc.imzMLintensity.data(),  ionCount* sizeof(double) );
+  }
   else
   {
     //Processed mode, interpolation needed
     
     //Intermediate buffers to load data before interpolation
-    const int massLength = get_mzLength(pixelID);
-    if( massLength != get_intLength(pixelID))
+    if( get_mzLength(pixelID) != get_intLength(pixelID))
     {
       throw std::runtime_error("Error: different mass and intensity length in the imzML data\n"); 
     }
-    imzMLSpc.imzMLmass.resize(massLength);
-    imzMLSpc.imzMLintensity.resize(massLength);
     
     //Read processed mode mass and intensity
     try
     {
-      readMzData(get_mzOffset(pixelID),  get_mzLength(pixelID),  imzMLSpc.imzMLmass.data());
-      readIntData(get_intOffset(pixelID), get_intLength(pixelID), imzMLSpc.imzMLintensity.data());
+      //Complex read by searching the apropiate mass
+      double current_mass;
+      unsigned int start_ioffset = offset_proc_data; //Offset at which start reading the spectrum
+      unsigned int found_ioffset = start_ioffset;
+      unsigned int last_ioffset = start_ioffset;
       
-      if(get_continuous())
+      ibdFile.seekg(get_mzOffset(pixelID) +  (std::streampos)(start_ioffset*get_mzEncodingBytes()));
+      if(ibdFile.eof())
       {
-        //When data in continuous mode, just the first readed spectrum, so directely copy to out pointer
-        memcpy( out, imzMLSpc.imzMLintensity.data(),  ionCount* sizeof(double) );
+        throw std::runtime_error("ERROR: mass look-up reached EOF seeking the imzML ibd file.\n"); 
       }
+      if(ibdFile.fail() || ibdFile.bad())
+      {
+        throw std::runtime_error("FATAL ERROR: mass look-up got fail or bad bit condition seeking the imzML ibd file.\n"); 
+      }
+      
+      //Search the first mass channel
+      unsigned int ioffset = start_ioffset;
+      while( ioffset < get_mzLength(pixelID) )
+      {
+        readMzData(-1, 1, &current_mass); //Read a single mass channel
+        if( current_mass >= commonMassAxis[ionIndex])
+        {
+          break;
+        }
+        found_ioffset = ioffset;
+        ioffset++;
+      }
+      
+      //Read the mass channel till get the last
+      ibdFile.seekg(get_mzOffset(pixelID) +  (std::streampos)(found_ioffset*get_mzEncodingBytes()));
+      if(ibdFile.eof())
+      {
+        throw std::runtime_error("ERROR: mass read reached EOF seeking the imzML ibd file.\n"); 
+      }
+      if(ibdFile.fail() || ibdFile.bad())
+      {
+        throw std::runtime_error("FATAL ERROR: mass read got fail or bad bit condition seeking the imzML ibd file.\n"); 
+      }
+      ioffset = found_ioffset;
+      while( ioffset < get_mzLength(pixelID) )
+      {
+        readMzData(-1, 1, &current_mass); //Read a single mass channel
+        imzMLSpc.imzMLmass.push_back(current_mass);
+        if( current_mass > commonMassAxis[ionIndex + ionCount -1] )
+        {
+          break;
+        }
+        last_ioffset = ioffset;
+        ioffset++;
+      }
+      
+      imzMLSpc.last_offset = last_ioffset;
+      imzMLSpc.imzMLintensity.resize(imzMLSpc.imzMLmass.size());
+      
+      //Read the corresponding intensity
+      readIntData(get_intOffset(pixelID) + (std::streampos)(found_ioffset*get_intEncodingBytes()), imzMLSpc.imzMLintensity.size(), imzMLSpc.imzMLintensity.data());
     }
     catch(std::runtime_error &e)
     {
@@ -537,7 +596,8 @@ imzMLSpectrum ImzMLBinRead::ReadSpectrum(int pixelID, unsigned int ionIndex, uns
 //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
 //out: a pointer where data will be stored (m)ultiple spectra will be concatenated).
 //number_of_threads: number of threads used during interpolation.
-void ImzMLBinRead::ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads)
+//bUpdate_pixel_read_offsets: is set to true further reading operation will start at the last reading offsets
+void ImzMLBinRead::ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads, bool bUpdate_pixel_read_offsets)
 {
   std::vector<imzMLSpectrum> thread_spectrum(number_of_threads);
   std::vector<std::future<void> > futures(number_of_threads);
@@ -551,7 +611,11 @@ void ImzMLBinRead::ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs,
     {
       if(!futures[ithread].valid() && current_pixel < numOfPixels)
       {
-        thread_spectrum[ithread] = ReadSpectrum( pixelIDs[current_pixel], ionIndex, ionCount, out + (current_pixel*ionCount), false);
+        thread_spectrum[ithread] = ReadSpectrum( pixelIDs[current_pixel], ionIndex, ionCount, out + (current_pixel*ionCount), false, pixels_read_offsets[ pixelIDs[current_pixel]]);
+        if(bUpdate_pixel_read_offsets)
+        {
+          pixels_read_offsets[ pixelIDs[current_pixel]] =  thread_spectrum[ithread].last_offset;
+        }
         if(!get_continuous() || bForceResampling)
         {
           //Only run threads for data in processed mode or resampling
@@ -594,15 +658,25 @@ void ImzMLBinRead::InterpolateSpectrum(imzMLSpectrum *imzMLSpc, unsigned int ion
 {
   if(!get_continuous() || bForceResampling) 
   {
-    //Only inpterpolate for data in processed mode or different mass axis
+    //Only inpterpolate for data in processed mode or different mass axis in continuous mode
     
     //Linear interpolation
     const int massLength = imzMLSpc->imzMLmass.size();
-    mlinterp::interp(
-      &massLength, (int)ionCount, // Number of points (imzML original, interpolated )
-      imzMLSpc->imzMLintensity.data(), out, // Y axis  (imzML original, interpolated )
-      imzMLSpc->imzMLmass.data(), commonMassAxis.data() + ionIndex // X axis  (imzML original, interpolated )
-    );
+    if(massLength > 0)
+    {
+      mlinterp::interp(
+        &massLength, (int)ionCount, // Number of points (imzML original, interpolated )
+        imzMLSpc->imzMLintensity.data(), out, // Y axis  (imzML original, interpolated )
+        imzMLSpc->imzMLmass.data(), commonMassAxis.data() + ionIndex // X axis  (imzML original, interpolated )
+      );
+    }
+    else
+    {
+      for(unsigned int i = 0; i < ionCount; i++)
+      {
+        out[i] = 0; //Just set to zero if no spectral data avaialble
+      }
+    }
   }
 }
 

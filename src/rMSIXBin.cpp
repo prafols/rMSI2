@@ -254,7 +254,7 @@ void rMSIXBin::CreateImgStream()
       {
         iIonImgCount = iIonImgCount <  iRemainingIons ? iIonImgCount :  iRemainingIons;
         LoadBuffer_ptr = new double[iIonImgCount*_rMSIXBin->numOfPixels];
-        imzMLReader->ReadSpectra(pixelIDs.size(), (unsigned int *) pixelIDs.data(), iIon, iIonImgCount, LoadBuffer_ptr, number_of_encoding_threads); 
+        imzMLReader->ReadSpectra(pixelIDs.size(), (unsigned int *) pixelIDs.data(), iIon, iIonImgCount, LoadBuffer_ptr, number_of_encoding_threads, true); 
         iRemainingIons = iRemainingIons - iIonImgCount;
       }
       else
