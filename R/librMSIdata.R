@@ -79,8 +79,9 @@ LoadMsiData<-function(data_file,
     {
       #No .XrMSI file so process the imzML
       fun_label(".XrMSI not found, loading imzML data...")
-      imgData <- Ccreate_rMSIXBinData(import_imzML(path.expand(data_file),  fun_progress = fun_progress, fun_text = fun_label, close_signal = close_signal, verifyChecksum = imzMLChecksum, subImg_rename = imzMLRename, subImg_Coords = imzMLSubCoords),
-                                             encoding_threads)
+      rMSIobject <- import_imzML(path.expand(data_file),  fun_progress = fun_progress, fun_text = fun_label, close_signal = close_signal, verifyChecksum = imzMLChecksum, subImg_rename = imzMLRename, subImg_Coords = imzMLSubCoords)
+      rMSIobject <- CNormalizationsAndMeans(list(rMSIobject), encoding_threads, 200, rMSIobject$mass)[[1]]
+      imgData <- Ccreate_rMSIXBinData(rMSIobject,encoding_threads)
     }
   }
   else if(fileExtension == "XrMSI")
@@ -434,6 +435,7 @@ CreateEmptyImage<-function(num_of_pixels,
   
   img$pixel_size_um <-  pixel_resolution
   img$mean <- rep(0, length(mass_axis))
+  img$base <- rep(0, length(mass_axis))
 
   #Prepare an empty datacube
   img$data <- list()
@@ -449,8 +451,6 @@ CreateEmptyImage<-function(num_of_pixels,
                                             ByteOffset = rep(NA, length(mass_axis)) #The offset in bytes of each m/z channel image in the imgStream 
                                             )
   class(img$data$rMSIXBin$imgStream) <- "imgStream"
-  
-  #TODO create all the rMSIXBinData remaining fields!!!!
   
   img$data$imzML <- list()
   class(img$data$imzML) <- "imzMLData"
@@ -475,6 +475,8 @@ CreateEmptyImage<-function(num_of_pixels,
   img$data$peaklist <- list()
   class(img$data$peaklist) <- "peakList"
   #The peaklist field are created outside this function.
+  
+  img$normalizations <- data.frame();
   
   return(img)
 }

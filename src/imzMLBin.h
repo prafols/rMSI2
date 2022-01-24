@@ -24,6 +24,7 @@
 #include <vector>
 #include <Rcpp.h>
 #include "peakpicking.h" //Used to get the datatype Peaks to allow a direct acces to imzML with peak lists
+#include "encoder_settings.h"
 
 typedef struct
 {
@@ -150,6 +151,18 @@ class ImzMLBinRead : public ImzMLBin
     //bUpdate_pixel_read_offsets: is set to true further reading operation will start at the last reading offsets
     void ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, double *out, unsigned int number_of_threads, bool bUpdate_pixel_read_offsets = false);
     
+    //Read multiple specta from the imzML data
+    //If data is in processed mode the spectrum will be interpolated to the common mass axis using a multi-threaded approach.
+    //numOfPixels: number of pixels to read.
+    //pixelIDs: pointer to the pixel IDs of the spectra to read.
+    //scaling_factors: pointer to scaling factors is used only when type T is char.
+    //ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
+    //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
+    //out: a pointer where data will be stored as bytes and scaled(m)ultiple spectra will be concatenated).
+    //number_of_threads: number of threads used during interpolation.
+    //bUpdate_pixel_read_offsets: is set to true further reading operation will start at the last reading offsets
+    void ReadSpectra(unsigned int numOfPixels, unsigned int *pixelIDs, double *scaling_factors, unsigned int ionIndex, unsigned int ionCount, imgstreamencoding_type *out, unsigned int number_of_threads, bool bUpdate_pixel_read_offsets = false);
+    
     //Read a spectrum of a imzML in processed mode as a peak list.
     // pixelID: the pixel ID of the peaklist to read.
     // return a pointer to a PeakPicking::Peaks datatype.
@@ -186,6 +199,19 @@ class ImzMLBinRead : public ImzMLBin
     std::vector<unsigned int>  pixels_read_offsets; //A vector to store all the previous offset readed to allow a faster acces in processed mode;
     
     bool bPeakListInrMSIFormat; //If peak list must be readed using rMSI trick of appending Area, SNR and binsize after intensity
+    
+    //Read multiple specta from the imzML data
+    //If data is in processed mode the spectrum will be interpolated to the common mass axis using a multi-threaded approach.
+    //numOfPixels: number of pixels to read.
+    //pixelIDs: pointer to the pixel IDs of the spectra to read.
+    //ionIndex: the ion index at which to start reading the spectrum (0 means reading from the begining).
+    //ionCount: the number of mass channels to read (massLength means reading the whole spectrum).
+    //out: a pointer where data will be stored (m)ultiple spectra will be concatenated).
+    //number_of_threads: number of threads used during interpolation.
+    //bUpdate_pixel_read_offsets: is set to true further reading operation will start at the last reading offsets
+    //scaling_factors: pointer to scaling factors is used only when type T is char.
+    template<typename T> 
+    void ReadSpectraTemplateType(unsigned int numOfPixels, unsigned int *pixelIDs, unsigned int ionIndex, unsigned int ionCount, T *out, unsigned int number_of_threads, bool bUpdate_pixel_read_offsets = false, double *scaling_factors = nullptr);
 };
 
 class ImzMLBinWrite : public ImzMLBin

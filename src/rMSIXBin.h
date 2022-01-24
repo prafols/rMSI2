@@ -25,22 +25,9 @@
 #include <fstream>
 #include <mutex>
 #include "imzMLBin.h"
+#include "encoder_settings.h"
 
-#define IMG_STREAM_8bits //Comment this line out if you prefere to encode the imgStream as 16bits plus a mask
-
-#define IONIMG_BUFFER_MB 250 //I think 250 MB of RAM is a good balance for fast hdd operation and low memory footprint
-
-#ifdef IMG_STREAM_8bits
-typedef  unsigned char imgstreamencoding_type;
-#define ENCODER_RANGE 255.0
-#define ENCODING_BITS 8
-#define ENCODING_BIT_MASK 0xFF //imgStream encoding mask (in 8 bit encoding, no masking)
-#else
-typedef  unsigned short imgstreamencoding_type;
-#define ENCODER_RANGE 65535.0
-#define ENCODING_BITS 16
-#define ENCODING_BIT_MASK 0xFFC0 //imgStream encoding mask (only used for 16 bit encoding)
-#endif
+#define IONIMG_BUFFER_MB 1024 //I think 1024 MB of RAM is a good balance for fast hdd operation and low memory footprint
 
 class rMSIXBin
 {
@@ -108,16 +95,12 @@ class rMSIXBin
       std::vector<unsigned char> png_stream; //the encoded png stream
     }ImgStreamEncoder_result;
     
-    //Normalizations and mean spectra
-    Rcpp::NumericVector averageSpectrum;
+    //Copy of the baseSpectrum ()which is the same as scaling factors)
     Rcpp::NumericVector baseSpectrum;
-    Rcpp::NumericVector normTIC;
-    Rcpp::NumericVector normRMS;
-    Rcpp::NumericVector normMAX;
     
     //Threaded encoding model 
-    ImgStreamEncoder_result encodeBuffer2SingleImgStream(double *buffer, unsigned int ionIndex, unsigned int bufferIonIndex, unsigned int bufferIonCount); //Threaded method
-    void startThreadedEncoding(double *buffer, unsigned int ionIndex, unsigned int ionCount); //Threaded method
+    ImgStreamEncoder_result encodeBuffer2SingleImgStream(imgstreamencoding_type *buffer, unsigned int ionIndex, unsigned int bufferIonIndex, unsigned int bufferIonCount); //Threaded method
+    void startThreadedEncoding(imgstreamencoding_type *buffer, unsigned int ionIndex, unsigned int ionCount); //Threaded method
 
     //Threaded decoding method
     //buffer: pointer to char with the raw imgStream readed form hdd

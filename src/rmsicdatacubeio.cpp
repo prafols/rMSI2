@@ -116,7 +116,7 @@ void CrMSIDataCubeIO::appedImageData(Rcpp::List rMSIobj, std::string outputImzML
   DataFrame peaksimzMLrun;
   if(dataMode == DataCubeIOMode::PEAKLIST_READ || dataMode == DataCubeIOMode::DATA_AND_PEAKLIST_READ)
   {
-    if( data["peaklist"] == R_NilValue)
+    if( !data.containsElementNamed("peaklist"))
     {
       throw std::runtime_error("Error: peak list data not available\n");
     }

@@ -180,6 +180,7 @@ ProcessImages <- function(proc_params,
       if(!is.null(result$processed_data[[i]]$data$imzML))
       {
         cat(paste0("Writing .XrMSI file ", i, " of ", length(result$processed_data), "...\n"))
+        #TODO check if it is possible to get here without normalizations or base spectrum
         result$processed_data[[i]] <- Ccreate_rMSIXBinData(result$processed_data[[i]], numOfThreads) #TODO include information for the peaklists in the XML if available!
       }
       else
@@ -246,12 +247,7 @@ RunPreProcessing <- function(proc_params,
     }
 
     #Calculate normalizations, TIC normalization is needd for internal reference calculation so, when alginemtn is used normalizations will be precalculated
-    Normalizations <- CNormalizations(img_lst, numOfThreads, memoryPerThreadMB, common_mass)
-    #Replace each image normalizations
-    for( i in 1:length(img_lst))
-    {
-      img_lst[[i]]$normalizations <- Normalizations[[i]]
-    }
+    img_lst <- CNormalizationsAndMeans(img_lst, numOfThreads, memoryPerThreadMB, common_mass)
     
     if(proc_params$preprocessing$alignment$enable || proc_params$preprocessing$massCalibration)
     {  

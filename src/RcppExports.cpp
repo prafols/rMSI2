@@ -10,6 +10,20 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// CNormalizationsAndMeans
+List CNormalizationsAndMeans(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis);
+RcppExport SEXP _rMSI2_CNormalizationsAndMeans(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type rMSIObj_list(rMSIObj_listSEXP);
+    Rcpp::traits::input_parameter< int >::type numOfThreads(numOfThreadsSEXP);
+    Rcpp::traits::input_parameter< double >::type memoryPerThreadMB(memoryPerThreadMBSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type commonMassAxis(commonMassAxisSEXP);
+    rcpp_result_gen = Rcpp::wrap(CNormalizationsAndMeans(rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis));
+    return rcpp_result_gen;
+END_RCPP
+}
 // CparseBrukerXML
 List CparseBrukerXML(String xml_path);
 RcppExport SEXP _rMSI2_CparseBrukerXML(SEXP xml_pathSEXP) {
@@ -241,20 +255,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// CNormalizations
-List CNormalizations(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::NumericVector commonMassAxis);
-RcppExport SEXP _rMSI2_CNormalizations(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP commonMassAxisSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type rMSIObj_list(rMSIObj_listSEXP);
-    Rcpp::traits::input_parameter< int >::type numOfThreads(numOfThreadsSEXP);
-    Rcpp::traits::input_parameter< double >::type memoryPerThreadMB(memoryPerThreadMBSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type commonMassAxis(commonMassAxisSEXP);
-    rcpp_result_gen = Rcpp::wrap(CNormalizations(rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis));
-    return rcpp_result_gen;
-END_RCPP
-}
 // CRunPeakPicking
 Rcpp::List CRunPeakPicking(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams, Rcpp::StringVector uuid, Rcpp::String outputDataPath, Rcpp::StringVector imzMLoutFnames, Rcpp::NumericVector commonMassAxis);
 RcppExport SEXP _rMSI2_CRunPeakPicking(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP, SEXP uuidSEXP, SEXP outputDataPathSEXP, SEXP imzMLoutFnamesSEXP, SEXP commonMassAxisSEXP) {
@@ -480,6 +480,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
     {"_rMSI2_CimzMLBinWriteModifyMass", (DL_FUNC) &_rMSI2_CimzMLBinWriteModifyMass, 7},
@@ -496,7 +497,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CcommonMassAxis", (DL_FUNC) &_rMSI2_CcommonMassAxis, 3},
     {"_rMSI2_CRunFillPeaks", (DL_FUNC) &_rMSI2_CRunFillPeaks, 6},
     {"_rMSI2_CInternalReferenceSpectrum", (DL_FUNC) &_rMSI2_CInternalReferenceSpectrum, 5},
-    {"_rMSI2_CNormalizations", (DL_FUNC) &_rMSI2_CNormalizations, 4},
     {"_rMSI2_CRunPeakPicking", (DL_FUNC) &_rMSI2_CRunPeakPicking, 8},
     {"_rMSI2_CRunPreProcessing", (DL_FUNC) &_rMSI2_CRunPreProcessing, 9},
     {"_rMSI2_NoiseEstimationFFTCosWin", (DL_FUNC) &_rMSI2_NoiseEstimationFFTCosWin, 2},
