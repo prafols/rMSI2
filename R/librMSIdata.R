@@ -68,7 +68,9 @@ LoadMsiData<-function(data_file,
   if( fileExtension == "imzML")
   {
     #Check if the .XrMSI file is already there...
-    XrMSI_fname <- path.expand(file.path(dirname(data_file), paste0(  unlist(strsplit(basename(data_file), split = "\\."))[1], ".XrMSI")))
+    XrMSI_fname <- basename(data_file)
+    XrMSI_fname <- sub("\\.[^.]*$", "", XrMSI_fname)
+    XrMSI_fname <- path.expand(file.path(dirname(data_file), paste0(XrMSI_fname, ".XrMSI")))
     if(file.exists(XrMSI_fname))
     {
       #.XrMSI file exists so load it
@@ -110,7 +112,7 @@ LoadMsiData<-function(data_file,
 #' @param data_file The .XrMSI file containing the MS image in rMSI format.
 #' @param fun_text This is a callback function to update the label widget of loading data. See details for more information.
 #'  Imports an rMSI data object from an .XrMSI data file
-#'  It is recomanded to use rMSI::LoadMsiData directly instead of this function.
+#'  It is recomanded to use rMSI2::LoadMsiData directly instead of this function.
 #'  
 #' @return   an rMSI data object.
 #' @export
@@ -139,7 +141,7 @@ import_rMSIXBin<-function(data_file, fun_text = NULL)
   if(file.exists(imzML_fname))
   {
     fun_text("Found imzML file, parsing...")
-    imzML_XML <- rMSI:::CimzMLParse(imzML_fname)
+    imzML_XML <- CimzMLParse(imzML_fname)
     img$data$imzML$uuid <- imzML_XML$UUID
     if(imzML_XML$SHA != "")
     {
@@ -182,7 +184,7 @@ import_rMSIXBin<-function(data_file, fun_text = NULL)
 #' @param close_signal function to call if error.
 #'
 #'  Imports an rMSI data object in a tar data file
-#'  It is recomanded to use rMSI::LoadMsiData directly instead of this function.
+#'  It is recomanded to use rMSI2::LoadMsiData directly instead of this function.
 #'
 #' @return  an rMSI data object.
 #' @export

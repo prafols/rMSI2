@@ -222,7 +222,7 @@ void rMSIXBin::CreateImgStream()
    *  bytesPerIonImg = img_width * img_height * ENCODING_BITS/8 + 4 (32bits float scalingFactor)
    *  iIonImgCount = IONIMG_BUFFER_MB * 1024 * 1024 / bytesPerIonImg
    */
-  unsigned int iIonImgCount = (unsigned int)(  ((double)(IONIMG_BUFFER_MB * 1024 * 1024)) / ((double)( img_width *img_height * ENCODING_BITS/8 + 4 )) );
+  unsigned int iIonImgCount = (unsigned int)(  ((double)((double)IONIMG_BUFFER_MB * (double)(1024 * 1024))) / ((double)( img_width *img_height * ENCODING_BITS/8 + 4 )) );
   unsigned int iRemainingIons = massAxis.length();
   
   try

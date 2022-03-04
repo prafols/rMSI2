@@ -24,7 +24,6 @@
 #include <Rcpp.h>
 
 //#define __DEBUG__
-#define MAX_MEMORY_MB 250 //Maxim usable memory
 #define INTERPOLATION_TIMEOUT 10 //Timeout for interpolation theads ins ms
 
 ImzMLBin::ImzMLBin(const char* ibd_fname,  unsigned int num_of_pixels,Rcpp::String Str_mzType, Rcpp::String Str_intType, bool continuous, Mode mode):

@@ -11,7 +11,7 @@ import_rMSIXBin(data_file, fun_text = NULL)
 
 \item{fun_text}{This is a callback function to update the label widget of loading data. See details for more information.
 Imports an rMSI data object from an .XrMSI data file
-It is recomanded to use rMSI::LoadMsiData directly instead of this function.}
+It is recomanded to use rMSI2::LoadMsiData directly instead of this function.}
 }
 \value{
 an rMSI data object.

@@ -36,7 +36,7 @@ import_imzML(
 \item{subImg_Coords}{a Complex vector with the motors coordinates to be included in the rMSI data.
 
  Imports an imzML image to an rMSI data object.
- It is recomanded to use rMSI::LoadMsiData directly instead of this function.}
+ It is recomanded to use rMSI2::LoadMsiData directly instead of this function.}
 }
 \value{
 an rMSI data object.

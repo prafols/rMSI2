@@ -24,7 +24,7 @@ import_rMSItar(
 \item{close_signal}{function to call if error.
 
  Imports an rMSI data object in a tar data file
- It is recomanded to use rMSI::LoadMsiData directly instead of this function.}
+ It is recomanded to use rMSI2::LoadMsiData directly instead of this function.}
 }
 \value{
 an rMSI data object.
