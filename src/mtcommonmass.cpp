@@ -34,7 +34,7 @@ MTCommonMass::~MTCommonMass()
 
 List MTCommonMass::Run()
 {
-  Rcpp::Rcout<<"Calculating the new mass axi...\n";
+  Rcpp::Rcout<<"Calculating the new mass axis...\n";
   globalMergedSpc.mass.clear();
   globalMergedSpc.bins.clear();
   globalMergedSpc.bMerge = false;

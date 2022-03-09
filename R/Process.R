@@ -252,7 +252,7 @@ RunPreProcessing <- function(proc_params,
     if(proc_params$preprocessing$alignment$enable || proc_params$preprocessing$massCalibration)
     {  
       #Get the 25% and 75% quantiles of TIC norms
-      allTICs <- unlist(lapply(Normalizations, function(x){ x$TIC }))
+      allTICs <- unlist(lapply(img_lst, function(x){ x$normalizations$TIC }))
       TICquantiles <- quantile(allTICs)
       ticMin <- TICquantiles[2] # 25%
       ticMax <- TICquantiles[4] # 75%
@@ -278,8 +278,7 @@ RunPreProcessing <- function(proc_params,
       #I need to supply a reference spectrum even if alignment is not enabled, so just feed it with zeros
       refSpc <- rep(0.0, length(img_lst[[1]]$mass)) 
     }
-    rm(Normalizations)
-  
+    
     #Calc new UUID's for the processed imzML files
     if( proc_params$preprocessing$smoothing$enable ||
         proc_params$preprocessing$alignment$enable ||
