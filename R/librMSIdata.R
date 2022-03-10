@@ -26,6 +26,7 @@
 #' @param imzMLRename the image name, if NULL a default name based on the file name will be used.
 #' @param imzMLSubCoords a Complex vector with the motors coordinates to be included in the ramdisk, if NULL all positions will be used.
 #' @param encoding_threads numeber of threads to use during the pngstream encoding process.
+#' @param fixBrokenUUID set to FALSE by default to automatically fix an uuid mismatch between the ibd and the imzML files (a warning message will be raised).
 #'
 #' @return an rMSI object pointing to ramdisk stored data
 #'
@@ -42,7 +43,8 @@ LoadMsiData<-function(data_file,
                       imzMLChecksum = F, 
                       imzMLRename = NULL,
                       imzMLSubCoords = NULL,
-                      encoding_threads = parallel::detectCores())
+                      encoding_threads = parallel::detectCores(),
+                      fixBrokenUUID = F)
 {
   if(!file.exists(data_file))
   {
@@ -81,7 +83,7 @@ LoadMsiData<-function(data_file,
     {
       #No .XrMSI file so process the imzML
       fun_label(".XrMSI not found, loading imzML data...")
-      rMSIobject <- import_imzML(path.expand(data_file),  fun_progress = fun_progress, fun_text = fun_label, close_signal = close_signal, verifyChecksum = imzMLChecksum, subImg_rename = imzMLRename, subImg_Coords = imzMLSubCoords)
+      rMSIobject <- import_imzML(path.expand(data_file),  fun_progress = fun_progress, fun_text = fun_label, close_signal = close_signal, verifyChecksum = imzMLChecksum, subImg_rename = imzMLRename, subImg_Coords = imzMLSubCoords, fixBrokenUUID = fixBrokenUUID)
       rMSIobject <- CNormalizationsAndMeans(list(rMSIobject), encoding_threads, 200, rMSIobject$mass)[[1]]
       imgData <- Ccreate_rMSIXBinData(rMSIobject,encoding_threads)
     }
@@ -1161,4 +1163,3 @@ readimzML_singlePixelPeakList <- function(imzML_file, pixel_id)
   peakList <- CimzMLReadPeakList(path.expand(paste0(imzML_file, ".ibd")), imzMLDesc, pixel_id-1) #C-style indexing so -1  
   return ( peakList )
 }
-

@@ -12,7 +12,8 @@ LoadMsiData(
   imzMLChecksum = F,
   imzMLRename = NULL,
   imzMLSubCoords = NULL,
-  encoding_threads = parallel::detectCores()
+  encoding_threads = parallel::detectCores(),
+  fixBrokenUUID = F
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ LoadMsiData(
 \item{imzMLSubCoords}{a Complex vector with the motors coordinates to be included in the ramdisk, if NULL all positions will be used.}
 
 \item{encoding_threads}{numeber of threads to use during the pngstream encoding process.}
+
+\item{fixBrokenUUID}{set to FALSE by default to automatically fix an uuid mismatch between the ibd and the imzML files (a warning message will be raised).}
 }
 \value{
 an rMSI object pointing to ramdisk stored data

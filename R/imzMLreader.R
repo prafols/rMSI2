@@ -50,6 +50,7 @@ fixImzMLDuplicates <- function(mass, intensity)
 #' @param convertProcessed2Continuous if true (the default) an imzML file in processed mode will be converted to a continuous mode.
 #' @param subImg_rename alternative image name, new rMSI files will be created with the given name.
 #' @param subImg_Coords a Complex vector with the motors coordinates to be included in the rMSI data.
+#' @param fixBrokenUUID set to FALSE by default to automatically fix an uuid mismatch between the ibd and the imzML files (a warning message will be raised).
 #'
 #'  Imports an imzML image to an rMSI data object.
 #'  It is recomanded to use rMSI2::LoadMsiData directly instead of this function.
@@ -60,7 +61,7 @@ fixImzMLDuplicates <- function(mass, intensity)
 import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzML_File), ".ibd", sep = "" ),
                          fun_progress = NULL, fun_text = NULL, close_signal = NULL, 
                          verifyChecksum = F, convertProcessed2Continuous = T,
-                         subImg_rename = NULL, subImg_Coords = NULL)
+                         subImg_rename = NULL, subImg_Coords = NULL, fixBrokenUUID = F)
 {
   setPbarValue<-function(progress)
   {
@@ -81,6 +82,12 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   if( !is.null(xmlRes$Error))
   {
     .controlled_loadAbort(paste0(xmlRes$Error, "\n"), close_signal)
+  }
+  
+  #2- Check UUID and fix it if broken
+  if( !check_imzMLUUID(imzML_file = imzML_File, fixibd_uuid = fixBrokenUUID, xmlParserResult = xmlRes) )
+  {
+    .controlled_loadAbort("ERROR: UUID in imzML file does not match UUID in ibd file.\nYou may want to fix this with the argument fixBrokenUUID set to TRUE.\n", close_signal)
   }
   
   if(verifyChecksum)
@@ -142,23 +149,15 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
     }
   }
   
-  #2- Create a connection to read binary file
+  #3- Create a connection to read binary file
   bincon <- file(description = ibd_File, open = "rb")
-
-  #3- Test the UUID in binary file (the first 16 bytes are always UUID (in XML file are in hex codes))
-  binUUID <- paste(sprintf("%.2X", readBin(bincon, integer(), 16, size = 1, signed = F)), collapse = "")
-  if(binUUID != xmlRes$UUID)
-  {
-    close(bincon)
-    .controlled_loadAbort("ERROR: UUID in imzML file does not match UUID in ibd file\n", close_signal)
-  }
 
   #4- Obtain de m/z axis (for continuous mode just read the mass axis, for processed mode calculate a common mass axis)
   pt<-proc.time()
   dataPointEncoding_Mz  <- dataPointBinaryEncoding(xmlRes$mz_dataType)
   dataPointEncoding_Int <- dataPointBinaryEncoding(xmlRes$int_dataType)
   bNoNeed2Resample <- T #Start assuming there is no need to resample the data
-  
+  readBin(bincon, integer(), 16, size = 1, signed = F) #Read the first 16 bytes (uuid) to position seek pointer
   if(xmlRes$continuous_mode)
   {
     mzAxis <- readBin(bincon, dataPointEncoding_Mz$dataType, xmlRes$run_data[1, "mzLength"], size = dataPointEncoding_Mz$bytes, signed = T)
@@ -200,7 +199,7 @@ import_imzML <- function(imzML_File, ibd_File =  paste(sub("\\.[^.]*$", "", imzM
   img <- CreateEmptyImage(num_of_pixels = nrow(xmlRes$run_data), mass_axis = mzAxis, pixel_resolution = xmlRes$pixel_size_um,
                                img_name = subImg_rename,
                                rMSIXBin_path = path.expand(dirname(imzML_File)),
-                               uuid = binUUID
+                               uuid = xmlRes$UUID
                                 )
 
   #Fill missing data
@@ -304,4 +303,72 @@ dataPointBinaryEncoding <- function(str_dataType)
   }
 
   return(result)
+}
+
+#' check_imzMLUUID.
+#' 
+#' Check and fix the UUID of invalid imzML files.
+#'
+#' @param imzML_file path to an imzML file.
+#' @param fixibd_uuid set to TRUE to overwrite the ibd file uuid with the imzML uuid.
+#' @param xmlParserResult result of the CimzMLParse() if available
+#'
+#' @return TRUE if the UUID is OK.
+#' @export
+#'
+check_imzMLUUID <- function(imzML_file, fixibd_uuid = F, xmlParserResult = NULL)
+{
+  #Set files
+  imzML_fname <- path.expand(imzML_file)
+  ibd_fname <- basename(imzML_fname)
+  ibd_fname <- sub("\\.[^.]*$", "", ibd_fname)
+  ibd_fname <- file.path(dirname(imzML_fname), paste0(ibd_fname, ".ibd"))
+  
+  if(!file.exists(imzML_fname))
+  {
+    stop("ERROR: imzML file not found")
+  }
+  
+  if(!file.exists(ibd_fname))
+  {
+    stop("ERROR: ibd file not found")
+  }
+  
+  if(is.null(xmlParserResult))
+  {
+    cat("Parsing imzML file...\n")
+    imzML_XML <- CimzMLParse(imzML_fname) 
+    imzMLUUID <- imzML_XML$UUID
+    rm(imzML_XML)
+    gc()
+  }
+  else
+  {
+    imzMLUUID <- xmlParserResult$UUID
+  }
+  
+  #Check imzML UUID
+  cat("Checking ibd UUID...")
+  bincon <- file(description = ibd_fname, open = "rb")
+  binUUID <- paste(sprintf("%.2X", readBin(bincon, integer(), 16, size = 1, signed = F)), collapse = "")
+  close(bincon)
+  if(binUUID == imzMLUUID)
+  {
+    cat("OK\n")
+    return(TRUE)
+  }
+  else
+  {
+    if(fixibd_uuid)
+    {
+      cat("NOK\n")
+      overwriteIbdUUid(ibd_fname, imzMLUUID)
+      cat("WARNING: UUID mismatch, overwriting it in the ibd file!\n")
+      return(TRUE)
+    }
+    else
+    {
+      return(FALSE)
+    }
+  }
 }

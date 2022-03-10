@@ -13,7 +13,8 @@ import_imzML(
   verifyChecksum = F,
   convertProcessed2Continuous = T,
   subImg_rename = NULL,
-  subImg_Coords = NULL
+  subImg_Coords = NULL,
+  fixBrokenUUID = F
 )
 }
 \arguments{
@@ -33,7 +34,9 @@ import_imzML(
 
 \item{subImg_rename}{alternative image name, new rMSI files will be created with the given name.}
 
-\item{subImg_Coords}{a Complex vector with the motors coordinates to be included in the rMSI data.
+\item{subImg_Coords}{a Complex vector with the motors coordinates to be included in the rMSI data.}
+
+\item{fixBrokenUUID}{set to FALSE by default to automatically fix an uuid mismatch between the ibd and the imzML files (a warning message will be raised).
 
  Imports an imzML image to an rMSI data object.
  It is recomanded to use rMSI2::LoadMsiData directly instead of this function.}
