@@ -107,7 +107,8 @@ ProcessImages <- function(proc_params,
                                    verifyChecksum = verifyImzMLChecksums, 
                                    subImg_rename =  img_desc$name,  
                                    subImg_Coords = img_coords,
-                                   convertProcessed2Continuous = !data_description$data_is_peaklist)
+                                   convertProcessed2Continuous = !data_description$data_is_peaklist,
+                                   fixBrokenUUID = data_description$fixBrokenUUID)
   }
   
   # At this point, img_lst contains a list with all the images to process. If various images must be extracted form the same imzML file, then there will be an item for

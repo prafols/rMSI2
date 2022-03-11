@@ -159,6 +159,7 @@ ImportWizardGui <- function()
     UpdateParamListStruct()
     #Set the data_is_peaklist field
     this$ParamList$datadesc$setImzMLIsPeakList(gWidgets2::svalue(this$check_imzMLisPeakList))
+    this$ParamList$datadesc$setFixBrokenUUID(gWidgets2::svalue(this$check_imzMLfixBrokenUUID))
     gWidgets2::dispose(h$obj)
   }
   
@@ -296,6 +297,7 @@ ImportWizardGui <- function()
   frm_dataInput <-  gWidgets2::gframe( "Data Source", container =  box_mainV, expand = T, fill = T)
   box_dataInput <- gWidgets2::ggroup( horizontal = F, container = frm_dataInput, expand = T, fill = T)
   check_imzMLisPeakList <- gWidgets2::gcheckbox("ImzML files contain peaks-lists", checked = F, container = box_dataInput, handler = this$ChkBoxImzMLisPeakList)
+  check_imzMLfixBrokenUUID <- gWidgets2::gcheckbox("Fix broken UUID", checked = F, container = box_dataInput)
   browseMSIFile <- FileBrowseWidget( box_dataInput, setdir_fun = SetWorkingDir, getdir_fun = GetWorkingDir )
   
   #Set initial state properly

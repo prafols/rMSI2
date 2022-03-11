@@ -26,7 +26,8 @@ DataInfo <- setRefClass("DataInfo",
                           raw_data_path = "data.frame",
                           data_is_peaklist = "logical",
                           roi_list = "list",
-                          outputpath = "character"
+                          outputpath = "character",
+                          fixBrokenUUID = "logical"
                           ),
                          
                          #Constructor
@@ -35,6 +36,7 @@ DataInfo <- setRefClass("DataInfo",
                            {
                              raw_data_path <<- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("imzML", "subimage_roi_xml")) 
                              data_is_peaklist <<- F
+                             fixBrokenUUID <<- F
                              callSuper(..., raw_data_path = raw_data_path,  version = version)
                            })
                         )
@@ -146,6 +148,15 @@ DataInfo$methods(
   setImzMLIsPeakList = function(bIsPeakList)
   {
     data_is_peaklist <<- bIsPeakList
+  },
+  
+  
+ #' setFixBrokenUUID.
+ #' set to true if UUID in the ibd files must be fixed in case of a mismatch.
+ #'
+  setFixBrokenUUID = function(bFixBrokenUUID)
+  {
+    fixBrokenUUID <<- bFixBrokenUUID
   }
 )
 
