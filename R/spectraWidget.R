@@ -67,7 +67,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
 .SpectraPlotWidget <- function( parent_widget = gWidgets2::gwindow( "Default SpectraPlotWidget" , visible = FALSE ), top_window_widget = NULL,  clicFuntion = NULL, showOpenFileButton = T,
                                 display_sel_red = F, display_sel_green = F, display_sel_blue = F, display_sel_spins = T, display_clearall_button = F, max_spectra_limit = 50, useInternalRedrawTimer = T)
 {
-  options(guiToolkit="RGtk2") 
+  options(guiToolkit="tcltk") 
   oldWarning<-options()$warn
   options(warn = -1)
 
@@ -261,7 +261,8 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     if(!is.null(this$Spin_massSel))
     {
       gWidgets2::blockHandlers(this$Spin_massSel)
-      RGtk2::gtkSpinButtonSetRange( gWidgets2::getToolkitWidget( this$Spin_massSel),  this$data_mass_range[1],  this$data_mass_range[2] )
+      tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), from = this$data_mass_range[1])
+      tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), to = this$data_mass_range[2])
       gWidgets2::unblockHandlers(this$Spin_massSel)
     }
 
@@ -296,7 +297,8 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if(!is.null(this$Spin_massSel))
       {
         gWidgets2::blockHandlers(this$Spin_massSel)
-        RGtk2::gtkSpinButtonSetRange( gWidgets2::getToolkitWidget( this$Spin_massSel),  this$data_mass_range[1],  this$data_mass_range[2] )
+        tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), from = this$data_mass_range[1])
+        tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), to = this$data_mass_range[2])
         gWidgets2::unblockHandlers(this$Spin_massSel)
       }
     }
@@ -360,7 +362,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       gWidgets2::blockHandlers(this$Spin_TolSel)
       gWidgets2::svalue(this$Spin_massSel) <- mz_sel_spin
       gWidgets2::svalue(this$Spin_TolSel) <- mz_tol_spin
-      RGtk2::gtkSpinButtonSetIncrements( gWidgets2::getToolkitWidget( this$Spin_massSel), mz_tol_spin, mz_tol_spin)
+      tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), increment = mz_tol_spin)
       gWidgets2::unblockHandlers(this$Spin_massSel)
       gWidgets2::unblockHandlers(this$Spin_TolSel)
     }
@@ -828,7 +830,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     gWidgets2::blockHandlers(this$Spin_TolSel)
     gWidgets2::svalue(this$Spin_massSel) <- mzValue
     gWidgets2::svalue(this$Spin_TolSel) <- tolValue
-    RGtk2::gtkSpinButtonSetIncrements( gWidgets2::getToolkitWidget( this$Spin_massSel), tolValue, tolValue)
+    tcltk::tkconfigure(gWidgets2::getToolkitWidget(this$Spin_massSel), increment = tolValue) 
     gWidgets2::unblockHandlers(this$Spin_massSel)
     gWidgets2::unblockHandlers(this$Spin_TolSel)
 
@@ -963,7 +965,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     {
       c=RGtk2::gdkCursorNew("GDK_BASED_ARROW_DOWN")
     }
-    gWidgets2::getToolkitWidget(this$plot_device)$getWindow()$setCursor(c)
+    gWidgets2::getToolkitWidget(this$plot_device)$getWindow()$setCursor(c) #TODO this is probably going to crash...
   }
 
   #Set the tool to use externally, can be: Zoom, Red, Green or Blue

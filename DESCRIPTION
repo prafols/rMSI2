@@ -16,6 +16,8 @@ Depends:
     R (>= 3.6),
     methods,
     gWidgets2 (>= 1.0),
+    gWidgets2tcltk (>= 1.0),
+    tkrplot,
     RGtk2 (>= 2.20.25),
     cairoDevice (>= 2.22),
     gWidgets2RGtk2 (>= 1.0)
