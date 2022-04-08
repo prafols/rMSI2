@@ -16,11 +16,13 @@ RGtk2 is not available anymore as a binary package easy to install from CRAN to 
 
 ![alt text](https://github.com/prafols/rMSI2/blob/main/guides/images/Screenshot_installingR.png "R 4.0.5 Installation")
 
-4. In Windows it is needed to install Rtools in order to be able to complie rMSI2 package from source. You can get it from here: TODO.. While installing Rtools ensure you select the option to set the system path (see the screenshot below) otherwise the installtion of rMSI2 may not work.
+4. In Windows it is needed to install Rtools in order to be able to complie rMSI2 package from source. You can get it from here: [get Rtools for R 4.0](https://cran.r-project.org/bin/windows/Rtools/rtools40.html "Rtools"). Follow the procedure described in Rtools site in order to correctely configure your PATH.
 
-5. Finally we are ready to execute the script that is going to automatically pull the RGtk2 dependencies for Windows. Just run the following command in your R console:
- 
- Then... source!
+5. Finally we are ready to execute the script that is going to automatically pull all RGtk2 dependencies for Windows. Just run the following command in your R console:
+
+```R
+> source("https://raw.githubusercontent.com/prafols/rMSI2/main/guides/installing_RGtk2_win.R")
+```
 
 * ##### Instructions for Linux users
 Gtk2 is a graphical library that comes pre-installed in almost any Linux distribution and therefore it is really straight forward to get rMSI2 working on a Linux machine. If you already have a working R environment on Linux, nothing special has to be made before installing rMSI2. No special version of R is needed on Linux, just continure reading to the next step.
