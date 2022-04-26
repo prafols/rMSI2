@@ -37,13 +37,20 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   if( !exists( x = ".SpectraWidget", mode = "environment") )
   {
     #Spectra plot windows does not exists, create it
-    window_spectra <- gWidgets2::gwindow ( "Spectra Plot" , visible = F , width = 750, height = 440)
+    options(guiToolkit="tcltk") #force to use tcltk
+    oldWarning<-options()$warn
+    options(warn = -1)
+    
+    window_spectra <- gWidgets2::gwindow ( "Spectra Plot" , visible = FALSE, width = 750, height = 440)
     .SpectraWidget<<-.SpectraPlotWidget( parent_widget = window_spectra )
     gWidgets2::addHandlerDestroy( obj = window_spectra, handler = .plotSpectraWindow_Disposed )
 
     #window_spectra$widget$present()
     gWidgets2::visible(window_spectra) <- T
-
+    
+    #Restore warnings level
+    options(warn = oldWarning)
+    rm(oldWarning)
   }
 
   if( !is.null(mass) && !is.null(intensity) )
@@ -92,7 +99,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   clicFun <- clicFuntion
   rm(clicFuntion)
   AnteriorClickMz <- 0
-  plot_device <- 0
+  plot_device <- NULL
   radio_buttons <- 0
   lbl_mz_coords <- 0
   lbl_in_coords <- 0
@@ -377,81 +384,93 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   {
     if( this$ReDraw )
     {
-      #Redraw parent MS image if necessari
-      if( !is.null( this$clicFun ))
+      redrawPlotWidget(this$plot_device)
+    }
+    this$ReDraw <- F
+  }
+  
+  #Redraw
+  ReDrawPlot <- function()
+  {
+    #Redraw parent MS image if necessari
+    if( !is.null( this$clicFun ))
+    {
+      ReDrawParentMSI()
+    }
+    
+    #Reduce spectra data size to speed-up ploting
+    mass_range <- this$mz_lim
+    if(is.null(this$plot_device))
+    {
+      npoints <- 10000 #in init condition the widget is still not avaialble so I cannot get its size! So I use a default size of 10000
+    }
+    else
+    {
+      npoints <- 10*as.numeric(tcltk::tkwinfo("width", this$plot_device)) 
+    }
+    
+    #Visible before plot() forces the target divice for ploting
+    par(mar = c(3.1, 5.1, 0.5, 0.5), cex = 0.7, xaxs = "i", yaxs = "i")
+    
+    #Init Plot
+    #i_axt<-pretty(this$in_lim[1]:this$in_lim[2], n = 5)
+    i_axt<-seq(from = this$in_lim[1], to = this$in_lim[2], length.out = 5)
+    plot(x=0, xlim = this$mz_lim, ylim = this$in_lim, type = "n", xlab = "", ylab ="", yaxt ="n")
+    axis(2, at = i_axt, labels = sprintf("%.2e",i_axt), las = 1)
+    
+    #Draw ref masses as vertical lines
+    if(!is.null(this$ref_mass))
+    {
+      abline(v = this$ref_mass, col = "grey", lty = 2)
+    }
+    
+    #Plot selection range Red
+    if(!is.na(this$SelIon_mz_R) && !is.na(this$SelIon_tol_R))
+    {
+      rect(xleft = this$SelIon_mz_R - this$SelIon_tol_R, xright = this$SelIon_mz_R + this$SelIon_tol_R, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightsalmon", border = "red3")
+    }
+    
+    #Plot selection range Green
+    if(!is.na(this$SelIon_mz_G) && !is.na(this$SelIon_tol_G))
+    {
+      rect(xleft = this$SelIon_mz_G - this$SelIon_tol_G, xright = this$SelIon_mz_G + this$SelIon_tol_G, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightgreen", border = "green3")
+    }
+    
+    #Plot selection range Blue
+    if(!is.na(this$SelIon_mz_B) && !is.na(this$SelIon_tol_B))
+    {
+      rect(xleft = this$SelIon_mz_B - this$SelIon_tol_B, xright = this$SelIon_mz_B + this$SelIon_tol_B, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightblue", border = "blue3")
+    }
+    
+    if(length(this$spectra_data) > 0)
+    {
+      for(li in 1:length(this$spectra_data))
       {
-          ReDrawParentMSI()
-      }
-
-      #Reduce spectra data size to speed-up ploting
-      mass_range <- this$mz_lim
-      npoints <- 10*gWidgets2::size(this$plot_device)["width"]
-
-      #Visible before plot() forces the target divice for ploting
-      visible(this$plot_device)<-TRUE
-      par(mar = c(3.1, 5.1, 0.5, 0.5), cex = 0.7, xaxs = "i", yaxs = "i")
-
-      #Init Plot
-      #i_axt<-pretty(this$in_lim[1]:this$in_lim[2], n = 5)
-      i_axt<-seq(from = this$in_lim[1], to = this$in_lim[2], length.out = 5)
-      plot(x=0, xlim = this$mz_lim, ylim = this$in_lim, type = "n", xlab = "", ylab ="", yaxt ="n")
-      axis(2, at = i_axt, labels = sprintf("%.2e",i_axt), las = 1)
-
-      #Draw ref masses as vertical lines
-      if(!is.null(this$ref_mass))
-      {
-        abline(v = this$ref_mass, col = "grey", lty = 2)
-      }
-
-      #Plot selection range Red
-      if(!is.na(this$SelIon_mz_R) && !is.na(this$SelIon_tol_R))
-      {
-        rect(xleft = this$SelIon_mz_R - this$SelIon_tol_R, xright = this$SelIon_mz_R + this$SelIon_tol_R, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightsalmon", border = "red3")
-      }
-
-      #Plot selection range Green
-      if(!is.na(this$SelIon_mz_G) && !is.na(this$SelIon_tol_G))
-      {
-        rect(xleft = this$SelIon_mz_G - this$SelIon_tol_G, xright = this$SelIon_mz_G + this$SelIon_tol_G, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightgreen", border = "green3")
-      }
-
-      #Plot selection range Blue
-      if(!is.na(this$SelIon_mz_B) && !is.na(this$SelIon_tol_B))
-      {
-        rect(xleft = this$SelIon_mz_B - this$SelIon_tol_B, xright = this$SelIon_mz_B + this$SelIon_tol_B, ybottom = this$in_lim[1], ytop = this$in_lim[2]*0.99, col = "lightblue", border = "blue3")
-      }
-
-      if(length(this$spectra_data) > 0)
-      {
-        for(li in 1:length(this$spectra_data))
+        if( this$spectra_data[[li]]$enabled)
         {
-          if( this$spectra_data[[li]]$enabled)
+          
+          #Plot the spectrum
+          plotData <- ReduceDataPointsC(this$spectra_data[[li]]$mass, this$spectra_data[[li]]$intensity, this$mz_lim[1], this$mz_lim[2], npoints)
+          lines(x = plotData$mass, y = plotData$intensity, col= this$spectra_data[[li]]$color)
+          if(length(plotData$mass) <= 200)
           {
-
-            #Plot the spectrum
-            plotData <- ReduceDataPointsC(this$spectra_data[[li]]$mass, this$spectra_data[[li]]$intensity, this$mz_lim[1], this$mz_lim[2], npoints)
-            lines(x = plotData$mass, y = plotData$intensity, col= this$spectra_data[[li]]$color)
-            if(length(plotData$mass) <= 200)
-            {
-              points(x = plotData$mass, y = plotData$intensity, col= this$spectra_data[[li]]$color, pch = 20)
-            }
-
-            #Plot labels
-            if( !is.null(this$spectra_data[[li]]$mass_peaks) && !is.null(this$spectra_data[[li]]$intensity_peaks) )
-            {
-              #cat(paste("Mz peaks:", this$spectra_data[[li]]$mass_peaks, "int peaks:", this$spectra_data[[li]]$intensity_peaks, "\n"))
-              pk_lbl <- sprintf("%.4f", this$spectra_data[[li]]$mass_peaks) #4 decimals
-              text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = pk_lbl, pos = 3, cex = 0.8, offset = 1.1)
-              un_lbl<-sapply(pk_lbl, function(x) { paste(rep("_", nchar(x)), collapse = "") })
-              text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = un_lbl, pos = 3, cex = 0.8, offset = 1.1)
-              text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = rep("|", length(pk_lbl)), pos = 3, cex = 0.8)
-            }
+            points(x = plotData$mass, y = plotData$intensity, col= this$spectra_data[[li]]$color, pch = 20)
+          }
+          
+          #Plot labels
+          if( !is.null(this$spectra_data[[li]]$mass_peaks) && !is.null(this$spectra_data[[li]]$intensity_peaks) )
+          {
+            #cat(paste("Mz peaks:", this$spectra_data[[li]]$mass_peaks, "int peaks:", this$spectra_data[[li]]$intensity_peaks, "\n"))
+            pk_lbl <- sprintf("%.4f", this$spectra_data[[li]]$mass_peaks) #4 decimals
+            text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = pk_lbl, pos = 3, cex = 0.8, offset = 1.1)
+            un_lbl<-sapply(pk_lbl, function(x) { paste(rep("_", nchar(x)), collapse = "") })
+            text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = un_lbl, pos = 3, cex = 0.8, offset = 1.1)
+            text(x = this$spectra_data[[li]]$mass_peaks, y = this$spectra_data[[li]]$intensity_peaks, labels = rep("|", length(pk_lbl)), pos = 3, cex = 0.8)
           }
         }
       }
-      this$SetStateAccordingSelTool()
     }
-    this$ReDraw <- F #Reset the redraw signaling
+    this$SetStateAccordingSelTool()
   }
 
   #OpenTXT
@@ -510,25 +529,23 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   }
 
   #Grab Mouse Selection Changes on plot
-  OnSelection <- function( evt, ... )
+  OnSelection <- function( x ,y )
   {
     if(length(this$spectra_data) == 0) return()
     if(this$CurrentSelTool == "Zoom")
     {
-      if(abs(evt$x[1] - evt$x[2]) > 0.1)
+      if(abs(x[1] - x[2]) > 0.1)
       {
         #Mz zooming
-        this$ZoomMzRange(min(evt$x), max(evt$x))
+        this$ZoomMzRange(min(x), max(x))
       }
     }
     else
     {
-      top_left <- min(evt$x)
-      top_right <- max(evt$x)
+      top_left <- min(x)
+      top_right <- max(x)
       mz_tol <-(top_right - top_left)/2
       mz_sel <- top_left + mz_tol
-      #mz_tol<-round(mz_tol, digits = 2) #TODO do not round! this fails for high res data!
-      #mz_sel<-round(mz_sel, digits = 2)
       mz_tol<-max(mz_tol, 0)
 
       #Use the tolerance spin if the spectrum was just clicked
@@ -541,7 +558,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if( length(this$spectra_data) == 0)
       {
         cat("No spectra to select\n")
-        return(TRUE)
+        return()
       }
       
       dpSelL <- which.min(abs(this$spectra_data[[1]]$mass - (mz_sel - mz_tol)))
@@ -549,7 +566,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if(( dpSelR - dpSelL ) > this$MAX_MASS_SEL_RANGE )
       {
         cat(paste("Ion selection in a range of", mz_tol*2, "Da has been aborted. To large data sector.\n"))
-        return(TRUE)
+        return()
       }
 
       if(this$CurrentSelTool == "Red")
@@ -573,23 +590,21 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       #Plot selection in spectra
       this$ReDraw <- T #Signal a redraw request, redraw will be performed on the next timer interrupt
     }
-
-    return(TRUE)
   }
 
   #Grab mouse cursor on plot
-  OnMouseMotion <- function( evt, ... )
+  OnMouseMotion <- function( x, y )
   {
     if(length(this$spectra_data) == 0) return()
 
     #Update Labels
-    if(evt$x >= this$mz_lim[1] &&
-       evt$x <= this$mz_lim[2] &&
-       evt$y >= this$in_lim[1] &&
-       evt$y <= this$in_lim[2])
+    if(x >= this$mz_lim[1] &&
+       x <= this$mz_lim[2] &&
+       y >= this$in_lim[1] &&
+       y <= this$in_lim[2])
     {
-      mz_txt<-sprintf(paste("%-",this$LABEL_LENGTH, ".4f", sep = ""), evt$x)
-      in_txt<-sprintf(paste("%-",this$LABEL_LENGTH, ".2e", sep = ""), evt$y)
+      mz_txt<-sprintf(paste("%-",this$LABEL_LENGTH, ".4f", sep = ""), x)
+      in_txt<-sprintf(paste("%-",this$LABEL_LENGTH, ".2e", sep = ""), y)
     }
     else
     {
@@ -597,16 +612,15 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     }
     this$lbl_mz_coords$set_value(mz_txt)
     this$lbl_in_coords$set_value(in_txt)
-    return(TRUE)
   }
 
   #Zoom on spectra plot handler
-  ScrollEventOnSpectra <- function( obj, evt, ... )
+  ScrollEventOnSpectra <- function( direction, x, y )
   {
+    
     if(length(this$spectra_data) == 0) return()
 
-    dir<- as.double(evt$direction)
-    dir<-dir*(-2) + 1 # 1 is up, -1 is down
+    dir<- as.double(direction)
     mz_min<-this$data_mass_range[1]
     mz_max<-this$data_mass_range[2]
 
@@ -637,11 +651,8 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     else if(this$MouseWheelFunction == 1)
     {
       #Mz zooming
-      m <- (this$mz_lim[2] - this$mz_lim[1])/(gWidgets2::size(this$plot_device)["width"] - this$PLOT_MARGIN_RIGHT - this$PLOT_MARGIN_LEFT)
-      n <- this$mz_lim[1] - (m*this$PLOT_MARGIN_LEFT)
-      pointer.x<- m*evt$x + n
-      top_left <- pointer.x -  abs(0.1 + dir)*(pointer.x - this$mz_lim[1])
-      top_right <- pointer.x + abs(0.1 + dir)*(this$mz_lim[2] - pointer.x)
+      top_left <- x -  abs(0.1 + dir)*(x - this$mz_lim[1])
+      top_right <- x + abs(0.1 + dir)*(this$mz_lim[2] - x)
       top_left<-max(top_left, mz_min)
       top_right<-min(top_right, mz_max)
       this$mz_lim<- c(top_left, top_right)
@@ -655,28 +666,26 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     }
 
     this$ReDraw <- T #Signal a redraw request, redraw will be performed on the next timer interrupt
-
-    return(TRUE) #The scroll event requires this return
   }
 
   #Key Press handler
-  OnKeyPress <- function( evt, ... )
+  OnKeyPress <- function( K )
   {
-    if(evt[[4]][["keyval"]] == 65507)
+    if( K == "Control_L" || K == "Control_R" )
     {
       if(this$MouseWheelFunction == 0)
       {
         this$MouseWheelFunction<-1
       }
     }
-    else if(evt[[4]][["keyval"]] == 65505)
+    else if( K == "Shift_L" || K == "Shift_R" )
     {
       if(this$MouseWheelFunction == 0)
       {
         this$MouseWheelFunction<-2
       }
     }
-    else if(evt[[4]][["keyval"]] == 114)
+    else if( K == "r" || K == "R" )
     {
       #r key press
       if(!is.null(this$Btn_SelRedTool))
@@ -685,7 +694,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- T
       }
     }
-    else if(evt[[4]][["keyval"]] == 103)
+    else if( K == "g" || K == "G" )
     {
       #g key press
       if(!is.null(this$Btn_SelGreenTool))
@@ -694,7 +703,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- T
       }
     }
-    else if(evt[[4]][["keyval"]] == 98)
+    else if( K == "b" || K == "B" )
     {
       #b key press
       if(!is.null(this$Btn_SelBlueTool))
@@ -703,27 +712,26 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- T
       }
     }
-    return(FALSE) #The key event requires this return to allow keyboard continue working for other widgets as spin buttons
   }
 
   #Key Release handler
-  OnKeyRelease <- function( evt, ... )
+  OnKeyRelease <- function( K )
   {
-    if(evt[[4]][["keyval"]] == 65507)
+    if( K == "Control_L" || K == "Control_R" )
     {
       if(this$MouseWheelFunction == 1)
       {
         this$MouseWheelFunction<-0
       }
     }
-    else if(evt[[4]][["keyval"]] == 65505)
+    else if( K == "Shift_L" || K == "Shift_R" )
     {
       if(this$MouseWheelFunction == 2)
       {
         this$MouseWheelFunction<-0
       }
     }
-    else if(evt[[4]][["keyval"]] == 114)
+    else if( K == "r" || K == "R" )
     {
       #r key press
       if(!is.null(this$Btn_SelRedTool))
@@ -732,7 +740,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- F
       }
     }
-    else if(evt[[4]][["keyval"]] == 103)
+    else if( K == "g" || K == "G" )
     {
       #g key press
       if(!is.null(this$Btn_SelGreenTool))
@@ -741,7 +749,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- F
       }
     }
-    else if(evt[[4]][["keyval"]] == 98)
+    else if( K == "b" || K == "B" )
     {
       #b key press
       if(!is.null(this$Btn_SelBlueTool))
@@ -750,14 +758,12 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$UsingRGBKeyOnKeyboard <- F
       }
     }
-    return(FALSE) #The key event requires this return to allow keyboard continue working for other widgets as spin buttons
   }
 
   #Windows lost focuts, used to restore zoom status
-  OnLostFocus <- function( evt, ... )
+  OnLostFocus <- function( )
   {
     this$MouseWheelFunction<-0
-    return(TRUE) #This event requires this return
   }
 
   #Clear all spectra button click
@@ -788,10 +794,10 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       #Set ion manually selection visibility
       if(!is.null(this$Spin_massSel))
       {
-        gWidgets2::visible(Lbl_massSel) <- F
-        gWidgets2::visible(Spin_massSel) <- F
-        gWidgets2::visible(Lbl_TolSel) <- F
-        gWidgets2::visible(Spin_TolSel) <- F
+        gWidgets2::enabled(Lbl_massSel) <- F
+        gWidgets2::enabled(Spin_massSel) <- F
+        gWidgets2::enabled(Lbl_TolSel) <- F
+        gWidgets2::enabled(Spin_TolSel) <- F
       }
     }
     else #Check if all ara false and avoid such situation
@@ -835,10 +841,10 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     gWidgets2::unblockHandlers(this$Spin_TolSel)
 
     #Set ion manually selection visibility
-    gWidgets2::visible(Lbl_massSel) <- bVisible
-    gWidgets2::visible(Spin_massSel) <- bVisible
-    gWidgets2::visible(Lbl_TolSel) <- bVisible
-    gWidgets2::visible(Spin_TolSel) <- bVisible
+    gWidgets2::enabled(Lbl_massSel) <- bVisible
+    gWidgets2::enabled(Spin_massSel) <- bVisible
+    gWidgets2::enabled(Lbl_TolSel) <- bVisible
+    gWidgets2::enabled(Spin_TolSel) <- bVisible
   }
 
   #Red tool selected
@@ -957,15 +963,17 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
 
   SetStateAccordingSelTool <- function ()
   {
-    if (this$CurrentSelTool == "Zoom")
+    if(!is.null(this$plot_device))
     {
-      c=RGtk2::gdkCursorNew("GDK_SIZING")
+      if (this$CurrentSelTool == "Zoom")
+      {
+        tcltk::tkconfigure(this$plot_device, cursor = "target")
+      }
+      else
+      {
+        tcltk::tkconfigure(this$plot_device, cursor = "based_arrow_down")
+      }
     }
-    else
-    {
-      c=RGtk2::gdkCursorNew("GDK_BASED_ARROW_DOWN")
-    }
-    gWidgets2::getToolkitWidget(this$plot_device)$getWindow()$setCursor(c) #TODO this is probably going to crash...
   }
 
   #Set the tool to use externally, can be: Zoom, Red, Green or Blue
@@ -1076,7 +1084,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     Btn_RemoveSpectra<- gWidgets2::gbutton(text = "Clear all", handler = this$ClearSpectraClicked, action = this, container = Grp_Buttons)
   }
   Btn_ZoomTool <- gWidgets2::gcheckbox("Zoom", checked = T, handler = this$ZoomToolSel, container = Grp_Buttons, use.togglebutton = F)
-  gWidgets2::visible(Btn_ZoomTool) <- display_sel_red | display_sel_green | display_sel_blue #Only dispaly the zoom tool selector if at leas one sel. ion is visible
+  gWidgets2::enabled(Btn_ZoomTool) <- display_sel_red | display_sel_green | display_sel_blue #Only dispaly the zoom tool selector if at leas one sel. ion is enabled
 
   if( display_sel_red )
   {
@@ -1115,10 +1123,10 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     Spin_massSel <- gWidgets2::gspinbutton( from = 0, to = 1, value = 0, digits = 4, by = 0.1, container =  Grp_Buttons, handler = this$MassSelSpinChanged)
     Lbl_TolSel <- gWidgets2::glabel("+/-", container = Grp_Buttons)
     Spin_TolSel <- gWidgets2::gspinbutton( from = 0, to = 500, value = 0.1, digits = 4, by = 0.01, container =  Grp_Buttons, handler = this$TolSelSpinChanged)
-    gWidgets2::visible(Lbl_massSel) <- F
-    gWidgets2::visible(Spin_massSel) <- F
-    gWidgets2::visible(Lbl_TolSel) <- F
-    gWidgets2::visible(Spin_TolSel) <- F
+    gWidgets2::enabled(Lbl_massSel) <- F
+    gWidgets2::enabled(Spin_massSel) <- F
+    gWidgets2::enabled(Lbl_TolSel) <- F
+    gWidgets2::enabled(Spin_TolSel) <- F
   }
 
   gWidgets2::addSpring(Grp_Buttons)
@@ -1128,9 +1136,13 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   }
   rm(showOpenFileButton)
 
-  this$plot_device <- gWidgets2::ggraphics(  )
-  gWidgets2::size( this$plot_device )<- c(-1, 170)
-  gWidgets2::add(obj = Grp_Top, child = this$plot_device, expand = T, fill = T)
+  plot_device <-createPlotWidget(parent = Grp_Top, 
+                                      redraw_function = this$ReDrawPlot,
+                                      MouseSelection_callback = OnSelection,
+                                      MouseWheel_callback = this$ScrollEventOnSpectra, 
+                                      MouseHover_callback = this$OnMouseMotion, 
+                                      initial_width = 800, 
+                                      initial_height = 170 ) 
 
   Grp_BottomLabel<-gWidgets2::ggroup(horizontal = T, container = Grp_Top)
   lbl_help_info<-gWidgets2::glabel(" Mouse wheel -> m/z scroll\n Ctrl + Mouse wheel -> m/z zooming\n Shift + Mouse Wheel -> intensity scaling", container = Grp_BottomLabel)
@@ -1145,14 +1157,11 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   gWidgets2::font(lbl_int)<-list(family = "monospace", weight = "light", size = 8)
   gWidgets2::font(lbl_help_info)<-list(family = "monospace", weight = "light", size = 8)
 
-  #Signal handlers
-  scroll_event_id <- RGtk2::gSignalConnect( gWidgets2::getToolkitWidget(this$plot_device),  signal = "scroll-event", f = this$ScrollEventOnSpectra, data = this )
-  gWidgets2::addHandler(this$top_window, signal = "key-press-event", handler = this$OnKeyPress, action = this)
-  gWidgets2::addHandler(this$top_window, signal = "key-release-event", handler = this$OnKeyRelease, action = this)
-  gWidgets2::addHandler(this$top_window, signal = "focus-out-event", handler = this$OnLostFocus, action = this)
-  gWidgets2::addHandlerMouseMotion(this$plot_device, handler = this$OnMouseMotion)
-  gWidgets2::addHandlerSelectionChanged(this$plot_device, handler = this$OnSelection, action = this)
-
+  #TclTk specific signal handlers
+  tcltk::tkbind("all", "<KeyPress>", this$OnKeyPress )
+  tcltk::tkbind("all", "<KeyRelease>", this$OnKeyRelease )
+  tcltk::tkbind(plot_device, "<Leave>", this$OnLostFocus )
+  
   #Start the redraw timer
   if(useInternalRedrawTimer)
   {
