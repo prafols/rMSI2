@@ -20,7 +20,7 @@
 
 .MSImagePlotWidget <- function( in_img, parent_widget=gwindow ( "Default MSImagePlotWidget" , visible = FALSE ), AddSpectra_function = NULL, GetSpectraInfo_function = NULL, ClearSpectraPlot_function = NULL, meanSpectrumColor = "red", widget_name = "")
 {
-  options(guiToolkit="RGtk2") 
+  options(guiToolkit="tcltk") 
   oldWarning<-options()$warn
   options(warn = -1)
 
@@ -116,7 +116,7 @@
 
   RedrawMSImage <-function()
   {
-    visible(this$imaging_dev)<-TRUE
+    visible(this$imaging_dev)<-TRUE #TODO look for all visibles, these are not going to work on tcltk...
     .plotMassImageRGB (this$plotting_raster, cal_um2pixels = this$img$pixel_size_um,  rotation = this$Rotation, flipV = this$flipV, flipH = this$flipH,
                          display_axes = F, roi_rectangle =  this$ROI, zoom = this$ZOOM_win, border = this$GUI_RASTER_BORDER)
   }
@@ -394,7 +394,7 @@
 
   }
 
-  OnPixelSelection <- function( evt, ...)
+  OnPixelSelection <- function( evt, ...) #TODO look for all evt, args that are specific to the plotting device!
   {
     X_left<-round(min(evt$x)) - this$GUI_RASTER_BORDER
     X_right<-round(max(evt$x)) - this$GUI_RASTER_BORDER
@@ -809,6 +809,8 @@
   Y<-0
   Tbl_spotList<-gWidgets2::gtable( data.frame(ID,X,Y, Colour = meanSpectrumColor), container = Grp_Tbl, multiple = T, chosen.col = 1)
   size( Tbl_spotList )<- c(120, -1)
+  
+  #TODO all table rendering is not compatible with tcltk! But, it seams th gtbale is available in gwidgets and I can set colors in tcltk... so It should be able to work..
   ##Set table style using colors
   RGtk2::gtkTreeViewSetGridLines(getToolkitWidget(Tbl_spotList), as.integer(3))
   RGtk2::gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0),
@@ -838,9 +840,9 @@
   RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CW.png") )
 
   Btn_flipV <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipV)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipV.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipV.png") ) #TODO use a tcltk label with the image instead...
   Btn_flipH <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipH)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipH.png") )
+  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipH.png") )  #TODO use a tcltk label with the image instead...
 
   Lbl_Xres<- gWidgets2::glabel(text = "Interpolation:", container = Grp_Buttons)
   Combo_Xres <- gWidgets2::gcombobox( items = c("x1","x2","x3","x4","x5"), selected = 2, container = Grp_Buttons, handler = this$ComboBox_XRes_Changed)
@@ -854,7 +856,7 @@
 
   Grp_ImgTop<-gWidgets2::ggroup( horizontal = T, container =  Grp_TopImg,  fill = T, expand = T)
   Grp_ImgRoi<-gWidgets2::ggroup( horizontal = F, container =  Grp_ImgTop,  fill = T, expand = T)
-  imaging_dev <- gWidgets2::ggraphics(spacing = 5 )
+  imaging_dev <- gWidgets2::ggraphics(spacing = 5 ) #TODO replace with my plotting widget
   gWidgets2::size( imaging_dev )<- c(200, 200)
   gWidgets2::addHandlerSelectionChanged( imaging_dev, handler = this$OnPixelSelection, action = this)
   gWidgets2::add(obj = Grp_ImgRoi, child = imaging_dev,  fill = T, expand = T)
@@ -867,7 +869,7 @@
 
   #Red Color Scale
   Grp_RedScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleRed_dev <- gWidgets2::ggraphics(spacing = 5 )
+  scaleRed_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
   gWidgets2::size( scaleRed_dev )<- c(100, -1)
   gWidgets2::add(obj = Grp_RedScale, child = scaleRed_dev,  fill = T, expand = T)
   Grp_RedCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_RedScale)
@@ -876,7 +878,7 @@
 
   #Green Color scale
   Grp_GreenScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleGreen_dev <- gWidgets2::ggraphics(spacing = 5 )
+  scaleGreen_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
   gWidgets2::size( scaleGreen_dev )<- c(100, -1)
   gWidgets2::add(obj = Grp_GreenScale, child = scaleGreen_dev,  fill = T, expand = T)
   Grp_GreenCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_GreenScale)
@@ -885,8 +887,8 @@
 
   #Blue Color scale
   Grp_BlueScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleBlue_dev <- gWidgets2::ggraphics(spacing = 5 )
-  gWidgets2::size( scaleBlue_dev )<- c(100, -1)
+  scaleBlue_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
+  gWidgets2::size( scaleBlue_dev )<- c(100, -1) 
   gWidgets2::add(obj = Grp_BlueScale, child = scaleBlue_dev,  fill = T, expand = T)
   Grp_BlueCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_BlueScale)
   Btn_BlueEnable<-gWidgets2::gcheckbox("On", container = Grp_BlueCtl, use.togglebutton = T, checked = F, handler = this$IntensityScale_EnableClicked, action = "B")
