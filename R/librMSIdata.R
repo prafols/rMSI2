@@ -960,6 +960,7 @@ Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NUL
   CimzMLBinCreateNewIBD(paste0(output_data_file, ".ibd"), newUUID)
   
   pb <- txtProgressBar(min = 0, max = nrow(out_run_data), style = 3)
+  emptyPixels <- c()
   for(i in 1:nrow(out_run_data))
   {
     mass <- CimzMLBinReadMass(path.expand(file.path(in_img$data$path, paste0(in_img$data$imzML$file, ".ibd"))),
@@ -978,29 +979,33 @@ Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NUL
     
     #Trim mass channel
     keepMassChannels <- which( (mass >= mass_min) & (mass <= mass_max)) 
-    if(length(keepMassChannels) == 0)
-    {
-      #TODO handle empty mass, maybe just delete the pixel and count it?
-      cat("TODO empty pixel!!!!")
-    }
-    else
+    if(length(keepMassChannels) > 0)
     {
       mass <- mass[keepMassChannels]
       intensity <- intensity[keepMassChannels]
+      
+      if(!in_img$data$imzML$continuous_mode || i == 1)
+      {
+        out_run_data$mzOffset[i] <- CimzMLBinAppendMass(paste0(output_data_file, ".ibd"), in_img$data$imzML$mz_dataType, mass )
+        out_run_data$mzLength[i] <- length(mass)
+      }
+      
+      out_run_data$intOffset[i] <- CimzMLBinAppendIntensity(paste0(output_data_file, ".ibd"), in_img$data$imzML$int_dataType, intensity )
+      out_run_data$intLength[i] <- length(intensity)  
     }
-    
-    if(!in_img$data$imzML$continuous_mode)
+    else
     {
-      out_run_data$mzOffset[i] <- CimzMLBinAppendMass(paste0(output_data_file, ".ibd"), in_img$data$imzML$mz_dataType, mass )
-      out_run_data$mzLength[i] <- length(mass)
+      emptyPixels <- c(emptyPixels, i)
     }
     
-    out_run_data$intOffset[i] <- CimzMLBinAppendIntensity(paste0(output_data_file, ".ibd"), in_img$data$imzML$int_dataType, intensity )
-    out_run_data$intLength[i] <- length(intensity)
-
     setTxtProgressBar(pb, i)
   }
   close(pb)
+  
+  if(length(emptyPixels) > 0)
+  {
+    out_run_data <- out_run_data[-emptyPixels,]
+  }
   
   cat("Calculating MD5 checksum...\n")
   checksum_md5 <- toupper(digest::digest( paste0(output_data_file, ".ibd"), algo = "md5", file = T))
