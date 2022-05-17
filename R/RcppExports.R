@@ -41,6 +41,34 @@ NULL
     .Call('_rMSI2_testingimzMLBinWriteSequential', PACKAGE = 'rMSI2', ibdFname, mz_dataTypeString, int_dataTypeString, str_uuid, mzArray, intArray)
 }
 
+#' CimzMLBinCreateNewIBD.
+#' This function creates a new ibd file with the provided uuid
+#' @param ibdFname: full path to the ibd file.
+#' @param uuid: 16 bytes long UUID.
+CimzMLBinCreateNewIBD <- function(ibdFname, str_uuid) {
+    invisible(.Call('_rMSI2_CimzMLBinCreateNewIBD', PACKAGE = 'rMSI2', ibdFname, str_uuid))
+}
+
+#' CimzMLBinAppendMass.
+#' This function appends a new mass axis to a given ibd file.
+#' The last added offset is returned.
+#' @param ibdFname: full path to the ibd file.
+#' @param mz_dataTypeString:  String to specify the data format used to encode m/z values.
+#' @param mzNew: The mass axis to append.
+CimzMLBinAppendMass <- function(ibdFname, mz_dataTypeString, mzNew) {
+    .Call('_rMSI2_CimzMLBinAppendMass', PACKAGE = 'rMSI2', ibdFname, mz_dataTypeString, mzNew)
+}
+
+#' CimzMLBinAppendIntensity.
+#' This function appends a new mass axis to a given ibd file.
+#' The last added offset is returned.
+#' @param ibdFname: full path to the ibd file.
+#' @param int_dataTypeString:  String to specify the data format used to encode m/z values.
+#' @param intNew: The mass axis to append.
+CimzMLBinAppendIntensity <- function(ibdFname, int_dataTypeString, intNew) {
+    .Call('_rMSI2_CimzMLBinAppendIntensity', PACKAGE = 'rMSI2', ibdFname, int_dataTypeString, intNew)
+}
+
 #' A method to use the imzMLwriter in modify mode to allow direct modification of mass axes for the calibration
 #' This function modifies data of an ibd file with the following params
 #' @param ibdFname: full path to the ibd file.

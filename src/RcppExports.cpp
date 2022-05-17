@@ -51,6 +51,43 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// CimzMLBinCreateNewIBD
+void CimzMLBinCreateNewIBD(const char* ibdFname, Rcpp::String str_uuid);
+RcppExport SEXP _rMSI2_CimzMLBinCreateNewIBD(SEXP ibdFnameSEXP, SEXP str_uuidSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const char* >::type ibdFname(ibdFnameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type str_uuid(str_uuidSEXP);
+    CimzMLBinCreateNewIBD(ibdFname, str_uuid);
+    return R_NilValue;
+END_RCPP
+}
+// CimzMLBinAppendMass
+uint64_t CimzMLBinAppendMass(const char* ibdFname, Rcpp::String mz_dataTypeString, Rcpp::NumericVector mzNew);
+RcppExport SEXP _rMSI2_CimzMLBinAppendMass(SEXP ibdFnameSEXP, SEXP mz_dataTypeStringSEXP, SEXP mzNewSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const char* >::type ibdFname(ibdFnameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type mz_dataTypeString(mz_dataTypeStringSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type mzNew(mzNewSEXP);
+    rcpp_result_gen = Rcpp::wrap(CimzMLBinAppendMass(ibdFname, mz_dataTypeString, mzNew));
+    return rcpp_result_gen;
+END_RCPP
+}
+// CimzMLBinAppendIntensity
+uint64_t CimzMLBinAppendIntensity(const char* ibdFname, Rcpp::String int_dataTypeString, Rcpp::NumericVector intNew);
+RcppExport SEXP _rMSI2_CimzMLBinAppendIntensity(SEXP ibdFnameSEXP, SEXP int_dataTypeStringSEXP, SEXP intNewSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const char* >::type ibdFname(ibdFnameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type int_dataTypeString(int_dataTypeStringSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type intNew(intNewSEXP);
+    rcpp_result_gen = Rcpp::wrap(CimzMLBinAppendIntensity(ibdFname, int_dataTypeString, intNew));
+    return rcpp_result_gen;
+END_RCPP
+}
 // CimzMLBinWriteModifyMass
 void CimzMLBinWriteModifyMass(const char* ibdFname, unsigned int NPixels, Rcpp::String mz_dataTypeString, Rcpp::String int_dataTypeString, bool continuous, Rcpp::NumericVector mzNew, uint64_t mzOffset);
 RcppExport SEXP _rMSI2_CimzMLBinWriteModifyMass(SEXP ibdFnameSEXP, SEXP NPixelsSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP continuousSEXP, SEXP mzNewSEXP, SEXP mzOffsetSEXP) {
@@ -483,6 +520,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
+    {"_rMSI2_CimzMLBinCreateNewIBD", (DL_FUNC) &_rMSI2_CimzMLBinCreateNewIBD, 2},
+    {"_rMSI2_CimzMLBinAppendMass", (DL_FUNC) &_rMSI2_CimzMLBinAppendMass, 3},
+    {"_rMSI2_CimzMLBinAppendIntensity", (DL_FUNC) &_rMSI2_CimzMLBinAppendIntensity, 3},
     {"_rMSI2_CimzMLBinWriteModifyMass", (DL_FUNC) &_rMSI2_CimzMLBinWriteModifyMass, 7},
     {"_rMSI2_CimzMLBinReadMass", (DL_FUNC) &_rMSI2_CimzMLBinReadMass, 6},
     {"_rMSI2_CimzMLBinReadIntensity", (DL_FUNC) &_rMSI2_CimzMLBinReadIntensity, 6},
