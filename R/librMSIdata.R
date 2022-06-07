@@ -978,8 +978,9 @@ Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NUL
                                       in_img$data$imzML$int_dataType, 
                                       in_img$data$imzML$continuous_mode)
     
-    #Trim mass channel
-    keepMassChannels <- which( ((mass >= mass_min) & (mass <= mass_max)) & (intensity >= intensity_trim) ) 
+    #Trim mass channel and intensity
+    intensity <- intensity - intensity_trim
+    keepMassChannels <- which( ((mass >= mass_min) & (mass <= mass_max)) & (intensity >= 0) ) 
     if(length(keepMassChannels) > 10) #At least 10 datapoints to be considered a non-empty spectrum
     {
       mass <- mass[keepMassChannels]
