@@ -912,9 +912,10 @@ ReadBrukerRoiXML <- function(img, xml_file)
 #' @param keepPixelIDs the pixel ID's to kept in the output imzML file.
 #' @param mass_min the minimum value of the output mass range.
 #' @param mass_max the maximum value of the output mass range.
+#' @param intensity_trim trim intensities below this value.
 #' @export
 #'
-Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NULL, mass_min = NULL, mass_max = NULL)
+Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NULL, mass_min = NULL, mass_max = NULL, intensity_trim = 0)
 {
   #TODO test this method with continuous data!
   
@@ -978,11 +979,12 @@ Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NUL
                                       in_img$data$imzML$continuous_mode)
     
     #Trim mass channel
-    keepMassChannels <- which( (mass >= mass_min) & (mass <= mass_max)) 
+    keepMassChannels <- which( (mass >= mass_min) & (mass <= mass_max) & (intensity >= intensity_trim) ) 
     if(length(keepMassChannels) > 0)
     {
       mass <- mass[keepMassChannels]
       intensity <- intensity[keepMassChannels]
+      
       
       if(!in_img$data$imzML$continuous_mode || i == 1)
       {

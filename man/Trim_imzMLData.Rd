@@ -9,7 +9,8 @@ Trim_imzMLData(
   output_data_file,
   keepPixelIDs = NULL,
   mass_min = NULL,
-  mass_max = NULL
+  mass_max = NULL,
+  intensity_trim = 0
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ Trim_imzMLData(
 \item{mass_min}{the minimum value of the output mass range.}
 
 \item{mass_max}{the maximum value of the output mass range.}
+
+\item{intensity_trim}{trim intensities below this value.}
 }
 \description{
 Create a partial copy of an imZML file by coping only the data that matches the mass and pixel ID filters.

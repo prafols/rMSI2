@@ -6,9 +6,6 @@
 \usage{
 ImzMLDataDescription()
 }
-\value{
-
-}
 \description{
 Create an empty DataInfo object to latter fill it.
 }
