@@ -1,0 +1,315 @@
+---
+title: "rMSI2-Workshop"
+author: "Pere Rafols"
+date: '2022-06-06'
+output: html_document
+---
+
+## Demo data
+This R markdown script show the fundamentals of rMSI2 data visualization and processing. The demo MSI data used here can be obtained in the link below:
+[RAW data imzML file](http://gofile.me/3VACP/9fCg0TRSB)
+[RAW data ibd file](http://gofile.me/3VACP/AIwy9LKR3)
+[Multiple tissues peak matrix](http://gofile.me/3VACP/PkWMyQpy1)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Start by setting the data_path variable pointing to the folder containing the demo data in your computer.
+data_path <- "~/MSI_DATASETS/rMSI2_workshop"
+```
+
+## Inspecting MSI data
+
+We start by loading the raw data (profile mode) to inspect it in rMSI2. To load an imzML file in rMSI2 we use the LoadMsiData() method. We recommend preceding each rMSI2's method invocation with rMSI2:: prefix to avoid calling methods with the same name from another package (like the old rMSI and rMSIproc packages).
+```{r }
+raw <- rMSI2::LoadMsiData(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")) #This will take 40 seconds
+```
+
+Next, we can launch the rMSI2 graphical user interface (GUI) to visualize the MSI data.
+Note that the `eval = FALSE` parameter is used in this markdown scripts when calling GUI methods. This allows us to produce reports in html or pdf formats without calling the GUI.
+```{r, eval=FALSE}
+rMSI2::MSIWindow(raw)
+```
+
+Alternatively, we can use a GUI method to load the data in a user-friendly way.
+```{r, eval=FALSE}
+raw <- rMSI2::OpenMSI()$img1
+```
+
+## rMSIObj data structure
+The following lines display the basic data structure used to handle the MSI data.
+```{r, echo=FALSE}
+#The name of the dataset
+cat("Dataset name:\n")
+raw$name
+
+#The number of pixels in X and Y directions
+cat("\nImage size:\n")
+raw$size 
+
+#The pixel size (spatial resolution) in micrometers
+cat("\nPixel size:\n")
+raw$pixel_size_um 
+
+#The common mass axis to the whole dataset
+cat("\nMass axis:\n")
+head(raw$mass) 
+
+#The average spectrum
+cat("\nAverage spectrum:\n")
+head(raw$mean) 
+
+#The pixel coordinates for each spectrum in the dataset
+cat("\nPixel coordinates:\n")
+head(raw$pos)
+
+#We can get the total number of pixels in an image using the pos matrix:
+cat("\nTotal number of pixel:\n")
+nrow(raw$pos)
+
+#The intensity normalization values are stored in a data frame
+cat("\nIntensity Normalization values\n")
+head(raw$normalizations)
+
+#The "data" field points to the actual spectral data and to the ion image stream. 
+#This field is not designed for end-user usage. Instead, use the rMSI2 methods to access the desired data.
+cat("\nThe data field\n")
+summary(raw$data) 
+```
+
+## Processing MSI data
+
+The rMSI2 processing workflow can be called using a GUI or pragmatically. Most users will probably prefer the GUI since it makes easier to set the processing parameters. 
+```{r, eval=FALSE}
+rMSI2::ProcessWizard() #GUI to execute the complete rMSI2 processing workflow
+```
+
+But, it may be very convenient to set the processing parameters withing an R script to automate things.
+```{r, eval=FALSE}
+proc_params <- rMSI2::ProcessingParameters() #Create a processing parameters object prefilled with the default settings.
+proc_params$preprocessing$smoothing$kernelSize <- as.integer(5) #Set the smoothing Savitzky–Golay kernel size to 5
+proc_params$preprocessing$peakpicking$SNR <- 3 #Set the SNR threshold
+proc_params$preprocessing$peakpicking$WinSize <- as.integer(10) #Set the window size to roughly the peak width 
+proc_params$preprocessing$peakbinning$tolerance <- as.integer(4) #Set the binning tolerance to avoid merging peaks from different species
+
+data_desc <- rMSI2::ImzMLDataDescription() #Create an empty data description object
+data_desc$setOutputPath(file.path(data_path,"out")) #Set the output data path
+data_desc$appendImzMLDataPath(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")) #Append an imzML to process. We can call this method multiple times to append more imzML file to the same processing pipeline (data merging).
+
+rMSI2::ProcessImages( proc_params, data_desc ) # This will take 2 minutes
+```
+
+Note that the `eval = FALSE` parameter is used when executing the workflow processing methods to prevent executing the whole processing each time we want to generate a report.
+
+## Working with the peak matrix
+
+After completing the data processing, we obtain a peak matrix file (.pkmat file extension). To present the peak matrix object, we will use a dataset consisting of eight mouse brain tissue sections that were combined in a single peak matrix. This dataset was acquired in a TOF spectrometer using a sputtered gold nanolayer to promote the LDI process.
+
+First, the peak matrix object must be loaded in R's memory:
+```{r}
+pks <- rMSI2::LoadPeakMatrix(file.path(data_path,"MultipleBrainsPeakMatrix.pkmat"))
+print(pks) #The print command shows us the peak matrix dimensions and its memory usage
+```
+The peak matrix follows a format similar to the MSI images data. The following code shows the basics:
+```{r, echo=FALSE}
+#The name of the MSI data used to construct the peak matrix. 
+#Since the peak matrix can result from the merging of multiple images, we may have various names in this field.
+cat("Datasets names:\n")
+pks$names
+
+#In the same sense as the names field, we have a vector with the total number of pixels contained in each image.
+cat("\nDatasets number of pixels:\n")
+pks$numPixels
+
+#Similarly to the rMSIObj  the pos field contains the pixel coordinates of each observation. 
+#Here, the coordinates of multiple images are combined in a single matrix.
+cat("\nPixels coordinates:\n")
+head(pks$pos)
+
+#The binned peak masses common to the whole dataset.
+#These masses may be used to assign each matrix column to a specific compound.
+cat("\nBinned masses:\n")
+head(pks$mass)
+
+#The results of the peak picking are stored in three matrices of the same dimensions:
+#- intensity: stores the peak maximum value recorded at the mass centroid position.
+cat("\nIntensity matrix:\n")
+head(pks$intensity[,1:4], n = 3) #Just showing the first 4 columns
+
+#- area: stores the integrated area below the peak shape.
+cat("\nArea matrix:\n")
+head(pks$area[,1:4], n = 3) #Just showing the first 4 columns
+
+#- SNR: stores the SNR detected for each peak. A given peak may show a SNR value of zero, indicating that the peak actually had an SNR value below the specified #SNR threshold, but then it was retrieved by the fill peaks algorithm.
+cat("\nSNR matrix:\n")
+head(pks$SNR[,1:4], n = 3) #Just showing the first 4 columns
+
+#The intensity normalization values from the MSI data are combined into a unified data.frame.
+cat("\nNormalization values:\n")
+head(pks$normalizations)
+```
+
+## Basic operations using the peak matrix
+
+First, it is very handy to directly inspect ion images from the peak matrix:
+```{r, warning=FALSE}
+#Ion images can be plotted, specified the approximate ion mass we are interested in:
+rMSI2::plotPeakImage(pks, mz = 832)
+
+#We can tune some plotting parameters to control the appearance
+rMSI2::plotPeakImage(pks, mz = 832, rotations = c(90, 90, 90, -90, 90, 90, 90, -90), labels = paste0("img", 1:8))
+
+#We can specify an intensity normalization for the plotting
+rMSI2::plotPeakImage(pks, mz = 832, rotations = c(90, 90, 90, -90, 90, 90, 90, -90), labels = paste0("img", 1:8), normalization = "TIC")
+```
+
+Secondly, we can create peak matrices subsets using the `[ , ]` standard R operator:
+```{r, warning=FALSE}
+#Create a subset, containing only the first ten pixels of the peak matrix
+pksSubset <- pks[1:100, ]
+rMSI2::plotPeakImage(pksSubset, mz = 832, labels = "Subset 100 pixels")
+
+#Create a subset, containing only the first ten masses of the peak matrix
+pksSubset <- pks[, 1:10 ]
+cat("Mass subset:\n")
+pksSubset$mass
+
+#Create a subset, containing only the first image stored in the peak matrix
+pksSubset <- pks[ pks$names[1] ,  ]
+rMSI2::plotPeakImage(pksSubset, mz = 832, labels = "Subset first image only")
+```
+
+Regarding intensity normalization, the rationale behind rMSI2 is not to modify data stored in the disk with normalization values and keep the data always using the raw values. This allows us to test multiple normalization approaches during the data analysis. 
+To apply a normalization vector to the peak matrix, we simply divide the desired matrix by the normalization vector:
+```{r, warning=FALSE}
+TICnormIntensity <- pksSubset$intensity/pksSubset$normalizations$TIC
+rMSI2::plotValuesImage(pksSubset, pksSubset$intensity[,1], labels = "first column RAW")
+rMSI2::plotValuesImage(pksSubset, TICnormIntensity[,1], labels = "first column TIC normalized")
+```
+
+## Data analysis using the peak matrix
+
+Going back to the dataset acquired with an Orbitrap, we are going to demonstrate how to analyze the peak matrix.
+```{r}
+pks <- rMSI2::LoadPeakMatrix(file.path(data_path,"out/merged-peakmatrix.pkmat"))
+print(pks) #The print command shows us the peak matrix dimensions and its memory usage
+```
+## Discarding tissue borders
+At the tissue borders, there may appear some artifacts related to OCT, matrix deposition, not enough accuracy on the acquisition region, etc.
+We can use the values of the RMS normalization to select these pixels and removing them from the peak matrix.
+```{r, warning=FALSE}
+rMSI2::plotValuesImage(pks, pks$normalizations$RMS, labels = "RMS")
+
+require(ggplot2)
+IntensityHist <- ggplot(pks$normalizations, aes(RMS)) +
+                 geom_histogram(binwidth = 1e3, colour = "blue") + scale_x_continuous(labels = function(x) format(x, scientific = TRUE)) + 
+                 geom_vline(xintercept = 2.5e5, colour = "red")
+
+IntensityHist #See the cut region
+
+invisible( rMSI2::plotClusterImage(pks, pks$normalizations$RMS < 2.5e5, labels = "Invalid Pixels") )
+
+#Subsetting of pks
+pks <- pks[pks$normalizations$RMS > 2.5e5, ]
+```
+
+## Multivariate statistics
+
+```{r, echo = FALSE, messages = FALSE, warning=FALSE}
+#PCA example
+pca <- prcomp(pks$intensity/pks$normalizations$RMS)
+rMSI2::plotValuesImage(pks, pca$x[,1], labels = "PC1" ) 
+rMSI2::plotValuesImage(pks, pca$x[,2], labels = "PC2" ) 
+rMSI2::plotValuesImage(pks, pca$x[,3], labels = "PC3" )
+
+#K-means example
+set.seed(111) #Set a random seed to get always the same results from kmeans
+clus <- kmeans(pks$intensity/pks$normalizations$RMS, centers = 5)
+clusterColors <- rMSI2::plotClusterImage(pks, clus$cluster)
+
+#PC1 vs. PC2 Score plot using same colors as in clustering plots
+dfPCA <- data.frame(PC1 = pca$x[,1], PC2 = pca$x[,2], cluster = clus$cluster )
+scorePlot <- ggplot(dfPCA, aes(PC1, PC2))  + theme_bw()
+scorePlot <- scorePlot + geom_point(aes(colour = factor(cluster)), alpha = 0.2, size = 1)
+scorePlot <- scorePlot + scale_colour_manual(values = clusterColors, name = "Cluster")
+scorePlot <- scorePlot + guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.8)))
+scorePlot
+
+```
+
+## Volcano plot 
+
+```{r message = FALSE, warning = FALSE}
+
+normMatrix <- pks$intensity/pks$normalizations$RMS
+group1  <- normMatrix[clus$cluster == 3, ]  #Select observations for cluster 3
+group2  <- normMatrix[clus$cluster == 4, ] #Select observations for cluster 4
+
+#Take the same number of obervations for each group a limit them to 1000 to avoid p.values of zero value
+nobs <- 1000
+group1 <- group1[sample(1:nrow(group1), nobs), ]
+group2 <- group2[sample(1:nrow(group2), nobs), ]
+
+foldchange_log2 <- function(var1, var2)
+{
+  mv1 <- median(var1, na.rm = T)
+  mv2 <- median(var2, na.rm = T)
+  return (log2(mv2/mv1))
+}
+
+dfFC <- data.frame (mz = pks$mass,
+                    FC =  rep(NA, length(pks$mass)),
+                    pval = rep(NA, length(pks$mass)))
+
+for( i in 1:length(pks$mass))
+{
+  dfFC$FC[i] <- foldchange_log2(group1[, i], group2[ , i] )
+  dfFC$pval[i] <- kruskal.test(list( group1[, i], group2[ , i]))$p.value
+}
+dfFC$pvalAdjusted <- p.adjust(dfFC$pval, method = "BH")
+
+#Volcano
+volcanoPlot <- function( log2FoldChange, pValue, var_labels, var1_name = "var1", var2_name = "var2", threshold_fc = 0.4, threshold_p = 0.05 )
+{
+  require(ggplot2)
+  require(ggrepel)
+  vDf <- data.frame( Label = var_labels,
+                     Log2.Fold.Change = log2FoldChange, 
+                     P.Value = pValue, 
+                     threshold = as.factor( abs(log2FoldChange) >= threshold_fc &  pValue <= threshold_p ))
+  vol <- ggplot(data = vDf, aes(x=Log2.Fold.Change, y =-log10(P.Value), colour=threshold))
+  vol <- vol + geom_vline( xintercept = c(-threshold_fc, threshold_fc), colour = "blue", alpha = 0.5 )
+  vol <- vol + geom_hline( yintercept = -log10(threshold_p), colour = "blue", alpha = 0.5 )
+  vol <- vol + geom_point(alpha=0.75, size=1.75)
+  vol <- vol +  xlim(1.1*c(-max(abs(log2FoldChange)), max(abs(log2FoldChange))))
+  vol <- vol + xlab( bquote("fold change {"*log[2](frac(.(var2_name), .(var1_name)) )*"}" )) + ylab(expression(-log[10]("p.value") )) + theme_bw() + theme(legend.position="none")
+  vol <- vol + labs( title= paste0("Volcano ",  var2_name, " vs. ", var1_name ))
+  vol <- vol + geom_text_repel( data = vDf[ which(as.logical(vDf$threshold)), ], aes( x= Log2.Fold.Change, y= -log10(P.Value), label = Label), alpha = 0.8, force = 10, size = 3, segment.size = 0.2 )
+  vol
+}
+
+volcanoPlot(log2FoldChange = dfFC$FC, pValue = dfFC$pvalAdjusted, var_labels = paste0( "m/z "  , round(pks$mass, 3)), var1_name = "Cluster 3", var2_name = "Cluster 4", threshold_fc = 1  )
+
+#Sort by Fold-Change
+dfFC <- dfFC[order(dfFC$FC), ]
+
+knitr::kable(dfFC, row.names = F, align = 'c')
+
+```
+
+## Images for the five most up-regulated ions
+```{r warning = FALSE}
+for( i in nrow(dfFC):(nrow(dfFC)-4))
+{
+  rMSI2::plotPeakImage(pks, mz = dfFC$mz[i], normalization = "RMS")
+}
+```
+
+## Images for the five most down-regulated ions
+```{r warning = FALSE}
+for( i in 1:5)
+{
+  rMSI2::plotPeakImage(pks, mz = dfFC$mz[i], normalization = "RMS")
+}
+```

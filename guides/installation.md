@@ -25,7 +25,7 @@ RGtk2 is not available anymore as a binary package easy to install from CRAN to 
 ```
 
 * ##### Instructions for Linux users
-Gtk2 is a graphical library that comes pre-installed in almost any Linux distribution, and therefore it is really straight forward to get rMSI2 working on a Linux machine. If you already have a working R environment on Linux, nothing special has to be made before installing rMSI2. No specific version of R is needed on Linux, just continue reading to the next step.
+Gtk2 is a graphical library that comes pre-installed in almost any Linux distribution, and therefore it is really straight forward to get rMSI2 working on a Linux machine. Due to the changes introduced in R's graphical engine since version 4.2, RGtk2 is not able to work with the latest R releases. So, ensure you have installed R version 4.1. Next, you'll have to download RGtk2, gWidgets2RGtk2 and cairoDevice packages source and install them manually.
 
 * ##### Common installation of rMSI2 for all platforms
 The simplest way to install rMSI2 and keep it updated is using devtools package. Install devtools from CRAN into your R session:
