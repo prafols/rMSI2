@@ -102,6 +102,9 @@ rMSI2::ProcessImages( proc_params, data_desc ) # This will take 2 minutes
 
 Note that the `eval = FALSE` parameter is used when executing the workflow processing methods to prevent executing the whole processing each time we want to generate a report.
 
+During the processing, you will be prompted by the mass calibration form to select the desired mass references. We provide an example of mass reference peaks to calibrate using DAN matrix clusters in negative ionization mode:
+[DAN negative mode mass references](https://github.com/prafols/rMSI2/blob/main/massCalibrationRefs/DAN_neg.ref)
+
 ## Working with the peak matrix
 
 After completing the data processing, we obtain a peak matrix file (.pkmat file extension). To present the peak matrix object, we will use a dataset consisting of eight mouse brain tissue sections that were combined in a single peak matrix. This dataset was acquired in a TOF spectrometer using a sputtered gold nanolayer to promote the LDI process.
