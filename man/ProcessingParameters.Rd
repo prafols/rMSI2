@@ -6,9 +6,6 @@
 \usage{
 ProcessingParameters()
 }
-\value{
-
-}
 \description{
 Create an empty ProcParams object to latter fill it.
 }

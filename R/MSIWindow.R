@@ -65,7 +65,7 @@ OpenMSI<-function( lockExecution = F )
 #' @export
 MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
 {
-  options(guiToolkit="RGtk2")
+  options(guiToolkit="tcltk") #force to use tcltk
   oldWarning<-options()$warn
   options(warn = -1)
 
@@ -184,10 +184,13 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
   spectraFrame<-gWidgets2::gframe("Spectra Viewer", container = Grp_Top,  fill = T, expand = T, spacing = 5 )
   spectraWidget<-.SpectraPlotWidget(parent_widget = spectraFrame, top_window_widget = window, clicFuntion = this$SpectrumClicked, showOpenFileButton = F,  display_sel_red = T, display_sel_green = T, display_sel_blue = T, display_clearall_button = T, useInternalRedrawTimer = F)
 
+  #TODO this was commented out for GTK but must be revised for tcltk...
   ##window$widget$present()
   #RGtk2::gtkWindowMaximize(gWidgets2::getToolkitWidget(window)) #Start maximized, currently disabled to addres windows redraw issue
-  gWidgets2::size(window) <- c(1024, 740)
-  visible(window)<-TRUE
+  
+  #TODO Not sureif this is doing somethin in TCL/TK... delte?
+  #gWidgets2::size(window) <- c(1024, 740)
+  #visible(window)<-TRUE
 
   if( class( img1$mean) == "MassSpectrum")
   {
@@ -233,6 +236,10 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
   #Start the redraw timer
   redrawTimer <- gWidgets2::gtimer(10, this$ReDrawByTimer)
   gWidgets2::addHandlerDestroy( obj = window, handler = this$Widget_Disposed ) #Connect to widget dispose to stop the draw timer
+  
+  #Set init windows size
+  gWidgets2::visible(window) <- TRUE
+  gWidgets2::size(window) <- c(1024, 740)
 
   ## Set the name for the class
   class(this) <- append(class(this),"MsiWindows")
@@ -273,6 +280,8 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
     pango_str <- paste(pango_str, " weight=\"", font_weight, "\"", sep = "" )
   }
   pango_str <- paste(pango_str, ">", text, "</span>", sep = "" )
+  
+  #TODO pango is no vaild for TCL/TK, revise where this method is used
 
-  RGtk2::gtkLabelSetMarkup(gWidgets2::getToolkitWidget(checkbox)[[1]],pango_str)
+  #RGtk2::gtkLabelSetMarkup(gWidgets2::getToolkitWidget(checkbox)[[1]],pango_str)
 }

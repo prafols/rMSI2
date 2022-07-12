@@ -47,7 +47,7 @@
   flipH <- F
   Tbl_spotList <- 0
   Scale_light <- 0
-  plotting_raster <- NULL #Current plotted MS image object
+  plotting_raster <- .BuildSingleIonRGBImage( .InitRGBEmptyRaster( img$size["x"], img$size["y"] ),   XResLevel = 1, light =  1 ) #Current plotted MS image object
   ROI <- NULL #Current used ROI on image, NULL means no ROI
   ZOOM_win <- NULL #Current zoom windows
   IntLimit_ROI <- NULL #Intensity limiting ROI
@@ -66,6 +66,14 @@
   Rlayer_raster <- .InitRGBEmptyRaster( img$size["x"], img$size["y"] )
   Glayer_raster <- .InitRGBEmptyRaster( img$size["x"], img$size["y"] )
   Blayer_raster <- .InitRGBEmptyRaster( img$size["x"], img$size["y"] )
+  
+  #Current plotting RGB layers
+  red_layer <- Rlayer_raster
+  green_layer <- Glayer_raster
+  blue_layer <- Blayer_raster
+  
+  #Keep track of the number of channels to plot (RGB vs. single ion mode)
+  ch_count <- 0
 
   ImgBuildFun <- function(channel, mass, tol )
   {
@@ -116,112 +124,121 @@
 
   RedrawMSImage <-function()
   {
-    visible(this$imaging_dev)<-TRUE #TODO look for all visibles, these are not going to work on tcltk...
     .plotMassImageRGB (this$plotting_raster, cal_um2pixels = this$img$pixel_size_um,  rotation = this$Rotation, flipV = this$flipV, flipH = this$flipH,
-                         display_axes = F, roi_rectangle =  this$ROI, zoom = this$ZOOM_win, border = this$GUI_RASTER_BORDER)
+                           display_axes = F, roi_rectangle =  this$ROI, zoom = this$ZOOM_win, border = this$GUI_RASTER_BORDER)
   }
 
   PlotMassImageRGB <- function()
   {
-    ch_count <- 0
+    this$ch_count <- 0
     if( gWidgets2::svalue(this$Btn_RedEnable))
     {
       .setCheckBoxText(this$Btn_RedEnable, " ON ", background = "red", foreground = "white", font_size = "large", font_weight = "heavy")
-      red_layer <- this$Rlayer_raster
-      unique_layer <- red_layer
-      ch_count <- ch_count + 1
+      this$red_layer <- this$Rlayer_raster
+      unique_layer <- this$red_layer
+      this$ch_count <- this$ch_count + 1
     }
     else
     {
       .setCheckBoxText(this$Btn_RedEnable, " ON ", background = "darkred", foreground = "grey", font_size = "large", font_weight = "heavy")
-      red_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
+      this$red_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
     }
     if( gWidgets2::svalue(this$Btn_GreenEnable))
     {
       .setCheckBoxText(this$Btn_GreenEnable, " ON ", background = "green", foreground = "white", font_size = "large", font_weight = "heavy")
-      green_layer <- this$Glayer_raster
-      unique_layer <- green_layer
-      ch_count <- ch_count + 1
+      this$green_layer <- this$Glayer_raster
+      unique_layer <- this$green_layer
+      this$ch_count <- this$ch_count + 1
     }
     else
     {
       .setCheckBoxText(this$Btn_GreenEnable, " ON ", background = "darkgreen", foreground = "grey", font_size = "large", font_weight = "heavy")
-      green_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
+      this$green_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
     }
     if( gWidgets2::svalue(this$Btn_BlueEnable))
     {
       .setCheckBoxText(this$Btn_BlueEnable, " ON ", background = "blue", foreground = "white", font_size = "large", font_weight = "heavy")
-      blue_layer <- this$Blayer_raster
-      unique_layer <- blue_layer
-      ch_count <- ch_count + 1
+      this$blue_layer <- this$Blayer_raster
+      unique_layer <- this$blue_layer
+      this$ch_count <- this$ch_count + 1
     }
     else
     {
       .setCheckBoxText(this$Btn_BlueEnable, " ON ", background = "darkblue", foreground = "grey", font_size = "large", font_weight = "heavy")
-      blue_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
+      this$blue_layer <-.InitRGBEmptyRaster( this$img$size["x"], this$img$size["y"] )
     }
 
-    if(ch_count < 1)
+    if(this$ch_count < 1)
     {
       print("No selected data to plot image")
       return()
     }
 
     inter_level<-switch(svalue(this$Combo_Xres), x1 = 1, x2 = 2, x3 = 3, x4 = 4, x5 = 5)
-    if(ch_count == 1)
+    if(this$ch_count == 1)
     {
       this$plotting_raster<-.BuildSingleIonRGBImage( unique_layer,   XResLevel = inter_level, light =  svalue(this$Scale_light) )
     }
     else
     {
-      this$plotting_raster<-.BuildRGBImage( imgR = red_layer, imgG = green_layer, imgB = blue_layer, XResLevel = inter_level, light =  svalue(this$Scale_light) )
+      this$plotting_raster<-.BuildRGBImage( imgR = this$red_layer, imgG = this$green_layer, imgB = this$blue_layer, XResLevel = inter_level, light =  svalue(this$Scale_light) )
     }
 
-    this$RedrawMSImage()
-
-    gWidgets2::visible(this$scaleRed_dev)<-TRUE
-    if(ch_count == 1)
+    redrawPlotWidget(this$imaging_dev)
+    redrawPlotWidget(this$scaleRed_dev)
+    redrawPlotWidget(this$scaleGreen_dev)
+    redrawPlotWidget(this$scaleBlue_dev)
+  }
+  
+  ReDrawRedScale <- function()
+  {
+    if(this$ch_count == 1)
     {
-      .plotIntensityScale(red_layer, light = svalue(this$Scale_light), fixGtkMargin = -1)
+      .plotIntensityScale(this$red_layer, light = svalue(this$Scale_light), fixGtkMargin = -1) 
     }
     else
     {
-      .plotIntensityScale(red_layer, "R", light = svalue(this$Scale_light), fixGtkMargin = -1 )
+      .plotIntensityScale(this$red_layer, "R", light = svalue(this$Scale_light), fixGtkMargin = -1 ) 
     }
-
-    gWidgets2::visible(this$scaleGreen_dev)<-TRUE
-    if(ch_count == 1)
+  }
+  
+  ReDrawGreenScale <- function()
+  {
+    if(this$ch_count == 1)
     {
-      .plotIntensityScale(green_layer, light = svalue(this$Scale_light), fixGtkMargin = -1)
-    }
-    else
-    {
-      .plotIntensityScale(green_layer, "G", light = svalue(this$Scale_light), fixGtkMargin = -1)
-    }
-
-
-    gWidgets2::visible(this$scaleBlue_dev)<-TRUE
-    if(ch_count == 1)
-    {
-      .plotIntensityScale(blue_layer, light = svalue(this$Scale_light), fixGtkMargin = -1)
+      .plotIntensityScale(this$green_layer, light = svalue(this$Scale_light), fixGtkMargin = -1)
     }
     else
     {
-      .plotIntensityScale(blue_layer, "B", light = svalue(this$Scale_light), fixGtkMargin = -1)
+      .plotIntensityScale(this$green_layer, "G", light = svalue(this$Scale_light), fixGtkMargin = -1)
+    }
+  }
+  
+  ReDrawBlueScale <- function()
+  {
+    if(this$ch_count == 1)
+    {
+      .plotIntensityScale(this$blue_layer, light = svalue(this$Scale_light), fixGtkMargin = -1)
+    }
+    else
+    {
+      .plotIntensityScale(this$blue_layer, "B", light = svalue(this$Scale_light), fixGtkMargin = -1)
     }
   }
 
   BtnClearSpotList <- function( mass, tol, ... )
   {
     this$Tbl_spotList$set_items(data.frame(this$Tbl_spotList$get_items())[1,])
-    gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0),
-                               gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]],
-                               background = 3 )
-
-    render<-gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]]
-    render$set( font = "bold")
-    gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0), render)
-    gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 3)$set(visible = F)
+    
+    #TODO reimplement in TCL/TK
+    # gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0),
+    #                            gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]],
+    #                            background = 3 )
+    # 
+    # render<-gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]]
+    # render$set( font = "bold")
+    # gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0), render)
+    # gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 3)$set(visible = F)
   }
 
   SpectraListSelChange <- function( ... )
@@ -394,12 +411,12 @@
 
   }
 
-  OnPixelSelection <- function( evt, ...) #TODO look for all evt, args that are specific to the plotting device!
+  OnPixelSelection <- function( x, y )
   {
-    X_left<-round(min(evt$x)) - this$GUI_RASTER_BORDER
-    X_right<-round(max(evt$x)) - this$GUI_RASTER_BORDER
-    Y_bottom<-round(min(evt$y)) - this$GUI_RASTER_BORDER #Transform raster coords to image coords (only Y axis is affected)
-    Y_top<-round(max(evt$y)) - this$GUI_RASTER_BORDER #Transform raster coords to image coords (only Y axis is affected)
+    X_left<-round(min(x)) - this$GUI_RASTER_BORDER
+    X_right<-round(max(x)) - this$GUI_RASTER_BORDER
+    Y_bottom<-round(min(y)) - this$GUI_RASTER_BORDER #Transform raster coords to image coords (only Y axis is affected)
+    Y_top<-round(max(y)) - this$GUI_RASTER_BORDER #Transform raster coords to image coords (only Y axis is affected)
 
     #Apply rotation!
     if(this$Rotation == 0)
@@ -471,7 +488,7 @@
     this$Spin_Ymin$add_handler_changed(this$SpinImageRangeChanged)
     this$Spin_Ymax$add_handler_changed(this$SpinImageRangeChanged)
 
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
     gWidgets2::enabled(this$Btn_RoiZoom) <- T
     gWidgets2::enabled(this$Frame_RoiCtl) <- T
   }
@@ -539,7 +556,7 @@
     this$ROI[2] <- svalue(this$Spin_Xmax)
     this$ROI[3] <- svalue(this$Spin_Ymin)
     this$ROI[4] <- svalue(this$Spin_Ymax)
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
   }
 
   SliderLightChanged<- function( ... )
@@ -576,7 +593,7 @@
     Lbl_Rotation$set_value(paste("Rotation:", rotateLabel))
 
     #Plot rotated image
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
   }
 
   ComboBox_XRes_Changed <- function( ... )
@@ -632,7 +649,7 @@
     this$Spin_Ymax$add_handler_changed(this$SpinImageRangeChanged)
 
     this$ROI <- NULL
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
     gWidgets2::enabled(this$Frame_RoiCtl) <- F
     if(is.null(this$ZOOM_win))
     {
@@ -643,7 +660,7 @@
   ROI_Zoom <- function( ... )
   {
     this$ZOOM_win <- switch(svalue(this$Btn_RoiZoom) , this$ROI)
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
 
     if( is.null(this$ZOOM_win) )
     {
@@ -706,16 +723,18 @@
         }
       }
       this$Tbl_spotList$set_items(rbind(data.frame(this$Tbl_spotList$get_items()), data.frame(ID, X, Y, Colour)))
-      gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0),
-                                 gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]],
-                                 background = 3
-      )
-
-      render<-gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]]
-      render$set( font = "bold")
-      gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0), render)
-
-      gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 3)$set(visible = F)
+      
+      #TODO reimplement in TCL/TK
+      # gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0),
+      #                            gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]],
+      #                            background = 3
+      # )
+      # 
+      # render<-gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0))[[1]]
+      # render$set( font = "bold")
+      # gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 0), render)
+      # 
+      # gtkTreeViewGetColumn(getToolkitWidget(this$Tbl_spotList), 3)$set(visible = F)
     }
   }
 
@@ -770,35 +789,40 @@
     gWidgets2::svalue(this$Btn_RoiIntUnLimit)<- "No Intensity Limit"
   }
 
-  ShowSpectraList <- function ( ... )
-  {
-    gWidgets2::add(this$Grp_SidePanel, this$spectraListFrame, expand=TRUE, fill = TRUE)
-    gWidgets2::svalue(this$Panel_Img) <- this$SidePanel_position
-    RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$Btn_Show))
-  }
+  #TODO Not valid for TCL/TK, consider removing the whole spectra list show thing
+  # ShowSpectraList <- function ( ... )
+  # {
+  #   gWidgets2::add(this$Grp_SidePanel, this$spectraListFrame, expand=TRUE, fill = TRUE)
+  #   gWidgets2::svalue(this$Panel_Img) <- this$SidePanel_position
+  #   RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$Btn_Show))
+  # }
 
-  HideSpectraList <- function ( ... )
-  {
-    gWidgets2::delete(this$Grp_SidePanel, this$spectraListFrame)
-    this$SidePanel_position <- gWidgets2::svalue(this$Panel_Img)
-    gWidgets2::svalue(this$Panel_Img) <- 0
-    RGtk2::gtkWidgetShow(gWidgets2::getToolkitWidget(this$Btn_Show))
-  }
+  #TODO Not valid for TCL/TK, consider removing the whole spectra list show thing
+  # HideSpectraList <- function ( ... )
+  # {
+  #   gWidgets2::delete(this$Grp_SidePanel, this$spectraListFrame)
+  #   this$SidePanel_position <- gWidgets2::svalue(this$Panel_Img)
+  #   gWidgets2::svalue(this$Panel_Img) <- 0
+  #   RGtk2::gtkWidgetShow(gWidgets2::getToolkitWidget(this$Btn_Show))
+  # }
 
   BtnFlipH <- function ( ... )
   {
     this$flipH <-  !(this$flipH)
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
   }
 
   BtnFlipV <- function ( ... )
   {
     this$flipV <- !(this$flipV)
-    this$RedrawMSImage()
+    redrawPlotWidget(this$imaging_dev)
   }
 
   #Build the GUI
-  Top_frm <- gWidgets2::gframe( text =  paste("<span foreground=\"",meanSpectrumColor ,"\" size=\"large\">Image: ",img$name, "</span>", sep = ""), markup = T, container = parent, spacing = 5 )
+  #TODO HTML markup not supported for title in TCL/TK
+  #Top_frm <- gWidgets2::gframe( text =  paste("<span foreground=\"",meanSpectrumColor ,"\" size=\"large\">Image: ",img$name, "</span>", sep = ""), markup = T, container = parent, spacing = 5 )
+  Top_frm <- gWidgets2::gframe( text =  img$name, container = parent, spacing = 5 ) #TODO see docs to set text color in TCL/TK
+  
   Panel_Img<- gWidgets2::gpanedgroup(horizontal = T, container = Top_frm,  expand=TRUE )
   Grp_SidePanel<- gWidgets2::ggroup(container = Panel_Img, expand=TRUE, fill = TRUE)
   spectraListFrame<-gWidgets2::gframe("Spectra List", container = Grp_SidePanel,  fill = T, spacing = 5, expand = T )
@@ -812,17 +836,18 @@
   
   #TODO all table rendering is not compatible with tcltk! But, it seams th gtbale is available in gwidgets and I can set colors in tcltk... so It should be able to work..
   ##Set table style using colors
-  RGtk2::gtkTreeViewSetGridLines(getToolkitWidget(Tbl_spotList), as.integer(3))
-  RGtk2::gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0),
-                             gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0))[[1]],
-                             background = 3
-                              )
+  #RGtk2::gtkTreeViewSetGridLines(getToolkitWidget(Tbl_spotList), as.integer(3))
+  #RGtk2::gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0),
+  #                           gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0))[[1]],
+  #                           background = 3
+  #                            )
 
-  render<-RGtk2::gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0))[[1]]
-  render$set( font = "bold")
-  gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0), render)
+  #TODO more Gtk stuff to work on...
+  #render<-RGtk2::gtkCellLayoutGetCells(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0))[[1]]
+  #render$set( font = "bold")
+  #gtkCellLayoutSetAttributes(gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 0), render)
 
-  gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 3)$set(visible = F)
+  #gtkTreeViewGetColumn(getToolkitWidget(Tbl_spotList), 3)$set(visible = F)
 
   Grp_BtmTbl <-gWidgets2::ggroup(horizontal = F, container =Grp_Tbl)
   Btn_PlotSelSpotList<-gWidgets2::gbutton("Plot", container= Grp_BtmTbl,  handler = this$SpectraListSelChange)
@@ -831,18 +856,28 @@
 
   Grp_TopImg <- gWidgets2::ggroup(horizontal = F, container = Panel_Img, expand = T, fill = T)
   Grp_Buttons <- gWidgets2::ggroup(horizontal = T, container = Grp_TopImg)
-  Btn_Show <- gWidgets2::gbutton(">>>Spectra List", container = Grp_Buttons, handler = this$ShowSpectraList )
-  RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$Btn_Show))
+  
+  #TODO maybe just remove the whole thing? or investigate if usefull and how can be implemented in TCL/TK
+  #Btn_Show <- gWidgets2::gbutton(">>>Spectra List", container = Grp_Buttons, handler = this$ShowSpectraList )
+  #RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$Btn_Show))
+  
   Lbl_Rotation<- gWidgets2::glabel(text = "Rotation: 0", container = Grp_Buttons)
   Btn_rotate_CCW <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnRotateCCW)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CCW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CCW.png") )
+  #TODO reimplement in TCLTK
+  #RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CCW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CCW.png") )
+  
+  
   Btn_rotate_CW <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnRotateCW)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CW.png") )
+  #TODO reimplement in TCLTK
+  #RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_rotate_CW)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"Rotate_CW.png") )
 
   Btn_flipV <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipV)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipV.png") ) #TODO use a tcltk label with the image instead...
+  #TODO reimplement in TCLTK
+  #RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipV)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipV.png") ) 
+  
   Btn_flipH <- gWidgets2::gbutton("", container = Grp_Buttons, handler = this$BtnFlipH)
-  RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipH.png") )  #TODO use a tcltk label with the image instead...
+  #TODO reimplement in TCLTK
+  #RGtk2::gtkImageSetFromFile( gWidgets2::getToolkitWidget(Btn_flipH)$image, filename = file.path(system.file(package = "rMSI2", "icons"),"FlipH.png") ) 
 
   Lbl_Xres<- gWidgets2::glabel(text = "Interpolation:", container = Grp_Buttons)
   Combo_Xres <- gWidgets2::gcombobox( items = c("x1","x2","x3","x4","x5"), selected = 2, container = Grp_Buttons, handler = this$ComboBox_XRes_Changed)
@@ -856,10 +891,18 @@
 
   Grp_ImgTop<-gWidgets2::ggroup( horizontal = T, container =  Grp_TopImg,  fill = T, expand = T)
   Grp_ImgRoi<-gWidgets2::ggroup( horizontal = F, container =  Grp_ImgTop,  fill = T, expand = T)
-  imaging_dev <- gWidgets2::ggraphics(spacing = 5 ) #TODO replace with my plotting widget
-  gWidgets2::size( imaging_dev )<- c(200, 200)
-  gWidgets2::addHandlerSelectionChanged( imaging_dev, handler = this$OnPixelSelection, action = this)
-  gWidgets2::add(obj = Grp_ImgRoi, child = imaging_dev,  fill = T, expand = T)
+  
+  
+  #TODO imaging_dev is the plotting widget, revise it troughout all the code
+  imaging_dev <-createPlotWidget(parent = Grp_ImgRoi, 
+                     redraw_function = this$RedrawMSImage,
+                     MouseSelection_callback = this$OnPixelSelection,
+                     initial_width = 200, 
+                     initial_height = 200 ) 
+  
+  #TODO revise this and delete when ready
+  #gWidgets2::addHandlerSelectionChanged( imaging_dev, handler = this$OnPixelSelection, action = this)
+  #gWidgets2::add(obj = Grp_ImgRoi, child = imaging_dev,  fill = T, expand = T)
 
   Grp_ScalesV <- gWidgets2::ggroup( horizontal = F, container =  Grp_ImgTop,  fill = T, expand = F)
   Grp_ScalesH <- gWidgets2::ggroup( horizontal = T, container =  Grp_ScalesV,  fill = T, expand = T)
@@ -869,27 +912,52 @@
 
   #Red Color Scale
   Grp_RedScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleRed_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
-  gWidgets2::size( scaleRed_dev )<- c(100, -1)
-  gWidgets2::add(obj = Grp_RedScale, child = scaleRed_dev,  fill = T, expand = T)
+  
+  #TODO scaleRed_dev is the red channel widget, revise it troughout all the code
+  scaleRed_dev <-createPlotWidget(parent = Grp_RedScale, 
+                                 redraw_function = this$ReDrawRedScale,
+                                 initial_width = 100, 
+                                 initial_height = 200 ) 
+  
+  #TODO revise this and delete when ready
+  #gWidgets2::size( scaleRed_dev )<- c(100, -1)
+  #gWidgets2::add(obj = Grp_RedScale, child = scaleRed_dev,  fill = T, expand = T)
+  
+  
   Grp_RedCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_RedScale)
   Btn_RedEnable<-gWidgets2::gcheckbox("On", container = Grp_RedCtl, use.togglebutton = T, checked = T,  handler = this$IntensityScale_EnableClicked, action = "R")
   Lbl_RedMz <- gWidgets2::glabel("", container = Grp_RedCtl)
 
   #Green Color scale
   Grp_GreenScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleGreen_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
-  gWidgets2::size( scaleGreen_dev )<- c(100, -1)
-  gWidgets2::add(obj = Grp_GreenScale, child = scaleGreen_dev,  fill = T, expand = T)
+  
+  #TODO scaleGreem_dev is the green channel widget, revise it troughout all the code
+  scaleGreen_dev <-createPlotWidget(parent = Grp_GreenScale, 
+                                  redraw_function = this$ReDrawGreenScale,
+                                  initial_width = 100, 
+                                  initial_height = 200 ) 
+  
+  #TODO revise this and delete when ready
+  #gWidgets2::size( scaleGreen_dev )<- c(100, -1)
+  #gWidgets2::add(obj = Grp_GreenScale, child = scaleGreen_dev,  fill = T, expand = T)
+  
   Grp_GreenCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_GreenScale)
   Btn_GreenEnable<-gWidgets2::gcheckbox("On", container = Grp_GreenCtl, use.togglebutton = T, checked = F, handler = this$IntensityScale_EnableClicked, action = "G")
   Lbl_GreenMz <- gWidgets2::glabel("", container = Grp_GreenCtl)
 
   #Blue Color scale
   Grp_BlueScale<-gWidgets2::ggroup( horizontal = F, container = Grp_ScalesH)
-  scaleBlue_dev <- gWidgets2::ggraphics(spacing = 5 )  #TODO replace with my plotting widget
-  gWidgets2::size( scaleBlue_dev )<- c(100, -1) 
-  gWidgets2::add(obj = Grp_BlueScale, child = scaleBlue_dev,  fill = T, expand = T)
+  
+  #TODO scaleBlue_dev is the blue channel widget, revise it troughout all the code
+  scaleBlue_dev <-createPlotWidget(parent = Grp_BlueScale, 
+                                  redraw_function = this$ReDrawBlueScale,
+                                  initial_width = 100, 
+                                  initial_height = 200 ) 
+  
+  #TODO revise this and delete when ready
+  #gWidgets2::size( scaleBlue_dev )<- c(100, -1) 
+  #gWidgets2::add(obj = Grp_BlueScale, child = scaleBlue_dev,  fill = T, expand = T)
+  
   Grp_BlueCtl <- gWidgets2::ggroup( horizontal = T, container = Grp_BlueScale)
   Btn_BlueEnable<-gWidgets2::gcheckbox("On", container = Grp_BlueCtl, use.togglebutton = T, checked = F, handler = this$IntensityScale_EnableClicked, action = "B")
   Lbl_BlueMz <- gWidgets2::glabel("", container = Grp_BlueCtl)
