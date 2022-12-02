@@ -44,6 +44,11 @@ ProcessImages <- function(proc_params,
     stop("ERROR: proc_params argument must be an object of class \"ProcParams\". Use the rMSI2::ProcessingParameters() function to create a valid proc_params\n")
   }
   
+  if((proc_params$preprocessing$massCalibration) && !(requireNamespace("RGtk2",quietly = T)))
+  {
+    stop("ERROR: mass calibration requires to install the RGtk2 package. Check the guides to install it properly in the Github \"prafols/rMSI2\" \n")
+  }
+  
   if(class(data_description) != "DataInfo")
   {
     stop("ERROR: data_description argument must be an object of class \"DataInfo\". Use the rMSI2::ImzMLDataDescription() function to create a valid data_description.\n")
