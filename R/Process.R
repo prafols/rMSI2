@@ -604,6 +604,12 @@ FormatPeakMatrix <- function (cPeakMatrix, posMat, numPixels, names, uuid, posMo
 #'
 ProcessWizard <- function( deleteRamdisk = T, overwriteRamdisk = F, calibrationSpan = 0.75, store_binsize_txt_file = F )
 {
+  
+   if(!(requireNamespace("RGtk2",quietly = T)))
+  {
+    stop("ERROR: this function requires to install the RGtk2 package. Check the guides to install it properly in the Github \"prafols/rMSI2\" \n")
+  }
+  
   #Get processing params using a GUI
   wizardResult <- ImportWizardGui()
   
