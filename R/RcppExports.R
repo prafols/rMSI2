@@ -254,6 +254,14 @@ NoiseEstimationFFTExpWinMat <- function(x, filWinSize = 40L) {
     .Call('_rMSI2_NoiseEstimationFFTExpWinMat', PACKAGE = 'rMSI2', x, filWinSize)
 }
 
+C_adductAnnotation <- function(numMonoiso, numAdducts, tolerance, numMass, R_monoisitopeMassVector, R_adductMassVector, R_isotopes, R_isotopeListOrder, R_massAxis, R_peakMatrix, numPixels, R_labelAxis, R_monoisotopicIndexVector) {
+    .Call('_rMSI2_C_adductAnnotation', PACKAGE = 'rMSI2', numMonoiso, numAdducts, tolerance, numMass, R_monoisitopeMassVector, R_adductMassVector, R_isotopes, R_isotopeListOrder, R_massAxis, R_peakMatrix, numPixels, R_labelAxis, R_monoisotopicIndexVector)
+}
+
+C_isotopeAnnotator <- function(massPeaks, massChannels, numPixels, numIso, PeakMtx, massVec, massChanVec, tolerance, scoreThreshold, ToleranceInScans, charge) {
+    .Call('_rMSI2_C_isotopeAnnotator', PACKAGE = 'rMSI2', massPeaks, massChannels, numPixels, numIso, PeakMtx, massVec, massChanVec, tolerance, scoreThreshold, ToleranceInScans, charge)
+}
+
 CRunPeakBinning <- function(rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams) {
     .Call('_rMSI2_CRunPeakBinning', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, preProcessingParams)
 }

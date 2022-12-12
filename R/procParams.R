@@ -293,18 +293,34 @@ PreProcParams <- setRefClass("PreProcParams",
                                })
                             )
 
-AnnotationParams <- setRefClass("AnnotationParams", 
-                                fields = list(
-                                  ILSThreshold = "numeric"
-                                  #TODO complete me!
-                                  )
-                                )
+PeakAnnotationParams <- setRefClass("PeakAnnotationParams", 
+                                    fields = list(
+                                      ppmMassTolerance = "numeric", 
+                                      isotopeLikelihoodScoreThreshold = "numeric",
+                                      adductElementsTable = "data.frame"
+                                    ),
+                                    
+                                    #Constructor
+                                    method = list(
+                                      initialize = function(...,
+                                                            ppmMassTolerance = as.integer(1),
+                                                            isotopeLikelihoodScoreThreshold = 0.8,
+                                                            adductElementsTable = data.frame(name = c("+K","+Na","+H"),
+                                                                                             mass = c(38.963706,22.98976,1.007825),
+                                                                                             priority = c(0,0,0))
+                                      )
+                                      {
+                                        callSuper(..., ppmMassTolerance = ppmMassTolerance, 
+                                                  isotopeLikelihoodScoreThreshold = isotopeLikelihoodScoreThreshold,
+                                                  adductElementsTable = adductElementsTable)
+                                      })
+)
 
 ProcParams <- setRefClass("ProcParams",
                           fields = list(
                            version = "character",
                            preprocessing = "PreProcParams",
-                           annotations = "AnnotationParams"
+                           peakAnnotation = "PeakAnnotationParams"
                            ),
                           
                           #Constructor
