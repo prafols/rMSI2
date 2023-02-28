@@ -1,4 +1,4 @@
-#' rMSI
+#' rMSI2
 #' 
 #'  MSI data handling and visualization in R
 #' 

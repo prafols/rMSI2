@@ -24,6 +24,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rMSIannotation_C
+void rMSIannotation_C(int numberPixels, int numberPeaks, int numberSpectrumDataPoints, int tolerance, double scoreThreshold, bool toleranceInScans, DataFrame adductElementsDF, NumericMatrix peakIntensityMatrix, NumericVector peakMassAxis, NumericVector averageSpectrumMassAxis, NumericVector averageSpectrumIntensity);
+RcppExport SEXP _rMSI2_rMSIannotation_C(SEXP numberPixelsSEXP, SEXP numberPeaksSEXP, SEXP numberSpectrumDataPointsSEXP, SEXP toleranceSEXP, SEXP scoreThresholdSEXP, SEXP toleranceInScansSEXP, SEXP adductElementsDFSEXP, SEXP peakIntensityMatrixSEXP, SEXP peakMassAxisSEXP, SEXP averageSpectrumMassAxisSEXP, SEXP averageSpectrumIntensitySEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type numberPixels(numberPixelsSEXP);
+    Rcpp::traits::input_parameter< int >::type numberPeaks(numberPeaksSEXP);
+    Rcpp::traits::input_parameter< int >::type numberSpectrumDataPoints(numberSpectrumDataPointsSEXP);
+    Rcpp::traits::input_parameter< int >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< double >::type scoreThreshold(scoreThresholdSEXP);
+    Rcpp::traits::input_parameter< bool >::type toleranceInScans(toleranceInScansSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type adductElementsDF(adductElementsDFSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type peakIntensityMatrix(peakIntensityMatrixSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type peakMassAxis(peakMassAxisSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type averageSpectrumMassAxis(averageSpectrumMassAxisSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type averageSpectrumIntensity(averageSpectrumIntensitySEXP);
+    rMSIannotation_C(numberPixels, numberPeaks, numberSpectrumDataPoints, tolerance, scoreThreshold, toleranceInScans, adductElementsDF, peakIntensityMatrix, peakMassAxis, averageSpectrumMassAxis, averageSpectrumIntensity);
+    return R_NilValue;
+END_RCPP
+}
 // CparseBrukerXML
 List CparseBrukerXML(String xml_path);
 RcppExport SEXP _rMSI2_CparseBrukerXML(SEXP xml_pathSEXP) {
@@ -377,50 +397,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// C_adductAnnotation
-Rcpp::List C_adductAnnotation(int numMonoiso, int numAdducts, int tolerance, int numMass, NumericVector R_monoisitopeMassVector, NumericVector R_adductMassVector, List R_isotopes, NumericVector R_isotopeListOrder, NumericVector R_massAxis, NumericMatrix R_peakMatrix, int numPixels, NumericVector R_labelAxis, NumericVector R_monoisotopicIndexVector);
-RcppExport SEXP _rMSI2_C_adductAnnotation(SEXP numMonoisoSEXP, SEXP numAdductsSEXP, SEXP toleranceSEXP, SEXP numMassSEXP, SEXP R_monoisitopeMassVectorSEXP, SEXP R_adductMassVectorSEXP, SEXP R_isotopesSEXP, SEXP R_isotopeListOrderSEXP, SEXP R_massAxisSEXP, SEXP R_peakMatrixSEXP, SEXP numPixelsSEXP, SEXP R_labelAxisSEXP, SEXP R_monoisotopicIndexVectorSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type numMonoiso(numMonoisoSEXP);
-    Rcpp::traits::input_parameter< int >::type numAdducts(numAdductsSEXP);
-    Rcpp::traits::input_parameter< int >::type tolerance(toleranceSEXP);
-    Rcpp::traits::input_parameter< int >::type numMass(numMassSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_monoisitopeMassVector(R_monoisitopeMassVectorSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_adductMassVector(R_adductMassVectorSEXP);
-    Rcpp::traits::input_parameter< List >::type R_isotopes(R_isotopesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_isotopeListOrder(R_isotopeListOrderSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_massAxis(R_massAxisSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type R_peakMatrix(R_peakMatrixSEXP);
-    Rcpp::traits::input_parameter< int >::type numPixels(numPixelsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_labelAxis(R_labelAxisSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type R_monoisotopicIndexVector(R_monoisotopicIndexVectorSEXP);
-    rcpp_result_gen = Rcpp::wrap(C_adductAnnotation(numMonoiso, numAdducts, tolerance, numMass, R_monoisitopeMassVector, R_adductMassVector, R_isotopes, R_isotopeListOrder, R_massAxis, R_peakMatrix, numPixels, R_labelAxis, R_monoisotopicIndexVector));
-    return rcpp_result_gen;
-END_RCPP
-}
-// C_isotopeAnnotator
-Rcpp::List C_isotopeAnnotator(int massPeaks, int massChannels, int numPixels, int numIso, NumericMatrix PeakMtx, NumericVector massVec, NumericVector massChanVec, int tolerance, double scoreThreshold, bool ToleranceInScans, int charge);
-RcppExport SEXP _rMSI2_C_isotopeAnnotator(SEXP massPeaksSEXP, SEXP massChannelsSEXP, SEXP numPixelsSEXP, SEXP numIsoSEXP, SEXP PeakMtxSEXP, SEXP massVecSEXP, SEXP massChanVecSEXP, SEXP toleranceSEXP, SEXP scoreThresholdSEXP, SEXP ToleranceInScansSEXP, SEXP chargeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type massPeaks(massPeaksSEXP);
-    Rcpp::traits::input_parameter< int >::type massChannels(massChannelsSEXP);
-    Rcpp::traits::input_parameter< int >::type numPixels(numPixelsSEXP);
-    Rcpp::traits::input_parameter< int >::type numIso(numIsoSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type PeakMtx(PeakMtxSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type massVec(massVecSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type massChanVec(massChanVecSEXP);
-    Rcpp::traits::input_parameter< int >::type tolerance(toleranceSEXP);
-    Rcpp::traits::input_parameter< double >::type scoreThreshold(scoreThresholdSEXP);
-    Rcpp::traits::input_parameter< bool >::type ToleranceInScans(ToleranceInScansSEXP);
-    Rcpp::traits::input_parameter< int >::type charge(chargeSEXP);
-    rcpp_result_gen = Rcpp::wrap(C_isotopeAnnotator(massPeaks, massChannels, numPixels, numIso, PeakMtx, massVec, massChanVec, tolerance, scoreThreshold, ToleranceInScans, charge));
-    return rcpp_result_gen;
-END_RCPP
-}
 // CRunPeakBinning
 List CRunPeakBinning(Rcpp::List rMSIObj_list, int numOfThreads, double memoryPerThreadMB, Rcpp::Reference preProcessingParams);
 RcppExport SEXP _rMSI2_CRunPeakBinning(SEXP rMSIObj_listSEXP, SEXP numOfThreadsSEXP, SEXP memoryPerThreadMBSEXP, SEXP preProcessingParamsSEXP) {
@@ -562,6 +538,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
+    {"_rMSI2_rMSIannotation_C", (DL_FUNC) &_rMSI2_rMSIannotation_C, 11},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
     {"_rMSI2_CimzMLBinCreateNewIBD", (DL_FUNC) &_rMSI2_CimzMLBinCreateNewIBD, 2},
@@ -587,8 +564,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_NoiseEstimationFFTExpWin", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWin, 2},
     {"_rMSI2_NoiseEstimationFFTCosWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTCosWinMat, 2},
     {"_rMSI2_NoiseEstimationFFTExpWinMat", (DL_FUNC) &_rMSI2_NoiseEstimationFFTExpWinMat, 2},
-    {"_rMSI2_C_adductAnnotation", (DL_FUNC) &_rMSI2_C_adductAnnotation, 13},
-    {"_rMSI2_C_isotopeAnnotator", (DL_FUNC) &_rMSI2_C_isotopeAnnotator, 11},
     {"_rMSI2_CRunPeakBinning", (DL_FUNC) &_rMSI2_CRunPeakBinning, 4},
     {"_rMSI2_DetectPeaks_C", (DL_FUNC) &_rMSI2_DetectPeaks_C, 5},
     {"_rMSI2_TestPeakInterpolation_C", (DL_FUNC) &_rMSI2_TestPeakInterpolation_C, 7},
