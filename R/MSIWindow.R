@@ -33,6 +33,12 @@
 #' @export
 OpenMSI<-function( lockExecution = F )
 {
+  
+  if(!(requireNamespace("RGtk2",quietly = T)))
+  {
+    stop("ERROR: this function requires to install the RGtk2 package. Check the guides to install it properly in the Github \"prafols/rMSI2\" \n")
+  }
+  
   #Load data using GUI
   MSI_obj<-LoadTwoMsImages()
 
