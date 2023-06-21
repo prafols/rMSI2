@@ -114,6 +114,13 @@ ProcessImages <- function(proc_params,
                                    subImg_Coords = img_coords,
                                    convertProcessed2Continuous = !data_description$data_is_peaklist,
                                    fixBrokenUUID = data_description$fixBrokenUUID)
+    
+    #In case of data as a peaklist, check if binning tolerance can be set in scans
+    if(data_description$data_is_peaklist & !img_lst[[i]]$data$peaklist$rMSIpeakList & !proc$preprocessing$peakbinning$tolerance_in_ppm)
+    {
+      stop("The binning tolerance must be specified in ppm when processing a peak-list not created with rMSI2\n");
+    }
+      
   }
   
   # At this point, img_lst contains a list with all the images to process. If various images must be extracted form the same imzML file, then there will be an item for
