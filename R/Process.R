@@ -265,7 +265,7 @@ RunPreProcessing <- function(proc_params,
       refSpc <- CInternalReferenceSpectrum(img_lst, numOfThreads, memoryPerThreadMB, AverageSpectrum, common_mass)
       
       cat(paste0("Pixel with ID ", refSpc$ID, " from image indexed as ", refSpc$imgIndex, " (", img_lst[[ refSpc$imgIndex]]$name, ") selected as internal reference.\n"))
-      refSpc <- rMSI2::loadImgChunkFromIds(img_lst[[ refSpc$imgIndex]], Ids = refSpc$ID)[1, ]
+      refSpc <- rMSI2::loadImgChunkFromIds(img_lst[[ refSpc$imgIndex]], Ids = refSpc$ID, MassAxis = common_mass)[1, ]
       
       #TODO refSpc must be baseline corrected the same as the rest of the data
       
