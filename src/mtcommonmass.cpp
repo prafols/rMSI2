@@ -84,7 +84,7 @@ std::vector<double> MTCommonMass::CalcMassAxisBinSize(std::vector<double> &mass,
     //Left region
     if(pkIndex[i] > 0)
     {
-      for( int j = pkIndex[i]; j >= 0; j--)
+      for( int j = pkIndex[i]; j > 0; j--) 
       {
         if( (intensity[j] <= intensity[j-1])  )
         {
@@ -228,7 +228,7 @@ MTCommonMass::MergeTree MTCommonMass::MergeMassAxis(MTCommonMass::MergeTree &mz1
             newMz[inew] = mz1.mass[i1];
             inew++;
           }
-          else if( (mz1.mass[i1] -  newMz[inew - 1]) >= mz1.bins[i1] )
+          else if( (mz1.mass[i1] -  newMz[inew - 1]) > mz1.bins[i1] )
           {
             newMz[inew] = mz1.mass[i1];
             newBins[inew] = mz1.bins[i1];
@@ -243,7 +243,7 @@ MTCommonMass::MergeTree MTCommonMass::MergeMassAxis(MTCommonMass::MergeTree &mz1
             newMz[inew] = mz2.mass[i2];
             inew++;
           }
-          else if( (mz2.mass[i2] -  newMz[inew - 1]) >= mz2.bins[i2] )
+          else if( (mz2.mass[i2] -  newMz[inew - 1]) > mz2.bins[i2] )
           {
             newMz[inew] = mz2.mass[i2];
             newBins[inew] = mz2.bins[i2];

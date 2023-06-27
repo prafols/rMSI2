@@ -842,7 +842,7 @@ void ImzMLBinWrite::open(bool truncate)
   }
 }
 
-void ImzMLBinWrite::writeUUID(const char* uuid)
+void ImzMLBinWrite::writeUUIDBytes(const char* uuid)
 {
   if(ibdFile.tellp() != 0)
   {
@@ -864,7 +864,7 @@ void ImzMLBinWrite::writeUUID(std::string suuid)
   {
     uuid[i] = strtol(suuid.substr(i*2, 2).c_str(), NULL, 16);
   }
-  writeUUID(uuid);
+  writeUUIDBytes(uuid);
 }
 
 void ImzMLBinWrite::overwriteUUID(std::string suuid)
@@ -1161,6 +1161,71 @@ Rcpp::DataFrame testingimzMLBinWriteSequential(const char* ibdFname, Rcpp::Strin
   return NULL;
 }
 
+//' CimzMLBinCreateNewIBD.
+//' This function creates a new ibd file with the provided uuid
+//' @param ibdFname: full path to the ibd file.
+//' @param uuid: 16 bytes long UUID.
+// [[Rcpp::export]]
+void CimzMLBinCreateNewIBD(const char* ibdFname, Rcpp::String str_uuid)
+{  
+  try
+  {
+    ImzMLBinWrite myWriter(ibdFname, 0, "double", "double", true, true, false);
+    myWriter.open(true); //Open here with truncation
+    myWriter.writeUUID(str_uuid.get_cstring());
+    myWriter.close();
+  }
+  catch(std::runtime_error &e)
+  {
+    Rcpp::Rcout << "Catch Error: "<< e.what() << "\n";
+  }
+}
+
+//' CimzMLBinAppendMass.
+//' This function appends a new mass axis to a given ibd file.
+//' The last added offset is returned.
+//' @param ibdFname: full path to the ibd file.
+//' @param mz_dataTypeString:  String to specify the data format used to encode m/z values.
+//' @param mzNew: The mass axis to append.
+// [[Rcpp::export]]
+uint64_t CimzMLBinAppendMass(const char* ibdFname, Rcpp::String mz_dataTypeString, Rcpp::NumericVector mzNew) 
+{
+  try
+  {
+    ImzMLBinWrite myWriter(ibdFname, 1, mz_dataTypeString, "double", false, true); //Assuming data in processed mode to allow appending anything
+    myWriter.writeMzData(mzNew.length(), mzNew.begin());
+    myWriter.close();
+    return myWriter.get_mzOffset(0);
+  }
+  catch(std::runtime_error &e)
+  {
+    Rcpp::Rcout << "Catch Error: "<< e.what() << "\n";
+  }
+   return 0;
+}
+
+//' CimzMLBinAppendIntensity.
+//' This function appends a new mass axis to a given ibd file.
+//' The last added offset is returned.
+//' @param ibdFname: full path to the ibd file.
+//' @param int_dataTypeString:  String to specify the data format used to encode m/z values.
+//' @param intNew: The mass axis to append.
+// [[Rcpp::export]]
+uint64_t CimzMLBinAppendIntensity(const char* ibdFname, Rcpp::String int_dataTypeString, Rcpp::NumericVector intNew) 
+{
+  try
+  {
+    ImzMLBinWrite myWriter(ibdFname, 1, "double", int_dataTypeString, false, true); //Assuming data in processed mode to allow appending anything
+    myWriter.writeIntData(intNew.length(), intNew.begin());
+    myWriter.close();
+    return myWriter.get_intOffset(0);
+  }
+  catch(std::runtime_error &e)
+  {
+    Rcpp::Rcout << "Catch Error: "<< e.what() << "\n";
+  }
+  return 0;
+}
 
 //' A method to use the imzMLwriter in modify mode to allow direct modification of mass axes for the calibration
 //' This function modifies data of an ibd file with the following params

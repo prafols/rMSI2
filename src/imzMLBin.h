@@ -225,7 +225,7 @@ class ImzMLBinWrite : public ImzMLBin
     void open(bool truncate = false);
     
     //Write the 16 bytes UUID to the imzML ibd file.
-    void writeUUID(const char* uuid);
+    void writeUUIDBytes(const char* uuid);
     
     //Write the 16 bytes UUID to the imzML ibd file. Uuid provided as a std::String
     void writeUUID(std::string suuid);

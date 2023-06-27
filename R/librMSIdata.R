@@ -903,87 +903,131 @@ ReadBrukerRoiXML <- function(img, xml_file)
   return(lstRois)
 }
 
-
-#' CreateSubDataset.
+#' Trim_imzMLData.
 #' 
-#' Creates a new rMSI image object from sub-set of selected pixels by ID's.
+#' Create a partial copy of an imZML file by coping only the data that matches the mass and pixel ID filters.
 #'
-#' @param img the original rMSI object.
-#' @param id a vector of ID's to retain in the sub data set.
-#' @param ramdisk_path a full disk path where the new ramdisk will be stored.
-#' @param new_mass a new mass axis if resampling must be used.
-#'
-#' @return the sub rMSI object.
+#' @param input_data_file complete path to an input imzML file.
+#' @param output_data_file complete path to an output imzML file (will be overwritten). 
+#' @param keepPixelIDs the pixel ID's to kept in the output imzML file.
+#' @param mass_min the minimum value of the output mass range.
+#' @param mass_max the maximum value of the output mass range.
+#' @param intensity_trim trim intensities below this value.
 #' @export
 #'
-CreateSubDataset <- function(img, id, ramdisk_path, new_mass = img$mass)
+Trim_imzMLData <- function(input_data_file, output_data_file, keepPixelIDs = NULL, mass_min = NULL, mass_max = NULL, intensity_trim = 0)
 {
-  cat("Creating the sub image...\n")
+  #TODO test this method with continuous data!
+  
+  if(is.null(keepPixelIDs) && is.null(mass_min) && is.null(mass_max))
+  {
+    stop("Some filter must be set!.\n")
+  }
+  
+  in_img <- import_imzML(imzML_File = input_data_file, convertProcessed2Continuous = T)
+  
+  #Remove extension if supplied
+  outfname <- basename(output_data_file)
+  outfname <- sub("\\.[^.]*$", "", outfname)
+  output_data_file <- path.expand(file.path(dirname(output_data_file), outfname))
+  
+  if(is.null(keepPixelIDs))
+  {
+    #ID filter not set so take all the IDs
+    keepPixelIDs <- 1:nrow(in_img$pos)
+  }
+  out_run_data <- in_img$data$imzML$run[keepPixelIDs, ]
+  
+  if(is.null(mass_min))
+  {
+    #Mass min not set so use data min
+    mass_min <- in_img$mass[1]
+  }
+  
+  if(is.null(mass_max))
+  {
+    #Mass max not set so use data max
+    mass_max <- in_img$mass[length(in_img$mass)]
+  }
+  
+  
+  cat("Creating the sub-image ibd file...\n")
+  if(!dir.exists(dirname(output_data_file)))
+  {
+    dir.create(dirname(output_data_file), showWarnings = F, recursive = T)
+  }
 
-  if(!dir.exists(ramdisk_path))
+  newUUID <- uuid_timebased()
+  CimzMLBinCreateNewIBD(paste0(output_data_file, ".ibd"), newUUID)
+  
+  pb <- txtProgressBar(min = 0, max = nrow(out_run_data), style = 3)
+  emptyPixels <- c()
+  for(i in 1:nrow(out_run_data))
   {
-    dir.create(ramdisk_path, showWarnings = F, recursive = T)
-  }
-  
-  #Resample data only if the supplied mass axis is different
-  bResampleData <- !identical(img$mass, new_mass)
-  
-  subImg <- CreateEmptyImage(num_of_pixels = length(id), 
-                             mass_axis = new_mass, 
-                             pixel_resolution = img$pixel_size_um, 
-                             img_name = paste0(img$name, "_sub"), 
-                             rMSIXBin_path = ramdisk_path, 
-                             data_type = attr(attr(img$data[[1]], "physical"), "vmode"), 
-                             uuid = img$uuid )
-  
-  subImg$pos <- remap2ImageCoords( img$pos[id, ] )
-  
-  if(!is.null(img$posMotors))
-  {
-    subImg$posMotors <- img$posMotors[id, ]
-  }
-  if( !is.null(img$normalizations))
-  {
-    subImg$normalizations <- img$normalizations
-    for( i in 1:length(subImg$normalizations))
-    {
-      subImg$normalizations[[i]] <- subImg$normalizations[[i]][id]
-    }
-  }
-  
-  #Copy data on given id list
-  pb <- txtProgressBar(min = 0, max = length(subImg$data), style = 3)
-  istart <- 1
-  for( i in 1:length(subImg$data))
-  {
-    setTxtProgressBar(pb, i)
-    subID <- id[ istart:(istart + nrow(subImg$data[[i]]) - 1) ]
-    istart <- istart +  nrow(subImg$data[[i]])
-    dm <- loadImgChunkFromIds(img, subID)
+    mass <- CimzMLBinReadMass(path.expand(file.path(in_img$data$path, paste0(in_img$data$imzML$file, ".ibd"))),
+                                      1, 
+                                      out_run_data$mzLength[i], 
+                                      out_run_data$mzOffset[i], 
+                                      in_img$data$imzML$mz_dataType, 
+                                      in_img$data$imzML$continuous_mode)
     
-    #Resampling...
-    if(bResampleData)
+    intensity <- CimzMLBinReadIntensity(path.expand(file.path(in_img$data$path, paste0(in_img$data$imzML$file, ".ibd"))),
+                                      1, 
+                                      out_run_data$intLength[i], 
+                                      out_run_data$intOffset[i], 
+                                      in_img$data$imzML$int_dataType, 
+                                      in_img$data$imzML$continuous_mode)
+    
+    #Trim mass channel and intensity
+    intensity <- intensity - intensity_trim
+    keepMassChannels <- which( ((mass >= mass_min) & (mass <= mass_max)) & (intensity >= 0) ) 
+    if(length(keepMassChannels) > 10) #At least 10 datapoints to be considered a non-empty spectrum
     {
-      dmSub <- matrix(nrow = nrow(dm), ncol = length(subImg$mass))
-      for( irow in 1:nrow(dm))
+      mass <- mass[keepMassChannels]
+      intensity <- intensity[keepMassChannels]
+      
+      
+      if(!in_img$data$imzML$continuous_mode || i == 1)
       {
-        dmSub[irow, ] <- approx(img$mass, dm[irow,], xout = subImg$mass, ties = "ordered", yleft = 0, yright = 0)$y
+        out_run_data$mzOffset[i] <- CimzMLBinAppendMass(paste0(output_data_file, ".ibd"), in_img$data$imzML$mz_dataType, mass )
+        out_run_data$mzLength[i] <- length(mass)
       }
+      
+      out_run_data$intOffset[i] <- CimzMLBinAppendIntensity(paste0(output_data_file, ".ibd"), in_img$data$imzML$int_dataType, intensity )
+      out_run_data$intLength[i] <- length(intensity)  
     }
     else
     {
-      dmSub <- dm
+      emptyPixels <- c(emptyPixels, i)
     }
     
-    subImg$data[[i]][ , ] <- dmSub
+    setTxtProgressBar(pb, i)
   }
   close(pb)
   
-  subImg$size <- c( max( subImg$pos[, "x"] ), max( subImg$pos[, "y"] ))
-  names(subImg$size) <- c("x", "y")
+  if(length(emptyPixels) > 0)
+  {
+    out_run_data <- out_run_data[-emptyPixels,]
+  }
   
-  subImg$mean <- AverageSpectrum(subImg)
-  return(subImg)
+  cat("Calculating MD5 checksum...\n")
+  checksum_md5 <- toupper(digest::digest( paste0(output_data_file, ".ibd"), algo = "md5", file = T))
+  
+  cat("Creating the sub-image imzML file...\n")
+  imgInfo <- list( UUID = newUUID, 
+                   continuous_mode = in_img$data$imzML$continuous_mode, 
+                   MD5 = checksum_md5,
+                   SHA = "",
+                   mz_dataType = in_img$data$imzML$mz_dataType,
+                   compression_mz = FALSE,
+                   int_dataType = in_img$data$imzML$int_dataType,
+                   compression_int = FALSE,
+                   pixel_size_um = in_img$pixel_size_um,
+                   run_data = out_run_data )
+  
+  rMSI2:::CimzMLStore(paste0(output_data_file, ".imzML"), imgInfo )
+  
+  cat("imzML Export completed\n")
 }
 
 #' ROIAverageSpectra.
@@ -1013,7 +1057,7 @@ ROIAverageSpectra <- function( img, roi_list )
   for( ic in 1:length(img$data) )
   {
     setTxtProgressBar(pb, ic)
-    dm <- img$data[[ic]][,] #Load the complete data cube
+    dm <- img$data[[ic]][,] #Load the complete data cube #TODO reimplement with the new data model!!!!
     current_ids <- (LastId+1):(LastId+nrow(dm))
     
     for( ir in 1:length(roi_cubes))
