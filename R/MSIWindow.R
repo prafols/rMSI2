@@ -169,10 +169,8 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
     return(list(ID=myImgIds, color =  myImgColors, mz_min = mz_range$mz_min, mz_max = mz_range$mz_max))
   }
 
-    #GUI builder
+  #GUI builder
   window <- gWidgets2::gwindow ( "MSI Reconstruction" , visible = F )
-
-  #TODO testing without panneds
   Grp_Top <- gWidgets2::gpanedgroup(horizontal = F, container = window)
   Grp_Ims <- gWidgets2::gpanedgroup(horizontal = T, container = Grp_Top )
 
@@ -181,52 +179,22 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
   {
     msiWidget2 <- .MSImagePlotWidget(in_img = img2 , parent_widget = Grp_Ims, AddSpectra_function = this$AddSpectra, GetSpectraInfo_function = this$GetPlotedSpectraInfo, ClearSpectraPlot_function = this$ClearSpectraPlot, meanSpectrumColor = "blue", widget_name = "imgRight")
   }
-  spectraFrame<-gWidgets2::gframe("Spectra Viewer", container = Grp_Top,  fill = T, expand = T, spacing = 5 )
+  spectraFrame<-gWidgets2::gframe("Spectra Viewer", container = Grp_Top,  fill = T, expand = F, spacing = 2 )
   spectraWidget<-.SpectraPlotWidget(parent_widget = spectraFrame, top_window_widget = window, clicFuntion = this$SpectrumClicked, showOpenFileButton = F,  display_sel_red = T, display_sel_green = T, display_sel_blue = T, display_clearall_button = T, useInternalRedrawTimer = F)
 
-  #TODO this was commented out for GTK but must be revised for tcltk...
-  ##window$widget$present()
-  #RGtk2::gtkWindowMaximize(gWidgets2::getToolkitWidget(window)) #Start maximized, currently disabled to addres windows redraw issue
   
-  #TODO Not sureif this is doing somethin in TCL/TK... delte?
-  #gWidgets2::size(window) <- c(1024, 740)
-  #visible(window)<-TRUE
-
-  if( class( img1$mean) == "MassSpectrum")
-  {
-    #Old mean MALDIquant handling
-    spectraWidget$AddSpectra(  img1$mass, img1$mean@intensity, col = "red", name = "imgLeft_ID0")
-  }
-  else
-  {
-    spectraWidget$AddSpectra(  img1$mass, img1$mean, col = "red", name = "imgLeft_ID0")
-  }
-
+  spectraWidget$AddSpectra(  img1$mass, img1$mean, col = "red", name = "imgLeft_ID0")
   if(!is.null(img2))
   {
-    if( class( img2$mean) == "MassSpectrum")
-    {
-      #Old mean MALDIquant handling
-      spectraWidget$AddSpectra(  img2$mass, img2$mean@intensity, col = "blue", name = "imgRight_ID0")
-    }
-    else
-    {
-      spectraWidget$AddSpectra(  img2$mass, img2$mean, col = "blue", name = "imgRight_ID0")
-    }
+    spectraWidget$AddSpectra(  img2$mass, img2$mean, col = "blue", name = "imgRight_ID0")
   }
 
   spectraWidget$ZoomResetClicked()
 
   #Plot a initial image which is the maximum peak in mean spectrum with a tolereance of 100 ppm of the mass range
   startTol <- 100/1e6*(max(img1$mass)-min(img1$mass))
-  if( class( img1$mean) == "MassSpectrum")
-  {
-    startMass <- img1$mass[which.max(img1$mean@intensity)]
-  }
-  else
-  {
-    startMass = img1$mass[which.max(img1$mean)]
-  }
+  startMass = img1$mass[which.max(img1$mean)]
+    
   for( i in 1:3)
   {
     SpectrumClicked( channel = i, mass = startMass, tol = startTol)
@@ -239,7 +207,8 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
   
   #Set init windows size
   gWidgets2::visible(window) <- TRUE
-  gWidgets2::size(window) <- c(1024, 740)
+  gWidgets2::size(window) <- c(1280, 960)
+  gWidgets2::svalue(Grp_Top) <- 0.65 #65% of space allocated to MSI image
 
   ## Set the name for the class
   class(this) <- append(class(this),"MsiWindows")
@@ -259,29 +228,4 @@ MSIWindow<-function(img1, img2 = NULL, lockExecution = F)
   rm(oldWarning)
 }
 
-#Global method to set checkbox text whit colors, font size and weight
-.setCheckBoxText <- function(checkbox, text, background = NULL, foreground = NULL, font_size = NULL, font_weight = NULL)
-{
-  pango_str <- "<span"
-  if(!is.null(foreground))
-  {
-    pango_str <- paste(pango_str, " foreground=\"", foreground,"\"", sep = "" )
-  }
-  if(!is.null(background))
-  {
-    pango_str <- paste(pango_str, " background=\"", background,"\"", sep = "" )
-  }
-  if(!is.null(font_size))
-  {
-    pango_str <- paste(pango_str, " size=\"",font_size, "\"", sep = "" )
-  }
-  if(!is.null(font_weight))
-  {
-    pango_str <- paste(pango_str, " weight=\"", font_weight, "\"", sep = "" )
-  }
-  pango_str <- paste(pango_str, ">", text, "</span>", sep = "" )
-  
-  #TODO pango is no vaild for TCL/TK, revise where this method is used
 
-  #RGtk2::gtkLabelSetMarkup(gWidgets2::getToolkitWidget(checkbox)[[1]],pango_str)
-}

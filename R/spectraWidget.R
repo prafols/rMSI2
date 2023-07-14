@@ -125,7 +125,6 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   ReDrawRedImg <- F
   ReDrawGreenImg <- F
   ReDrawBlueImg <- F
-  UsingRGBKeyOnKeyboard <- F
 
   #Stop gtimer if widget is distroyed
   Widget_Disposed <- function (evt, ...)
@@ -322,13 +321,6 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Redraw MS image on parent widget in a given channel
   ReDrawParentMSI <- function()
   {
-    
-    if(this$UsingRGBKeyOnKeyboard && ( this$ReDrawRedImg || this$ReDrawGreenImg || this$ReDrawBlueImg ))
-    {
-      gWidgets2::svalue(this$Btn_ZoomTool) <- T
-      this$UsingRGBKeyOnKeyboard <- F
-    }
-    
     if(this$ReDrawRedImg) #Red
     {
       this$clicFun(1, this$SelIon_mz_R, this$SelIon_tol_R)
@@ -685,13 +677,22 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$MouseWheelFunction<-2
       }
     }
+    else if( K == "z" || K == "Z" )
+    {
+      #z key press
+      if(!is.null(this$Btn_ZoomTool))
+      {
+        tcltk::tkselect(this$Btn_ZoomTool)
+        this$ZoomToolSel()
+      }
+    }
     else if( K == "r" || K == "R" )
     {
       #r key press
       if(!is.null(this$Btn_SelRedTool))
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- T
-        this$UsingRGBKeyOnKeyboard <- T
+        tcltk::tkselect(this$Btn_SelRedTool)
+        this$RedToolSel()
       }
     }
     else if( K == "g" || K == "G" )
@@ -699,8 +700,8 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       #g key press
       if(!is.null(this$Btn_SelGreenTool))
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- T
-        this$UsingRGBKeyOnKeyboard <- T
+        tcltk::tkselect(this$Btn_SelGreenTool)
+        this$GreenToolSel()
       }
     }
     else if( K == "b" || K == "B" )
@@ -708,8 +709,8 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       #b key press
       if(!is.null(this$Btn_SelBlueTool))
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- T
-        this$UsingRGBKeyOnKeyboard <- T
+        tcltk::tkselect(this$Btn_SelBlueTool)
+        this$BlueToolSel()
       }
     }
   }
@@ -731,33 +732,6 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
         this$MouseWheelFunction<-0
       }
     }
-    else if( K == "r" || K == "R" )
-    {
-      #r key press
-      if(!is.null(this$Btn_SelRedTool))
-      {
-        gWidgets2::svalue(this$Btn_ZoomTool) <- T
-        this$UsingRGBKeyOnKeyboard <- F
-      }
-    }
-    else if( K == "g" || K == "G" )
-    {
-      #g key press
-      if(!is.null(this$Btn_SelGreenTool))
-      {
-        gWidgets2::svalue(this$Btn_ZoomTool) <- T
-        this$UsingRGBKeyOnKeyboard <- F
-      }
-    }
-    else if( K == "b" || K == "B" )
-    {
-      #b key press
-      if(!is.null(this$Btn_SelBlueTool))
-      {
-        gWidgets2::svalue(this$Btn_ZoomTool) <- T
-        this$UsingRGBKeyOnKeyboard <- F
-      }
-    }
   }
 
   #Windows lost focuts, used to restore zoom status
@@ -775,23 +749,29 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Zoom tool has been selected
   ZoomToolSel <- function( ... )
   {
-    if( gWidgets2::svalue(this$Btn_ZoomTool))
+    if(is.null(this$Btn_ZoomTool))
+    {
+     return()  
+    }
+    
+    if( getValue_coloredCheckBox(this$Btn_ZoomTool))
     {
       this$CurrentSelTool <- "Zoom"
       if(!is.null(this$Btn_SelRedTool))
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- F
+        tcltk::tkdeselect(this$Btn_SelRedTool)
       }
       if(!is.null(this$Btn_SelGreenTool))
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- F
+        tcltk::tkdeselect(this$Btn_SelGreenTool)
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- F
+        tcltk::tkdeselect(this$Btn_SelBlueTool)
       }
 
       #Set ion manually selection visibility
+      #TODO there is no hide/show implementation for tcltk widgets, so I workarround it by disabling them.. but it is not very elegant
       if(!is.null(this$Spin_massSel))
       {
         gWidgets2::enabled(Lbl_massSel) <- F
@@ -805,19 +785,19 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       bTest <- F
       if(!is.null(this$Btn_SelRedTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelRedTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelRedTool) | bTest
       }
       if(!is.null(this$Btn_SelGreenTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelGreenTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelGreenTool) | bTest
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelBlueTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelBlueTool) | bTest
       }
       if( bTest == F)
       {
-        gWidgets2::svalue(this$Btn_ZoomTool) <- T
+        tcltk::tkselect(this$Btn_ZoomTool)
       }
     }
     this$SetStateAccordingSelTool()
@@ -850,17 +830,20 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Red tool selected
   RedToolSel <- function( ... )
   {
-    if( gWidgets2::svalue(this$Btn_SelRedTool))
+    if( getValue_coloredCheckBox(this$Btn_SelRedTool))
     {
       this$CurrentSelTool <- "Red"
-      gWidgets2::svalue(this$Btn_ZoomTool) <- F
+      if(!is.null(this$Btn_ZoomTool))
+      {
+        tcltk::tkdeselect(this$Btn_ZoomTool)
+      }
       if(!is.null(this$Btn_SelGreenTool))
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- F
+        tcltk::tkdeselect(this$Btn_SelGreenTool)
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- F
+        tcltk::tkdeselect(this$Btn_SelBlueTool)
       }
 
       this$SetMassTolSping(  this$SelIon_mz_R, this$SelIon_tol_R, T)
@@ -868,18 +851,18 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     else #Check if all ara false and avoid such situation
     {
       bTest <- F
-      bTest <- gWidgets2::svalue(this$Btn_ZoomTool) | bTest
+      bTest <- getValue_coloredCheckBox(this$Btn_ZoomTool) | bTest
       if(!is.null(this$Btn_SelGreenTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelGreenTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelGreenTool) | bTest
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelBlueTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelBlueTool) | bTest
       }
       if( bTest == F)
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- T
+        tcltk::tkselect(this$Btn_SelRedTool)
       }
     }
     this$SetStateAccordingSelTool()
@@ -888,17 +871,20 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Green tool selected
   GreenToolSel <- function( ... )
   {
-    if( gWidgets2::svalue(this$Btn_SelGreenTool))
+    if( getValue_coloredCheckBox(this$Btn_SelGreenTool))
     {
       this$CurrentSelTool <- "Green"
-      gWidgets2::svalue(this$Btn_ZoomTool) <- F
+      if(!is.null(this$Btn_ZoomTool))
+      {
+        tcltk::tkdeselect(this$Btn_ZoomTool)
+      }
       if(!is.null(this$Btn_SelRedTool))
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- F
+        tcltk::tkdeselect(this$Btn_SelRedTool)
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- F
+        tcltk::tkdeselect(this$Btn_SelBlueTool)
       }
 
       this$SetMassTolSping(  this$SelIon_mz_G, this$SelIon_tol_G, T)
@@ -906,18 +892,18 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     else #Check if all ara false and avoid such situation
     {
       bTest <- F
-      bTest <- gWidgets2::svalue(this$Btn_ZoomTool) | bTest
+      bTest <- getValue_coloredCheckBox(this$Btn_ZoomTool) | bTest
       if(!is.null(this$Btn_SelRedTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelRedTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelRedTool) | bTest
       }
       if(!is.null(this$Btn_SelBlueTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelBlueTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelBlueTool) | bTest
       }
       if( bTest == F)
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- T
+        tcltk::tkselect(this$Btn_SelGreenTool)
       }
     }
     this$SetStateAccordingSelTool()
@@ -926,17 +912,20 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Blue tool selected
   BlueToolSel <- function( ... )
   {
-    if( gWidgets2::svalue(this$Btn_SelBlueTool))
+    if( getValue_coloredCheckBox(this$Btn_SelBlueTool))
     {
       this$CurrentSelTool <- "Blue"
-      gWidgets2::svalue(this$Btn_ZoomTool) <- F
+      if(!is.null(this$Btn_ZoomTool))
+      {
+        tcltk::tkdeselect(this$Btn_ZoomTool)
+      }
       if(!is.null(this$Btn_SelRedTool))
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- F
+        tcltk::tkdeselect(this$Btn_SelRedTool)
       }
       if(!is.null(this$Btn_SelGreenTool))
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- F
+        tcltk::tkdeselect(this$Btn_SelGreenTool)
       }
 
       this$SetMassTolSping( this$SelIon_mz_B, this$SelIon_tol_B, T)
@@ -944,18 +933,18 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
     else #Check if all ara false and avoid such situation
     {
       bTest <- F
-      bTest <- gWidgets2::svalue(this$Btn_ZoomTool) | bTest
+      bTest <- getValue_coloredCheckBox(this$Btn_ZoomTool) | bTest
       if(!is.null(this$Btn_SelRedTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelRedTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelRedTool) | bTest
       }
       if(!is.null(this$Btn_SelGreenTool))
       {
-        bTest <- gWidgets2::svalue(this$Btn_SelGreenTool) | bTest
+        bTest <- getValue_coloredCheckBox(this$Btn_SelGreenTool) | bTest
       }
       if( bTest == F)
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- T
+        tcltk::tkselect(this$Btn_SelBlueTool)
       }
     }
     this$SetStateAccordingSelTool()
@@ -981,27 +970,30 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   {
     if( tool == "Zoom")
     {
-      gWidgets2::svalue(this$Btn_ZoomTool) <- T
+      if(!is.null(this$Btn_ZoomTool))
+      {
+        tcltk::tkselect(this$Btn_ZoomTool)
+      }
     }
     else if( tool == "Red")
     {
       if(!is.null(this$Btn_SelRedTool))
       {
-        gWidgets2::svalue(this$Btn_SelRedTool) <- T
+        tcltk::tkselect(this$Btn_SelRedTool)
       }
     }
     else if( tool == "Green")
     {
       if(!is.null(this$Btn_SelGreenTool))
       {
-        gWidgets2::svalue(this$Btn_SelGreenTool) <- T
+        tcltk::tkselect(this$Btn_SelGreenTool)
       }
     }
     else if( tool == "Blue")
     {
       if(!is.null(this$Btn_SelBlueTool))
       {
-        gWidgets2::svalue(this$Btn_SelBlueTool) <- T
+        tcltk::tkselect(this$Btn_SelBlueTool)
       }
     }
   }
@@ -1083,13 +1075,19 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   {
     Btn_RemoveSpectra<- gWidgets2::gbutton(text = "Clear all", handler = this$ClearSpectraClicked, action = this, container = Grp_Buttons)
   }
-  Btn_ZoomTool <- gWidgets2::gcheckbox("Zoom", checked = T, handler = this$ZoomToolSel, container = Grp_Buttons, use.togglebutton = F)
-  gWidgets2::enabled(Btn_ZoomTool) <- display_sel_red | display_sel_green | display_sel_blue #Only dispaly the zoom tool selector if at leas one sel. ion is enabled
-
+  
+  if(display_sel_red | display_sel_green | display_sel_blue )
+  {
+    Btn_ZoomTool <- coloredCheckBox(text  = "Zoom", checked = T, handler =  this$ZoomToolSel, container = Grp_Buttons, bold = T)  
+  }
+  else
+  {
+    Btn_ZoomTool <- NULL
+  }
+  
   if( display_sel_red )
   {
-    Btn_SelRedTool <- gWidgets2::gcheckbox("SelRed", checked = F, handler = this$RedToolSel, container = Grp_Buttons, use.togglebutton = F)
-    .setCheckBoxText(Btn_SelRedTool, "Sel.Red", background = NULL, foreground = "darkred", font_size = NULL, font_weight = "heavy")
+    Btn_SelRedTool <- coloredCheckBox(text  = "Sel.Red", checked = F, handler =  this$RedToolSel, container = Grp_Buttons, foreground = "red", bold = T)
   }
   else
   {
@@ -1098,8 +1096,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
 
   if( display_sel_green )
   {
-    Btn_SelGreenTool <- gWidgets2::gcheckbox("GreenRed", checked = F, handler = this$GreenToolSel, container = Grp_Buttons, use.togglebutton = F)
-    .setCheckBoxText(Btn_SelGreenTool, "Sel.Green", background = NULL, foreground = "darkgreen", font_size = NULL, font_weight = "heavy")
+    Btn_SelGreenTool <- coloredCheckBox(text  = "Sel.Green", checked = F, handler =  this$GreenToolSel, container = Grp_Buttons, foreground = "darkgreen", bold = T)
   }
   else
   {
@@ -1108,8 +1105,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
 
   if( display_sel_blue )
   {
-    Btn_SelBlueTool <- gWidgets2::gcheckbox("SelBlue", checked = F, handler = this$BlueToolSel, container = Grp_Buttons, use.togglebutton = F)
-    .setCheckBoxText(Btn_SelBlueTool, "Sel.Blue", background = NULL, foreground = "darkblue", font_size = NULL, font_weight = "heavy")
+    Btn_SelBlueTool <- coloredCheckBox(text  = "Sel.Blue", checked = F, handler =  this$BlueToolSel, container = Grp_Buttons, foreground = "darkblue", bold = T)
   }
   else
   {
@@ -1138,7 +1134,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
 
   plot_device <-createPlotWidget(parent = Grp_Top, 
                                       redraw_function = this$ReDrawPlot,
-                                      MouseSelection_callback = OnSelection,
+                                      MouseSelection_callback = this$OnSelection,
                                       MouseWheel_callback = this$ScrollEventOnSpectra, 
                                       MouseHover_callback = this$OnMouseMotion, 
                                       initial_width = 800, 
