@@ -968,11 +968,18 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
   #Set the tool to use externally, can be: Zoom, Red, Green or Blue
   SetActiveTool <- function (tool)
   {
+    #Start by deselecting all since tcltk do not trigger signals when selecting programatically
+    if(!is.null(this$Btn_ZoomTool)) { tcltk::tkdeselect(this$Btn_ZoomTool)}
+    if(!is.null(this$Btn_SelRedTool)) { tcltk::tkdeselect(this$Btn_SelRedTool)}
+    if(!is.null(this$Btn_SelGreenTool)) { tcltk::tkdeselect(this$Btn_SelGreenTool)}
+    if(!is.null(this$Btn_SelBlueTool)) { tcltk::tkdeselect(this$Btn_SelBlueTool)}
+    
     if( tool == "Zoom")
     {
       if(!is.null(this$Btn_ZoomTool))
       {
         tcltk::tkselect(this$Btn_ZoomTool)
+        this$ZoomToolSel()
       }
     }
     else if( tool == "Red")
@@ -980,6 +987,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if(!is.null(this$Btn_SelRedTool))
       {
         tcltk::tkselect(this$Btn_SelRedTool)
+        this$RedToolSel()
       }
     }
     else if( tool == "Green")
@@ -987,6 +995,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if(!is.null(this$Btn_SelGreenTool))
       {
         tcltk::tkselect(this$Btn_SelGreenTool)
+        this$GreenToolSel()
       }
     }
     else if( tool == "Blue")
@@ -994,6 +1003,7 @@ plotSpectra<-function( mass = NULL, intensity = NULL, peaks_mass = NULL, peaks_i
       if(!is.null(this$Btn_SelBlueTool))
       {
         tcltk::tkselect(this$Btn_SelBlueTool)
+        this$BlueToolSel()
       }
     }
   }

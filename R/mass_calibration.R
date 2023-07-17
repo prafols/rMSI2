@@ -28,7 +28,7 @@
 CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = "", CalibrationSpan = 0.75)
 {
 
-  options(guiToolkit="RGtk2") # Forca que toolquit sigu GTK pq fas crides directes a events GTK!!!
+  options(guiToolkit="tcltk") #force to use tcltk
   oldWarning<-options()$warn
   options(warn = -1)
   
@@ -94,7 +94,7 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
     nearestPeak <- which.min(abs(mass - pks$mass))
     PeakMz <- pks$mass[nearestPeak]
     
-    iRow <- this$Table_Ctl$get_selected()
+    iRow <- this$Table_Ctl$get_selection()
     this$Table_Ctl[iRow, this$Tbl_ColNames$sel] <- PeakMz
     this$Table_Ctl[iRow, this$Tbl_ColNames$errRAW] <- this$Table_Ctl[iRow, this$Tbl_ColNames$ref] - PeakMz
     this$Table_Ctl[iRow, this$Tbl_ColNames$ppmRAW] <- 1e6*(this$Table_Ctl[iRow, this$Tbl_ColNames$ref] - PeakMz)/this$Table_Ctl[iRow, this$Tbl_ColNames$ref]
@@ -109,7 +109,7 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   #Load an ASCII with reference masses
   LoadRefMzAscii <- function (...)
   {
-    fname <- gWidgets2::gfile("Select reference m/z file", type = "open", multi = F)
+    fname <- gWidgets2::gfile("Select reference m/z file", type = "open", multi = F) #TODO improve this: make larger and hide hidden folders
     if( length(fname) > 0)
     {
       dataM <- read.table(fname)
@@ -120,6 +120,7 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
       this$spectraWidget$SetRefMass(ref_mz)
       gWidgets2::enabled(this$Table_Ctl) <- T
       gWidgets2::enabled(this$Btn_Active) <- T
+      gWidgets2::svalue(this$Btn_Active) <- F
       gWidgets2::enabled(this$Btn_AutoAssign) <- T
       this$SetCalibrateButtonActiveState()
       this$spectraWidget$SetActiveTool("Red")
@@ -152,15 +153,17 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   RowSelected <- function ( ... )
   {
     #Zoom in spectrum
-    iRow <- this$Table_Ctl$get_selected()
+    iRow <- this$Table_Ctl$get_selection()
+    
     SelMz <- this$Table_Ctl[ iRow, this$Tbl_ColNames$ref]
     if( SelMz > max(this$dMass) || SelMz < min(this$dMass))
     {
       cat(paste("Selected mass (", SelMz, ") is out of range: ", min(this$dMass), " - " , max(this$dMass),"\n", sep = ""))
       return()
     }
+    
     this$spectraWidget$ZoomMzRange( SelMz - 0.007*SelMz, SelMz + 0.007*SelMz )
-    RGtk2::gtkButtonSetLabel( gWidgets2::getToolkitWidget(this$Btn_Active) , paste("m/z",sprintf("%.2f",SelMz), "active") )
+    tcltk::tcl( gWidgets2::getToolkitWidget(this$Btn_Active), "configure", "-text", paste("m/z",sprintf("%.2f",SelMz), "active"))
     gWidgets2::svalue(this$Btn_Active) <-  this$Table_Ctl[iRow, this$Tbl_ColNames$active]
     
     if(is.nan( this$Table_Ctl[ iRow, this$Tbl_ColNames$sel] ))
@@ -177,7 +180,7 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   #Button to enable/disable mz
   BtnActiveChanged <- function( ... )
   {
-    iRow <- this$Table_Ctl$get_selected()
+    iRow <- this$Table_Ctl$get_selection()
     if( length(iRow) > 0)
     {
       this$Table_Ctl[iRow, this$Tbl_ColNames$active] <- gWidgets2::svalue(this$Btn_Active)
@@ -209,8 +212,12 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
     gWidgets2::enabled(Chk_ShowCal) <-T
     
     this$spectraWidget$AddSpectra(  dMassCalibrated, dIntensity, col = "darkgreen", name = "cal")
-    gWidgets2::svalue(this$Chk_ShowRaw) <- F
-    gWidgets2::svalue(this$Chk_ShowCal) <- T
+    
+    tcltk::tkdeselect(this$Chk_ShowRaw)
+    tcltk::tkselect(this$Chk_ShowCal)
+    this$ChkShowCalSpc()
+    this$ChkShowRawSpc()
+    
     gWidgets2::enabled(Btn_Confirm) <- T
     this$spectraWidget$ZoomResetClicked()
     this$spectraWidget$SetActiveTool("Zoom")
@@ -219,13 +226,13 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   #Clicked on checkbox
   ChkShowRawSpc <- function( ... )
   {
-    this$spectraWidget$SetSpectrumEnabled("raw", gWidgets2::svalue(this$Chk_ShowRaw))
+    this$spectraWidget$SetSpectrumEnabled("raw", getValue_coloredCheckBox(this$Chk_ShowRaw))
   }
   
   #Clicked on checkbox
   ChkShowCalSpc <- function( ... )
   {
-    this$spectraWidget$SetSpectrumEnabled("cal", gWidgets2::svalue(this$Chk_ShowCal))
+    this$spectraWidget$SetSpectrumEnabled("cal", getValue_coloredCheckBox(this$Chk_ShowCal))
   }
   
   #Radio button to select method changed
@@ -242,16 +249,19 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   
   #GUI builder
   this$window <- gWidgets2::gwindow ( paste("Spectrum Calibration -",win_title ), visible = F )
-    Grp_Top <- gWidgets2::gpanedgroup(horizontal = F, container = window)
+  Grp_Top <- gWidgets2::gpanedgroup(horizontal = F, container = window)
   
-  Grp_Bot <- gWidgets2::ggroup(horizontal = T, container = Grp_Top)
-  Table_Ctl <- gWidgets2::gtable(CreateMzTable( c(NaN), c(NaN) ), multiple = F, container = Grp_Bot, chosen.col = 2) #First empty MZ table
+  Grp_Bot <- gWidgets2::ggroup(horizontal = T, container = Grp_Top, expand = T, fill = T)
+  Table_Ctl <- gWidgets2::gtable(CreateMzTable( c(NaN), c(NaN) ), multiple = F, container = Grp_Bot, chosen.col = 2, expand = T, fill = T) #First empty MZ table
   
   Table_Ctl$set_editable(F)
-  gWidgets2::size(this$Table_Ctl) <- list( width = -1, height = -1,  column.widths = rep(110, length(Tbl_ColNames)))
+  gWidgets2::size(this$Table_Ctl) <- list( width = 850, height = -1,  column.widths = rep(100, length(Tbl_ColNames)))
+  tcltk::tcl(gWidgets2::getToolkitWidget(Table_Ctl), "column", 8, "-stretch", 0)
+  tcltk::tcl(gWidgets2::getToolkitWidget(Table_Ctl), "column", 1, "-stretch", 1)
+  
   gWidgets2::enabled(Table_Ctl) <-F
   
-  Grp_Btn <- gWidgets2::ggroup(horizontal = F, container = Grp_Bot)
+  Grp_Btn <- gWidgets2::ggroup(horizontal = F, container = Grp_Bot, expand = T, fill = T)
   Btn_LoadRef <- gWidgets2::gbutton("Load Ref m/z", container = Grp_Btn, handler = this$LoadRefMzAscii)
   Btn_AutoAssign <- gWidgets2::gbutton("Auto assign", container = Grp_Btn, handler = this$AutoMzAssign)
   Btn_Active <- gWidgets2::gcheckbox("m/z active", checked = F, use.togglebutton = T, handler = this$BtnActiveChanged, container = Grp_Btn)
@@ -261,7 +271,7 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   Rad_Method <- gWidgets2::gradio( items = c("Linear", "Loess"), selected = 2, horizontal = F, handler = this$MethodRadioChanged, container = Grp_CalMethod)
   Grp_CalSpan <- gWidgets2::ggroup(horizontal = T, container = Grp_CalMethod)
   lblSpan <- gWidgets2::glabel("Span:", container = Grp_CalSpan)
-  Spin_Span <- gWidgets2::gspinbutton(from = 0.1, to = 2, by = 0.05, value = Span, digits = 2, container = Grp_CalSpan)
+  Spin_Span <- gspinbutton_rMSI(from = 0.1, to = 2, by = 0.05, value = Span, digits = 2, container = Grp_CalSpan)
   
   Btn_Calibrate <- gWidgets2::gbutton("Calibrate", container = Grp_Btn, handler = this$BtnCalibrate)
   gWidgets2::enabled(Btn_Active) <-F
@@ -270,11 +280,9 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   
   Frm_PlotCtl <- gWidgets2::gframe("Plot control", container = Grp_Btn)
   Grp_PlotCtl <- gWidgets2::ggroup(horizontal = F, container = Frm_PlotCtl)
-  Chk_ShowRaw <- gWidgets2::gcheckbox("RAW", checked = T, handler = this$ChkShowRawSpc, container = Grp_PlotCtl)
-  Chk_ShowCal <- gWidgets2::gcheckbox("CAL", checked = F, handler = this$ChkShowCalSpc, container = Grp_PlotCtl)
-  .setCheckBoxText(Chk_ShowRaw, "RAW spectrum", background = NULL, foreground = "darkblue", font_size = NULL, font_weight = "heavy")
-  .setCheckBoxText(Chk_ShowCal, "CAL spectrum", background = NULL, foreground = "darkgreen", font_size = NULL, font_weight = "heavy")
-  
+  Chk_ShowRaw <- coloredCheckBox("RAW", checked = T, handler = this$ChkShowRawSpc, container = Grp_PlotCtl, foreground = "darkblue", bold = T)
+  Chk_ShowCal <- coloredCheckBox("CAL", checked = F, handler = this$ChkShowCalSpc, container = Grp_PlotCtl,  foreground = "darkgreen", bold = T)
+
   Btn_Confirm <- gWidgets2::gbutton("Validate CAL & quit", container = Grp_Btn, handler = this$ValidateCalAndQuit)
   gWidgets2::enabled(Btn_Confirm) <-F
   
@@ -284,14 +292,12 @@ CalibrationWindow<-function( mass, intensity, peak_win_size = 20, win_title = ""
   spectraWidget<-.SpectraPlotWidget(parent_widget = spectraFrame, top_window_widget = window, clicFuntion = this$SpectrumClicked, showOpenFileButton = F,  display_sel_red = T, display_sel_spins = F)
   
   gWidgets2::size( window )<- c(1024, 740)
-  gWidgets2::size( spectraWidget )<- c(-1, 380)
-  gWidgets2::size( Table_Ctl )<- c(-1, 200)
-  
+
   visible(window)<-TRUE
   
   spectraWidget$AddSpectra(  dMass, dIntensity, col = "blue", name = "raw")
   spectraWidget$ZoomResetClicked()
-  window$widget$present()
+
   Table_Ctl$add_handler_selection_changed(this$RowSelected)
   
   ## Set the name for the class

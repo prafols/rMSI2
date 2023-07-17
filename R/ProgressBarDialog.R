@@ -20,7 +20,7 @@
 
 .ProgressBarDialog <- function( Title="", parent = NULL )
 {
-  options(guiToolkit="RGtk2") 
+  options(guiToolkit="tcltk") #force to use tcltk
   oldWarning<-options()$warn
   options(warn = -1)
 

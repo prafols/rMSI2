@@ -35,6 +35,27 @@ gcombobox_rMSI <- function(items, selected = 1, container = NULL, handler = NULL
   return(combo_widget)
 }
 
+#' gspinbutton_rMSI.
+#' 
+#' Build on top of gwidgets2tcltk implementation to properly set the widget width.
+#'
+#' @param from 
+#' @param to 
+#' @param by
+#' @param value
+#' @param digits
+#' @param container 
+#' @param handler 
+#'
+#' @return a gcombobox widget
+#'
+gspinbutton_rMSI <- function(from = 0, to = 10, by = 1, value = from, digits = 0, container = NULL, handler = NULL)
+{
+  char_length <- digits + 4
+  spin_widget <- gWidgets2::gspinbutton( from = from, to = to, by = by, value = value, digits = digits, container = container, handler = handler)  
+  tcltk::tkconfigure(gWidgets2::getToolkitWidget(spin_widget), width = char_length)
+  return(spin_widget)
+}
 
 #' gbutton_icon.
 #' 
@@ -111,7 +132,6 @@ coloredCheckBox <- function(text, checked = F, handler = NULL, container, foregr
   return(chb)
 }
 
-
 #' getValue_coloredCheckBox.
 #' 
 #' get the value of a tcltk checkbox as boolean.
@@ -123,37 +143,4 @@ coloredCheckBox <- function(text, checked = F, handler = NULL, container, foregr
 getValue_coloredCheckBox <- function(widget)
 {
   return( as.logical(as.integer(tcltk::tclvalue(widget$value))) )
-}
-
-#Global method to set checkbox text whit colors, font size and weight
-.setCheckBoxText <- function(widget, text, background = NULL, foreground = NULL, font_size = NULL, font_weight = NULL)
-{
-  
-  
-  cat("WARNING & TODO: this method is deprecated and must be updated or deleted!\n")
-  
-  #tcltk::tkconfigure(gWidgets2::getToolkitWidget(widget), background = "red")
-  # 
-  # pango_str <- "<span"
-  # if(!is.null(foreground))
-  # {
-  #   pango_str <- paste(pango_str, " foreground=\"", foreground,"\"", sep = "" )
-  # }
-  # if(!is.null(background))
-  # {
-  #   pango_str <- paste(pango_str, " background=\"", background,"\"", sep = "" )
-  # }
-  # if(!is.null(font_size))
-  # {
-  #   pango_str <- paste(pango_str, " size=\"",font_size, "\"", sep = "" )
-  # }
-  # if(!is.null(font_weight))
-  # {
-  #   pango_str <- paste(pango_str, " weight=\"", font_weight, "\"", sep = "" )
-  # }
-  # pango_str <- paste(pango_str, ">", text, "</span>", sep = "" )
-  
-  #TODO pango is no vaild for TCL/TK, revise where this method is used
-  
-  #RGtk2::gtkLabelSetMarkup(gWidgets2::getToolkitWidget(checkbox)[[1]],pango_str)
 }

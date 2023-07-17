@@ -18,6 +18,7 @@
 
 ImportWizardGui <- function()
 {
+  options(guiToolkit="tcltk") #force to use tcltk
   oldWarning<-options()$warn
   options(warn = -1)
   
@@ -285,7 +286,7 @@ ImportWizardGui <- function()
   
   mainWin<-gWidgets2::gwindow(title = "MSI data import and process wizard", visible = F)
   box_mainH <- gWidgets2::ggroup(horizontal = T, container = mainWin, expand = T, fill = T)
-  box_mainV <- gWidgets2::ggroup(horizontal = F, container = box_mainH, expand = , fill = T)
+  box_mainV <- gWidgets2::ggroup(horizontal = F, container = box_mainH, expand = F, fill = F)
   
   #Param management
   frm_paramManager <-  gWidgets2::gframe( "Processing Parameters Management", container =  box_mainV, expand = F, fill = F)
@@ -294,8 +295,8 @@ ImportWizardGui <- function()
   btn_paramSave <- gWidgets2::gbutton("Save parameters", handler = this$ButtonSaveParamsClicked, container = box_paramManager)
   
   #Data Input box
-  frm_dataInput <-  gWidgets2::gframe( "Data Source", container =  box_mainV, expand = T, fill = T)
-  box_dataInput <- gWidgets2::ggroup( horizontal = F, container = frm_dataInput, expand = T, fill = T)
+  frm_dataInput <-  gWidgets2::gframe( "Data Source", container =  box_mainV, expand = F, fill = F)
+  box_dataInput <- gWidgets2::ggroup( horizontal = F, container = frm_dataInput, expand = F, fill = F)
   check_imzMLisPeakList <- gWidgets2::gcheckbox("ImzML files contain peaks-lists", checked = F, container = box_dataInput, handler = this$ChkBoxImzMLisPeakList)
   check_imzMLfixBrokenUUID <- gWidgets2::gcheckbox("Fix broken UUID", checked = F, container = box_dataInput)
   browseMSIFile <- FileBrowseWidget( box_dataInput, setdir_fun = SetWorkingDir, getdir_fun = GetWorkingDir )
@@ -307,15 +308,19 @@ ImportWizardGui <- function()
   
   #Pre-processing box
   frm_preProcessing <- gWidgets2::gframe( "Pre-Processing parameters", container = box_mainH, expand = T, fill = T )
-  box_procH <- gWidgets2::ggroup(horizontal = T, container = frm_preProcessing, expand = T, fill = T, spacing = 20)
-  box_proc1 <- gWidgets2::ggroup(horizontal = F, container = box_procH, expand = T, fill = T, spacing = 20)
-  box_proc2 <- gWidgets2::ggroup(horizontal = F, container = box_procH, expand = T, fill = T, spacing = 20)
+  box_procH <- gWidgets2::ggroup(horizontal = T, container = frm_preProcessing, expand = T, fill = T, spacing = 5)
+  box_proc1 <- gWidgets2::ggroup(horizontal = F, container = box_procH, expand = T, fill = T, spacing = 5)
+  box_proc2 <- gWidgets2::ggroup(horizontal = F, container = box_procH, expand = T, fill = T, spacing = 5)
+  
   drawLabelSpin <- function( parent_widget, sText, minVal, maxVal, defaultVal, decPlaces = 0, increments = 1 )
   {
     box_spin <- gWidgets2::ggroup(horizontal = T, container = parent_widget)
     gWidgets2::glabel(sText, container = box_spin )
     gWidgets2::addSpring(box_spin)
-    return (gWidgets2::gspinbutton(from = minVal, to = maxVal, by = increments, value = defaultVal, container = box_spin, digits = decPlaces)  )
+    
+    bspin <- gWidgets2::gspinbutton(from = minVal, to = maxVal, by = increments, value = defaultVal, container = box_spin, digits = decPlaces)   
+    tcltk::tcl(gWidgets2::getToolkitWidget(bspin), "configure", "-width", 6)
+    return (bspin)
   }
   
   #Smoothing params
