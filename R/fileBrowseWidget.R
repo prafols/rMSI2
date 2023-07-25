@@ -76,7 +76,7 @@ FileBrowseWidget <- function( parent_widget, sLabel = "File:", dirSel = F, multi
       }
       else
       {
-        gWidgets2::svalue(this$entry_dir) <-  dirname(this$sPath)
+        gWidgets2::svalue(this$entry_dir) <-  this$sPath
       }
     }
     if(!is.null(this$SetWorkDir))
@@ -134,13 +134,17 @@ FileBrowseWidget <- function( parent_widget, sLabel = "File:", dirSel = F, multi
 
   box_entry <- gWidgets2::ggroup(horizontal = F, container = box, expand = T, fill = T)
   entry_dir<-gWidgets2::gedit(container = box_entry) #The width argument has no effect on tcltk 
-  gWidgets2::editable(entry_dir) <- F
+  
+  #set it not editable by disconnecting the key event
+  tcltk::tkbind(gWidgets2::getToolkitWidget(entry_dir), "<KeyPress>", "break")
+  
+  
   if( multiSel && !dirSel )
   {
     entry_files<-gWidgets2::gtext(container = box_entry) #The width argument has no effect on tcltk 
     #the width of the text entry defaults to 80 even if setting it to 50 with the following tcl command
     #tcltk::tcl(gWidgets2::getToolkitWidget(entry_files), "configure", "-width", 50)
-    gWidgets2::editable(entry_files) <- F
+    tcltk::tkbind(gWidgets2::getToolkitWidget(entry_files), "<KeyPress>", "break")
   }
   box_btn <- gWidgets2::ggroup(horizontal = F, container = box)
   btn <- gWidgets2::gbutton("Browse", handler = this$BrowseDialog, container = box_btn )
