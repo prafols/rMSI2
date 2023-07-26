@@ -832,7 +832,7 @@ void ImzMLBinWrite::open(bool truncate)
     else
     {
       //Open for serial writing, append data to the end
-      ibdFile.open(ibdFname.get_cstring(), std::fstream::out | std::ios::binary | std::fstream::app );
+      ibdFile.open(ibdFname.get_cstring(), std::fstream::out | std::ios::binary | std::fstream::app | std::fstream::ate ); //The ate is needed in Windows to open the file at the end
     }
   }
   
@@ -864,19 +864,6 @@ void ImzMLBinWrite::writeUUID(std::string suuid)
   {
     uuid[i] = strtol(suuid.substr(i*2, 2).c_str(), NULL, 16);
   }
-  
-
-  //TODO  this may be a bug on Windows! add some prints to check it
-  Rcpp::Rcout << "DBG binary UUID test" << std::endl;
-  Rcpp::Rcout << "std::string suuid = " << suuid << std::endl;
-  Rcpp::Rcout << "binary uuid = ";
-  for( int i = 0; i < 16; i++)
-  {
-    Rcpp::Rcout << std::hex <<  (0xFF & (int16_t) uuid[i]) << " ";
-  }
-  Rcpp::Rcout << std::endl;
-  //End of debug
-  
   writeUUIDBytes(uuid);
 }
 
