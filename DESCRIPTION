@@ -18,9 +18,7 @@ Depends:
     gWidgets2 (>= 1.0),
     gWidgets2tcltk (>= 1.0)
 Imports:
-    bit (>= 1.1-12),
     raster (>= 2.4),
-    sp (>= 1.2-0),
     digest (>= 0.6.9),
     Rcpp (>= 0.12.2)
 Suggests:

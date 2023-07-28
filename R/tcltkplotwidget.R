@@ -44,7 +44,7 @@ createPlotWidget <- function(parent,
 {
   img_file <- tempfile(pattern = "rplot", fileext = ".png" )
   
-  png(filename =  img_file, width =  initial_width, height = initial_height, res = 100, pointsize = 10)
+  png(filename =  img_file, width =  initial_width, height = initial_height, res = 100, pointsize = 10, type = "cairo")
   par(xaxs = "i", yaxs = "i") #Force axes range to xlim and ylim provided, this should enable a better mouse clicks control
   try(redraw_function())
   
@@ -242,7 +242,7 @@ redrawPlotWidget <- function(tkplotwidget)
   win_width <- as.numeric(tcltk::tkwinfo("width", tkplotwidget)) 
   win_height <- as.numeric(tcltk::tkwinfo("height", tkplotwidget))
   
-  png(filename =  tkplotwidget$file, width =  win_width, height = win_height, res = 100, pointsize = 10)
+  png(filename =  tkplotwidget$file, width =  win_width, height = win_height, res = 100, pointsize = 10, type = "cairo" )
   par(xaxs = "i", yaxs = "i") #Force axes range to xlim and ylim provided, this should enable a better mouse clicks control
   try(tkplotwidget$fun())
   

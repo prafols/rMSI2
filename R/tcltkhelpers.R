@@ -126,7 +126,10 @@ coloredCheckBox <- function(text, checked = F, handler = NULL, container, foregr
   
   if(!is.null(handler))
   {
-    tcltk::tkbind(chb, "<ButtonRelease-1>", handler )
+    #This is a good way to connect the even that works on Win and Linux
+    signal_str <- paste0("thischeckboxChanged",as.character(tcltk::tkwinfo("id", chb)))
+    tcltk::tcl("proc", signal_str, "args", handler)
+    tcltk::tcl("trace", "add", "variable", chb$value, "write", signal_str)
   }
   
   return(chb)
