@@ -61,7 +61,7 @@
   rm(ClearSpectraPlot_function)
   myName <- widget_name
   NormalizationCoefs <- rep(1, nrow(img$pos))
-  previous_spectralist_width<-0.15
+  previous_spectralist_width<-180 #width in pixels
 
   #Current image RGB layers
   Rlayer_raster <- .InitRGBEmptyRaster( img$size["x"], img$size["y"] )
@@ -804,12 +804,13 @@
     if(gWidgets2::svalue(this$Btn_ShowSpectraList))
     {
       #show spectra list
-      gWidgets2::svalue(this$Panel_Img) <- this$previous_spectralist_width
+      setSpectraListWidth(this$previous_spectralist_width)
     }
     else
     {
       #hide spectra list
-      this$previous_spectralist_width <- gWidgets2::svalue(this$Panel_Img)
+      curr_widget_width <- as.numeric(tcltk::tkwinfo("width", gWidgets2::getToolkitWidget(this$Top_frm)))
+      this$previous_spectralist_width <- gWidgets2::svalue(this$Panel_Img) * curr_widget_width
       gWidgets2::svalue(this$Panel_Img) <- 0
     }
   }
@@ -825,9 +826,24 @@
     this$flipV <- !(this$flipV)
     redrawPlotWidget(this$imaging_dev)
   }
+  
+  onExpose <- function()
+  {
+    if(gWidgets2::svalue(this$Btn_ShowSpectraList))
+    {
+      setSpectraListWidth(this$previous_spectralist_width)
+    }
+  }
+  
+  setSpectraListWidth <- function(desired_width_pixels)
+  {
+    curr_widget_width <- as.numeric(tcltk::tkwinfo("width", gWidgets2::getToolkitWidget(this$Top_frm)))
+    gWidgets2::svalue(this$Panel_Img) <- this$previous_spectralist_width /  curr_widget_width# % of space allocated to spectra list  
+  }
 
   #Build the GUI
   Top_frm <- gWidgets2::gframe( text =  img$name, container = parent, fill = T, expand = T, spacing = 2 ) 
+  tcltk::tkbind( gWidgets2::getToolkitWidget(Top_frm), "<Expose>", this$onExpose )
   
   Panel_Img<- gWidgets2::gpanedgroup(horizontal = T, container = Top_frm,  fill = T, expand = T )
   spectraListFrame<-gWidgets2::gframe("Spectra List", container = Panel_Img,  fill = T, spacing = 5, expand = T )
@@ -926,8 +942,6 @@
   gWidgets2::enabled(Frame_RoiCtl) <- F
   gWidgets2::enabled(Btn_RoiIntUnLimit) <- F
   
-  gWidgets2::svalue(Panel_Img) <- previous_spectralist_width # % of space allocated to spectra list
-
   # Set the name for the class
   class(this) <- append(class(this),"MSImagePlotWidget")
   gc()
