@@ -25,7 +25,7 @@
 #'
 LoadTwoMsImages <- function( )
 {
-  options(guiToolkit="RGtk2") 
+  options(guiToolkit="tcltk") #force to use tcltk
   oldWarning<-options()$warn
   options(warn = -1)
 
@@ -45,31 +45,16 @@ LoadTwoMsImages <- function( )
     {
       return ()
     }
-    RGtk2::gtkEntrySetText(gWidgets2::getToolkitWidget(h$action), fname)
+    gWidgets2::svalue(h$action) <- fname
   }
 
   cancelClicked <- function(h, ...)
   {
-    this$pbar$ProgressBar_Closed()
     gWidgets2::dispose(h$obj)
-  }
-
-  Win_Closed <- function( h, ...)
-  {
-    if(!this$load_completed)
-    {
-      this$pbar$ProgressBar_Closed()
-    }
   }
 
   okClicked <- function(h, ...)
   {
-    #Hide and show some widgets
-    RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$btn_proced))
-    gWidgets2::enabled(this$lbl_tl) <- F
-    gWidgets2::enabled(this$frm_img1) <- F
-    gWidgets2::enabled(this$frm_img2) <- F
-    RGtk2::gtkWidgetShow(gWidgets2::getToolkitWidget(this$frm_pbar))
 
     #Check if images paths are correct and load data
     fpath1<- gWidgets2::svalue( this$txt_img1 )
@@ -77,9 +62,7 @@ LoadTwoMsImages <- function( )
 
     if( file.exists(fpath1) )
     {
-      this$pbar$setTitle("Loading image 1")
-      this$img1_obj<-LoadMsiData(data_file = fpath1, fun_progress = this$pbar$setValue, fun_label = this$pbar$setTitle, close_signal = this$pbar$close, imzMLChecksum = F)
-      this$pbar$setValue(100)
+      this$img1_obj<-LoadMsiData(data_file = fpath1, imzMLChecksum = F)
     }
     else
     {
@@ -92,9 +75,7 @@ LoadTwoMsImages <- function( )
 
     if( file.exists(fpath2) )
     {
-      this$pbar$setTitle("Loading image 2")
-      this$img2_obj<-LoadMsiData(data_file = fpath2, fun_progress = this$pbar$setValue, fun_label = this$pbar$setTitle, close_signal = this$pbar$close, imzMLChecksum = F)
-      this$pbar$setValue(100)
+      this$img2_obj<-LoadMsiData(data_file = fpath2, imzMLChecksum = F)
     }
     else
     {
@@ -102,28 +83,6 @@ LoadTwoMsImages <- function( )
     {
         gWidgets2::gmessage("Image 2 file is not valid or does not exists", "Error loading image 2", icon = "error")
       }
-    }
-
-    if(is.null(this$img1_obj))
-    {
-      #Process Aborted By User, return
-      unlink( file.path(dirname(fpath1), paste("ramdisk",basename(fpath1), sep = "_")), recursive = T)
-    }
-
-    if(is.null(this$img2_obj))
-    {
-      #Process Aborted By User, return
-      unlink( file.path(dirname(fpath2), paste("ramdisk",basename(fpath2), sep = "_")), recursive = T)
-    }
-
-    #Restore widgets show state
-    if( gWidgets2::isExtant(this$win_tp ) )
-    {
-      RGtk2::gtkWidgetShow(gWidgets2::getToolkitWidget(this$btn_proced))
-      gWidgets2::enabled(this$lbl_tl) <- T
-      gWidgets2::enabled(this$frm_img1) <- T
-      gWidgets2::enabled(this$frm_img2) <- T
-      RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$frm_pbar))
     }
 
     if( !file.exists(fpath1) && !file.exists(fpath2) )
@@ -138,10 +97,10 @@ LoadTwoMsImages <- function( )
   }
 
   #Build GUI
-  win_tp<-gWidgets2::gwindow("Load MSI data", visible = F, width = 600, height = 200, parent = c(0.5*RGtk2::gdkScreenWidth() - 300, 0.5*RGtk2::gdkScreenHeight() - 100))
+  win_tp<-gWidgets2::gwindow("Load MSI data", visible = F, width = 600, height = 200, parent = c(0.5*as.integer(tcltk::tkwinfo("screenwidth", ".")) - 300, 0.5* as.integer(tcltk::tkwinfo("screenheight", ".")) - 100))
   box_tp<-gWidgets2::ggroup(horizontal = F,container = win_tp, spacing = 10)
   box_title <- gWidgets2::ggroup(horizontal = T,container = box_tp, spacing = 10, expand = T, fill = T)
-  lbl_tl<-gWidgets2::glabel("<span  weight=\"bold\">  Select up to two MS images to load in .tar or .imzML format</span>", markup = T,  container = box_title)
+  lbl_tl<-gWidgets2::glabel("Select up to two MS images to load in .imzML or .XrMSI format", container = box_title)
   gWidgets2::addSpring(box_title)
 
   frm_img1<-gWidgets2::gframe(spacing = 5, container = box_tp)
@@ -156,23 +115,17 @@ LoadTwoMsImages <- function( )
   txt_img2<-gWidgets2::gedit(width = 60, container = box_img2, expand = T, fill = T)
   btn_img2<-gWidgets2::gbutton("Select file", container = box_img2, handler = fileChooseClicked, action = txt_img2)
 
-  frm_pbar <- gWidgets2::gframe(spacing = 5, container = box_tp)
-  pbar <- .ProgressBarDialog( "Loading data...",parent = frm_pbar)
-
   frm_btns <- gWidgets2::gframe( spacing = 5, container = box_tp)
   box_btns <- gWidgets2::ggroup(horizontal = T, spacing = 10, container = frm_btns, expand = T, fill = T)
   gWidgets2::addSpring(box_btns)
   btn_cancel <- gWidgets2::gbutton("Cancel", container = box_btns, handler = cancelClicked)
   btn_proced <- gWidgets2::gbutton("OK", container = box_btns, handler = okClicked)
-
-  gWidgets2::addHandlerDestroy(win_tp, handler = Win_Closed)
-  RGtk2::gtkWidgetHide(gWidgets2::getToolkitWidget(this$frm_pbar))
-
+  
   gWidgets2::visible(win_tp)<-T
   ## Set the name for the class
   class(this) <- append(class(this),"LoadTwoMsImages")
   gc()
-
+  
   #Do not return until this windos is disposed...
   while(gWidgets2::isExtant(this$win_tp ))
   {
@@ -185,3 +138,4 @@ LoadTwoMsImages <- function( )
 
   return(this)
 }
+

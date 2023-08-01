@@ -832,7 +832,7 @@ void ImzMLBinWrite::open(bool truncate)
     else
     {
       //Open for serial writing, append data to the end
-      ibdFile.open(ibdFname.get_cstring(), std::fstream::out | std::ios::binary | std::fstream::app );
+      ibdFile.open(ibdFname.get_cstring(), std::fstream::out | std::ios::binary | std::fstream::app | std::fstream::ate ); //The ate is needed in Windows to open the file at the end
     }
   }
   

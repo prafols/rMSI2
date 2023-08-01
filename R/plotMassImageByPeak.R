@@ -481,6 +481,10 @@
 #'
 plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, NormalizationCoefs = NULL, rotation = 0, show_axes = F, scale_to_global_intensity = F, vlight = 3, crop_area = NULL, intensity_limit = NULL)
 {
+  
+  #TODO DBG timings
+  pt_start <- Sys.time()
+  
   numberOfChannels <- 1
 
   if(length(mass.peak) == 1 )
@@ -496,15 +500,7 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
 
     if(scale_to_global_intensity)
     {
-      if(class(img$mean) == "MassSpectrum")
-      {
-        #Handling old data format
-        raster_RGB<-.BuildSingleIonRGBImage(im_sgn, XResLevel = XResLevel, global_intensity_scaling_factor = max(img$mean@intensity), light = vlight)
-      }
-      else
-      {
-        raster_RGB<-.BuildSingleIonRGBImage(im_sgn, XResLevel = XResLevel, global_intensity_scaling_factor = max(img$mean), light = vlight)
-      }
+      raster_RGB<-.BuildSingleIonRGBImage(im_sgn, XResLevel = XResLevel, global_intensity_scaling_factor = max(img$mean), light = vlight)
     }
     else
     {
@@ -566,6 +562,12 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
     raster_RGB <-.BuildRGBImage( im_R, im_G, im_B,  XResLevel = XResLevel)
   }
 
+  #TODO DBG timming
+  elap <- Sys.time() - pt_start
+  cat("Time of  .buildImageByPeak() and .BuildSingleIonRGBImage() \n")
+  print(elap)
+  cat("\n\n")
+  pt_start <- Sys.time()
   
   oldPar <- par(no.readonly = T)
   layout( matrix( (numberOfChannels+1):1, ncol = (1+numberOfChannels), nrow = 1, byrow = TRUE ), widths = c(7, rep(1, numberOfChannels)) )
@@ -586,6 +588,13 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
 
   .plotMassImageRGB(raster_RGB, cal_um2pixels = img$pixel_size_um, rotation = rotation, display_axes = show_axes, roi_rectangle = crop_area )
   par(oldPar)
+  
+  #TODO DBG timming
+  elap <- Sys.time() - pt_start
+  cat("Time of  .plotIntensityScale() and .plotMassImageRGB() \n")
+  print(elap)
+  cat("\n\n")
+  pt_start <- Sys.time()
 }
 
 .FillSimpleRaster <- function(img, values, text)
