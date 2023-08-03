@@ -3,42 +3,17 @@ rMSI2 is an R package for mass spectrometry (MS) imaging data handling and visua
 The package is a multi-platform tool that has been tested on Linux, MAC and Windows systems. 
 It provides an optimized data model to allow loading large MS imaging datasets in low resource computers. MS data is stored in the hard disk drive (HDD) but rMSI2 is able to access data as if it where kept in computer’s memory using a virtual memory technology. The package also provides a graphical user interface (GUI) to facilitate MS imaging data exploration in R platform. The main rMSI2 GUI allows representing up to three MS ions spacial distribution, direct access to pixel spectrum and other usefull features. See and screenshot below.
 
-![alt text](https://github.com/prafols/rMSI2/blob/master/images/screenShotrMSI_RGB.png "rMSI2 Main GUI")
+![alt text](https://github.com/prafols/rMSI2/blob/main/images/screenShotrMSI_RGB.png "rMSI2 Main GUI")
 
 ### Installation
-
-##### RGtk2
-*rMSI2* provides a quite complex data model together with a graphical user interface (GUI), consequently rMSI2 depends on many other R packages that must be also installed. RGtk2 is one of these packages and is known to be problematic to install in some cases (specially on non-Linux systems). So, it is highly recommended installing and testing it before going through the process of installing *rMSI2*. 
-First install RGtk2 using R console:
-```R
-> install.packages("RGtk2")
-```
-Then test that it is working by loading the package:
-```R
-> library(RGtk2)
-```
-If RGtk2 loads properly then continue with the *rMSI2* installation process. Otherwise, please check out the RGtk2 website to solve issues related with Gtk installation: <http://www.ggobi.org/rgtk2/>
-
-##### rMSI2
-The simplest way to install rMSI2 and keep it updated is using devtools package. Install devtools from CRAN into your R session:
-```R
->  install.packages("devtools")
-```
-Then simply tell devtools to install rMSI2 from github latest release:
-```R
-> devtools::install_github("prafols/rMSI2")
-```
-This will install rMSI2 package and all of its dependencies in your R environment. Then you can access to its functions by loading the rMSI2 package or through the `::` operator. For example, you can test the main rMSI2 GUI by executing:
-```R
-> foo <- rMSI2::OpenMSI()
-```
-This will open a dialog that allows loading up to two MS images in imzML format or rMSI2 .XrMSI format. Then the MS images will be displayed. A reference to each MS image will be returned and stored in *foo* variable as *foo$img1* and *foo$img2*. 
+Check out the installation guide at:  [installation guide](https://github.com/prafols/rMSI2/blob/main/guides/installation.md "Install rMSI2")
 
 ### Quick Start Guide
 This guide provides a quick overview of rMSI2 package usage. Before going through this guide it is recommended to have some knowledge of R language (<https://www.r-project.org>) and  rMSI2 package installed as described above. The fundamentals of rMSI2 are described here but for a more detailed information, please check the package documentation through the standard R help interface:
 ```R
 > ??rMSI2
 ```
+A more comprehensive workshop of rMSI2 in use is available at: [rMSI2 Workshop](https://github.com/prafols/rMSI2/blob/main/guides/rMSI2_workshop.Rmd "rMSI2 workshop")
 
 ##### Loading data and starting the main GUI
 The first step to start using rMSI2 consists in loading an MS image. You can obtain some example data to test the program at the public available links in  **Example Data** section below. The MS imaging data can be loaded from two formats: rMSI2 format and imzML (currently only continuous mode is supported). It is also possible to load data from Bruker’s XMASS format but this format has to be previously converted using the *importBrukerXMASSImg_Wizard()* function.
@@ -51,7 +26,7 @@ The returned value of *OpenMSI()* will contain a list of two images where: myDat
 
 Nevertheless, opening the main GUI each time a MS images is loaded may not be very convenient in some cases. So, another way of loading data is using the *LoadMsiData()* function:
 ```R
-myData <- rMSI2::LoadMsiData("/path/to/your/image.data")
+myData <- rMSI2::LoadMsiData("/path/to/your/image_data.imzML")
 ```
 Where the path to the image must be complete including .imzML or .tar extension. Then, this function will return the loaded MS image in a rMSI2 formatted R object.
 The main GUI can be started anytime using the *MSIWindow()* function. For eaxmple:
