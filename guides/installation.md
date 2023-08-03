@@ -1,33 +1,12 @@
 ### Installation
 
-*rMSI2* provides a quite complex data model together with an optional graphical user interface (GUI), consequently rMSI2 depends on some other R packages that must be also installed. To use the GUI, RGtk2 is required and is known to be problematic to install on Windows systems since it is not maintained anymore. Thus, we provide an installation guides for each operating system (**MAC OSX is not available**).
-
-We are very aware of the issues related to the optinal GUI installation for rMSI2 and the downsides of it and therefore, we are working to develop a new GUI model to overcome this issue. But, in the meanwhile, we provide this guide to facilitate a successful installation of rMSI2 with the GUI operative. 
-
+*rMSI2* provides a quite complex data model together with an optional graphical user interface (GUI), consequently rMSI2 depends on some other R packages that must be also installed. Previous versions of rMSI2 relied on the RGtk2 package to drawn its GUI. This GTK dependency was known to be problematic to install on Windows and MAC systems. Currently, we are proud to provide a rewritten GUI that do not depend on GTK anymore. Instead, the renewed GUI uses the R built-in TCL/TK library to provide the required graphics functions. This allows a much easier installation on any R platform. 
 Follow the instructions below corresponding to your operating system to install the dependencies needed for the GUI .
 
 * ##### Instructions for Windows users
+To install rMSI2 from sources, we recommend a recent version of R (from 4.2 and above) and the corresponding Rtools. You can obtain the Rtools matching your R version here: [get Rtools](https://cran.r-project.org/bin/windows/Rtools/ "Rtools"). Next, you can proceed with the installation instructions below.
 
-RGtk2 is not available anymore as a binary package easy to install from CRAN to Windows systems. Building RGtk2 from source on Windows platform is rather complex and requires having the Gtk2 SDK properly installed. In order to simplify the installation of rMSI2 we provide an R script to automate the RGtk2 installation on Windows based on archive binaries of the required packages and libraries. The steps below describe the recommended procedure to get rMSI2 working on a Windows machine:
-
-1. The provided solution for Windows is only valid for a specific R version: 4.0.5. So, if you have another version of R installed, we recommend to completely uninstall it before continuing this guide.
-2. Get the R 4.0.5 for Windows from this link: [get R 4.0.5 for Windows](https://cloud.r-project.org/bin/windows/base/old/4.0.5/R-4.0.5-win.exe "Download R 4.0.5").
-3. Start the installation of R 4.0.5 but be very careful to disable the installation of 32 bits version of R. The provided rMSI2 solution only works for 64 bits systems and having a mixed environment only claims for troubles. Thus, check out the following screenshot of the R installer and ensure yours looks exactly the same (32 bits unchecked).
-
-![alt text](https://github.com/prafols/rMSI2/blob/main/guides/img/Screenshot_installingR.png "R 4.0.5 Installation")
-
-4. In Windows, it is needed to install Rtools in order to be able to compile rMSI2 package from source. You can get it from here: [get Rtools for R 4.0](https://cran.r-project.org/bin/windows/Rtools/rtools40.html "Rtools"). Follow the procedure described in Rtools site in order to correctly configure your PATH.
-
-5. Finally, we are ready to execute the script that is going to automatically pull all RGtk2 dependencies for Windows. Just run the following command in your R console:
-
-```R
-> source("https://raw.githubusercontent.com/prafols/rMSI2/main/guides/installing_RGtk2_win.R")
-```
-
-* ##### Instructions for Linux users
-Gtk2 is a graphical library that comes pre-installed in almost any Linux distribution, and therefore it is really straight forward to get rMSI2 working on a Linux machine. Due to the changes introduced in R's graphical engine since version 4.2, RGtk2 is not able to work with the latest R releases. So, ensure you have installed R version 4.1. Next, you'll have to download RGtk2, gWidgets2RGtk2 and cairoDevice packages source and install them manually.
-
-* ##### Common installation of rMSI2 for all platforms (with or without GUI)
+* ##### Common installation of rMSI2 for all platforms
 The simplest way to install rMSI2 and keep it updated is using devtools package. Install devtools from CRAN into your R session:
 ```R
 >  install.packages("devtools")

@@ -610,9 +610,9 @@ PlotClusterImage <- function( posMat, clusters,  rotate = 0,  pixel_size_um = 10
   terra::values(colras) <- sort(c(0, unique(clusters)))
   rgbColRas <- .ReMappingIntensity2HSV(colras, value_multiplier = 5)
   clusterColors <- c()
-  Rchannel <- terra::values(rgbColRas$layer.1)
-  Gchannel <- terra::values(rgbColRas$layer.2)
-  Bchannel <- terra::values(rgbColRas$layer.3)
+  Rchannel <- terra::values(rgbColRas)[,1]
+  Gchannel <- terra::values(rgbColRas)[,2]
+  Bchannel <- terra::values(rgbColRas)[,3]
   for( i in 1:length(unique(clusters))) #I'm avoiding the fist values because is the zero used to draw the background
   {
     clusterColors <- c(clusterColors, rgb( Rchannel[i + 1], Gchannel[i + 1], Bchannel[i + 1], 255, maxColorValue = 255))
