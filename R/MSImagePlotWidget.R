@@ -85,8 +85,49 @@
     #Apply intensity limitation directly to the raster object
     if( !is.null(this$IntLimit_ROI))
     {
-      this$IntLimits[channel] <- max(raster::as.matrix(img_new$raster)[ (this$IntLimit_ROI[3]:this$IntLimit_ROI[4]), (this$IntLimit_ROI[1]:this$IntLimit_ROI[2])])
-      raster::values(img_new$raster)[ raster::values(img_new$raster) > this$IntLimits[channel] ] <- this$IntLimits[channel]
+      roi_c <- c(this$IntLimit_ROI[1] -1, this$IntLimit_ROI[2],  terra::ext(img_new$raster)$ymax - this$IntLimit_ROI[4],  terra::ext(img_new$raster)$ymax - this$IntLimit_ROI[3] + 1)
+      if(roi_c[1] == roi_c[2])
+      {
+        roi_c[2] <- roi_c[2] + 1
+      }
+      if(roi_c[1] > roi_c[2])
+      {
+        raux <- roi_c[1]
+        roi_c[1] <- roi_c[2]
+        roi_c[2] <- raux
+      }
+      
+      if(roi_c[3] == roi_c[4])
+      {
+        roi_c[4] <- roi_c[4] + 1
+      }
+      if(roi_c[3] > roi_c[4])
+      {
+        raux <- roi_c[3]
+        roi_c[3] <- roi_c[4]
+        roi_c[4] <- raux
+      }
+      
+      crop_ext <- terra::ext(roi_c)
+       
+      if(terra::ext(crop_ext)$xmin == terra::ext(crop_ext)$xmax && terra::ext(crop_ext)$ymin == terra::ext(crop_ext)$ymax)
+      {
+         #Single pixel selected
+         this$IntLimits[channel] <- as.numeric(terra::extract(img_new$raster,cbind(terra::ext(crop_ext)$xmin, terra::ext(crop_ext)$ymin) ))
+      }
+      else
+      {
+         this$IntLimits[channel] <- max(terra::values( terra::crop( img_new$raster, crop_ext)))
+      }
+      
+      if(this$IntLimits[channel] <= 0.0)
+      {
+        this$IntLimits <- NULL
+      }
+      else
+      {
+        terra::values(img_new$raster)[ terra::values(img_new$raster) > this$IntLimits[channel] ] <- this$IntLimits[channel]
+      }
     }
     else
     {

@@ -269,7 +269,7 @@ import_rMSItar<-function(data_file, restore_path, fun_progress = NULL, fun_text 
   pp<-0
   for(i in 1:length(ffDataNames))
   {
-    ff::ffload(file.path(img_path, ffDataNames[i]), rootpath = restore_path, overwrite = T)
+    ff::ffload(file.path(img_path, ffDataNames[i]), rootpath = restore_path, overwrite = T) #TODO think what to do with deprecated tar files
      #Get Hdd space back asap
     unlink(file.path(img_path, paste0(ffDataNames[i], ".RData")))
     unlink(file.path(img_path, paste0(ffDataNames[i], ".ffData")))
@@ -288,7 +288,7 @@ import_rMSItar<-function(data_file, restore_path, fun_progress = NULL, fun_text 
     }
   }
 
-  lapply(spectra, ff::open.ff)
+  lapply(spectra, ff::open.ff) #TODO deprecated TAR format
   datacube<-list(name = basename(data_file), uuid = uuidObj, mass = massObj,  size = sizeObj,  pos = posObj, pixel_size_um = resolutionObj, mean = meanSpcData, data = spectra)
   if(!is.null(posMotorsObj))
   {
@@ -324,7 +324,7 @@ import_rMSItar<-function(data_file, restore_path, fun_progress = NULL, fun_text 
 #' @export
 DeleteRamdisk<-function(img)
 {
-  lapply(img$data, function(x){ ff::close.ff(x) })
+  lapply(img$data, function(x){ ff::close.ff(x) }) #TODO deprecated TAR format
   ramdisk_path <- dirname(attr(attributes(img$data[[1]])$physical, "filename"))
   ramdisk_path_splited <- unlist(strsplit(ramdisk_path, "/"))
   if(.Platform$OS.type == "unix")
@@ -593,8 +593,8 @@ PlotClusterImage <- function( posMat, clusters,  rotate = 0,  pixel_size_um = 10
   }
 
   #Create the raster
-  my_raster <- raster::raster( nrow = ncol(zplots), ncol = nrow(zplots), xmn= 0, xmx= nrow(zplots), ymn= 0, ymx= ncol(zplots))
-  raster::values(my_raster) <- as.vector(zplots)
+  my_raster <- terra::rast( nrow = ncol(zplots), ncol = nrow(zplots), xmin= 0, xmax= nrow(zplots), ymin= 0, ymax= ncol(zplots))
+  terra::values(my_raster) <- as.vector(zplots)
   rm(zplots)
 
   #Put zplots matrix and some metadata in a list
@@ -606,13 +606,13 @@ PlotClusterImage <- function( posMat, clusters,  rotate = 0,  pixel_size_um = 10
   .plotMassImageRGB(raster_RGB, cal_um2pixels = img$pixel_size_um, rotation = rotate, display_axes = F, display_syscoords = F)
 
   #Get the colors used for clusters as a plotable form (RGB code) using the same rMSI internal function as raster image
-  colras <- raster::raster( nrow = 1, ncol = 1+length(unique(clusters)))
-  raster::values(colras) <- sort(c(0, unique(clusters)))
+  colras <- terra::rast( nrow = 1, ncol = 1+length(unique(clusters)))
+  terra::values(colras) <- sort(c(0, unique(clusters)))
   rgbColRas <- .ReMappingIntensity2HSV(colras, value_multiplier = 5)
   clusterColors <- c()
-  Rchannel <- raster::values(rgbColRas$layer.1)
-  Gchannel <- raster::values(rgbColRas$layer.2)
-  Bchannel <- raster::values(rgbColRas$layer.3)
+  Rchannel <- terra::values(rgbColRas$layer.1)
+  Gchannel <- terra::values(rgbColRas$layer.2)
+  Bchannel <- terra::values(rgbColRas$layer.3)
   for( i in 1:length(unique(clusters))) #I'm avoiding the fist values because is the zero used to draw the background
   {
     clusterColors <- c(clusterColors, rgb( Rchannel[i + 1], Gchannel[i + 1], Bchannel[i + 1], 255, maxColorValue = 255))
@@ -695,8 +695,8 @@ PlotTICImage <- function(img, TICs = NULL, rotate = 0, scale_title = "TIC", vlig
   }
 
   #Create the raster
-  my_raster <- raster::raster( nrow = ncol(zplots), ncol = nrow(zplots), xmn= 0, xmx= nrow(zplots), ymn= 0, ymx= ncol(zplots))
-  raster::values(my_raster) <- as.vector(zplots)
+  my_raster <- terra::rast( nrow = ncol(zplots), ncol = nrow(zplots), xmin= 0, xmax= nrow(zplots), ymin= 0, ymax= ncol(zplots))
+  terra::values(my_raster) <- as.vector(zplots)
   rm(zplots)
 
   #Put zplots matrix and some metadata in a list

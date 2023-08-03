@@ -17,7 +17,7 @@
 ############################################################################
 
 #Idem k anterior xo sense:
-# - selectedPixels: Ho solucionare amb raster::crop raster::zoom i limatant el valor maxim de Z en plot del raster per cada layer RGB
+# - selectedPixels: Ho solucionare amb terra::crop terra::zoom i limatant el valor maxim de Z en plot del raster per cada layer RGB
 # - rotate: Ho solucionare directament rotant objecte de raster en plotar, no em cal re-generar imatge per plotar
 # - Retorna: una llista on
 #         img.data correspondra al raster de la imatge,
@@ -36,8 +36,8 @@
   img_slice<-builRasterImageFromMass( img, mass.peak, tolerance, NormCoefs)
 
   #Create the raster
-  my_raster <- raster::raster( nrow = ncol(img_slice$pixels), ncol = nrow(img_slice$pixels), xmn= 0, xmx= nrow(img_slice$pixels), ymn= 0, ymx= ncol(img_slice$pixels))
-  raster::values(my_raster) <- as.vector(img_slice$pixels)
+  my_raster <- terra::rast( nrow = ncol(img_slice$pixels), ncol = nrow(img_slice$pixels), xmin= 0, xmax= nrow(img_slice$pixels), ymin= 0, ymax= ncol(img_slice$pixels))
+  terra::values(my_raster) <- as.vector(img_slice$pixels)
 
   #Return zplots matrix and some metadata in a list
   list(raster = my_raster, mass = img_slice$Mass, tolerance = img_slice$Tolerance, cal_resolution = img$pixel_size_um)
@@ -47,8 +47,8 @@
 #Create an empty raster object
 .InitRGBEmptyRaster<-function( width, height)
 {
-  new_raster<-raster::raster( nrow = height, ncol = width, xmn= 0, xmx= width, ymn= 0, ymx= height)
-  raster::values(new_raster) <- rep(0, width*height)
+  new_raster<-terra::rast( nrow = height, ncol = width, xmin= 0, xmax= width, ymin= 0, ymax= height)
+  terra::values(new_raster) <- rep(0, width*height)
   return( list( raster = new_raster, mass = NULL, tolerance = NULL, cal_resolution = NULL))
 }
 
@@ -56,11 +56,11 @@
 #Normalize to 255 (8 bits per color channel)
 .NormalizeTo255 <-function( m, scaling )
 {
-  maxN<- max(raster::values(m))
+  maxN<- max(terra::values(m))
   if(maxN > 0)
   {
-    raster::values(m) <- scaling*255 * raster::values(m) / (maxN*3) #TODO, check that 3 default scale
-    raster::values(m)[raster::values(m)>255]<- 255 #Clipping
+    terra::values(m) <- scaling*255 * terra::values(m) / (maxN*3)
+    terra::values(m)[terra::values(m)>255]<- 255 #Clipping
   }
   return(m)
 }
@@ -88,9 +88,9 @@
 .BuildRGBImage <- function( imgR, imgG, imgB, XResLevel = 3 , light = 3)
 {
   #Normalize from 0 to 1
-  raster::values(imgR$raster)<-.NormalizeFrom0to1(raster::values(imgR$raster))
-  raster::values(imgG$raster)<-.NormalizeFrom0to1(raster::values(imgG$raster))
-  raster::values(imgB$raster)<-.NormalizeFrom0to1(raster::values(imgB$raster))
+  terra::values(imgR$raster)<-.NormalizeFrom0to1(terra::values(imgR$raster))
+  terra::values(imgG$raster)<-.NormalizeFrom0to1(terra::values(imgG$raster))
+  terra::values(imgB$raster)<-.NormalizeFrom0to1(terra::values(imgB$raster))
 
   #Normalize to 255 using light
   imgR <- .NormalizeTo255(imgR$raster, light)
@@ -98,21 +98,24 @@
   imgB <- .NormalizeTo255(imgB$raster, light)
 
   #Create an RGB image space
-  RGB_raster <- raster::addLayer(imgR,imgG,imgB )
-  interpolated_raster <- raster::raster( nrow= XResLevel*RGB_raster@nrows, ncol= XResLevel*RGB_raster@ncols, xmn= 0, xmx= RGB_raster@ncols, ymn= 0, ymx= RGB_raster@nrows)
-  RGB_raster<-raster::resample(RGB_raster, interpolated_raster)
-  raster::values(RGB_raster)[ raster::values(RGB_raster) < 0  ] <- 0 #Values below zero are dube interpolation artifacts, clip it to zero.
+  RGB_raster <- imgR
+  terra::add(RGB_raster) <- imgG
+  terra::add(RGB_raster) <- imgB
+  
+  interpolated_raster <- terra::rast( nrow= XResLevel*terra::nrow(RGB_raster), ncol= XResLevel*terra::ncol(RGB_raster), xmin= 0, xmax= terra::ncol(RGB_raster), ymin= 0, ymax= terra::nrow(RGB_raster))
+  RGB_raster<-terra::resample(RGB_raster, interpolated_raster)
+  terra::values(RGB_raster)[ terra::values(RGB_raster) < 0  ] <- 0 #Values below zero are dube interpolation artifacts, clip it to zero.
 
   return(RGB_raster)
 }
 
 #Remap a intensity vector to HSV coloring in a rainbow function
-.ReMappingIntensity2HSV<-function(single_channel_raster, maxN = max(raster::values(single_channel_raster)), value_multiplier = 3)
+.ReMappingIntensity2HSV<-function(single_channel_raster, maxN = max(terra::values(single_channel_raster)), value_multiplier = 3)
 {
-  auxVals <- raster::values(single_channel_raster) #Keep for vMApped
+  auxVals <- terra::values(single_channel_raster) #Keep for vMApped
 
   #Normalize to a range 0 -> 1
-  minRas <- min(raster::values(single_channel_raster))
+  minRas <- min(terra::values(single_channel_raster))
   if(( maxN - minRas ) == 0)
   {
     m <- 0
@@ -123,12 +126,12 @@
     m <- 1/( maxN - minRas )
     m_V <- 1/( max(c( abs(minRas), abs(maxN) ) ) )
   }
-  raster::values(single_channel_raster) <- raster::values(single_channel_raster) * m - m*minRas
+  terra::values(single_channel_raster) <- terra::values(single_channel_raster) * m - m*minRas
 
   #Remapping hue space
   hue_top <- 0.7
   hue_bottom <- 0.85
-  hMapped <- (1 + hue_top - hue_bottom) * (-1*raster::values(single_channel_raster)  + 1) + hue_bottom
+  hMapped <- (1 + hue_top - hue_bottom) * (-1*terra::values(single_channel_raster)  + 1) + hue_bottom
   over_one <- which(hMapped > 1)
   hMapped[ over_one ] <- hMapped[over_one] -1
 
@@ -138,18 +141,21 @@
   vMapped[ vMapped > 1] <- 1
 
   #Creating HSV image
-  rgbSpace <- col2rgb(hsv( h =  hMapped, s = rep(1, length(raster::values(single_channel_raster) )), v = vMapped))
+  rgbSpace <- col2rgb(hsv( h =  hMapped, s = rep(1, length(terra::values(single_channel_raster) )), v = vMapped))
 
   #Layering RGB raster
   R_raster<- single_channel_raster
   G_raster<- single_channel_raster
   B_raster<- single_channel_raster
-  raster::values(R_raster) <-  rgbSpace[1, ] #Extract R
-  raster::values(G_raster) <-  rgbSpace[2, ] #Extract G
-  raster::values(B_raster) <-  rgbSpace[3, ] #Extract B
+  terra::values(R_raster) <-  rgbSpace[1, ] #Extract R
+  terra::values(G_raster) <-  rgbSpace[2, ] #Extract G
+  terra::values(B_raster) <-  rgbSpace[3, ] #Extract B
 
   #Create an RGB image space
-  return (raster::addLayer(R_raster,G_raster,B_raster ))
+  RGB_raster <- R_raster
+  terra::add(RGB_raster) <- G_raster
+  terra::add(RGB_raster) <- B_raster
+  return(RGB_raster)
 }
 
 #Build a RGB images raster using rainbow colors from only one raster layer
@@ -164,9 +170,9 @@
   {
     RGB_raster <- .ReMappingIntensity2HSV(img$raster, maxN = global_intensity_scaling_factor, value_multiplier = light)
   }
-  interpolated_raster <- raster::raster( nrow= XResLevel*RGB_raster@nrows, ncol= XResLevel*RGB_raster@ncols, xmn= 0, xmx= RGB_raster@ncols, ymn= 0, ymx= RGB_raster@nrows)
-  RGB_raster<-raster::resample(RGB_raster, interpolated_raster)
-  raster::values(RGB_raster)[ raster::values(RGB_raster) < 0  ] <- 0 #Values below zero are due interpolation artifacts, clip it to zero.
+  interpolated_raster <- terra::rast( nrow= XResLevel*terra::nrow(RGB_raster), ncol= XResLevel*terra::ncol(RGB_raster), xmin= 0, xmax= terra::ncol(RGB_raster), ymin= 0, ymax= terra::nrow(RGB_raster))
+  RGB_raster<-terra::resample(RGB_raster, interpolated_raster)
+  terra::values(RGB_raster)[ terra::values(RGB_raster) < 0  ] <- 0 #Values below zero are due interpolation artifacts, clip it to zero.
 
   return(RGB_raster)
 }
@@ -174,13 +180,13 @@
 #roi_rectangle  is c(left, rigth, bottom, top)
 .plotMassImageRGB <- function(rasterRGB, cal_um2pixels = 1,  rotation=0, flipV=F, flipH=F, display_axes=T, display_syscoords=T, roi_rectangle = NULL, zoom_rectangle = NULL, border = 10)
 {
-  img_Xmax <- rasterRGB@extent@xmax
-  img_Ymax <- rasterRGB@extent@ymax
+  img_Xmax <- terra::ext(rasterRGB)$xmax
+  img_Ymax <- terra::ext(rasterRGB)$ymax
 
   #Crop raster according the zoom window
   if( !is.null(zoom_rectangle) )
   {
-    rasterRGB<- raster::crop( rasterRGB, raster::extent( c(zoom_rectangle[1] -1, zoom_rectangle[2], rasterRGB@extent@ymax - zoom_rectangle[4], rasterRGB@extent@ymax - zoom_rectangle[3] + 1)))
+    rasterRGB<- terra::crop( rasterRGB, terra::ext( c(zoom_rectangle[1] -1, zoom_rectangle[2],  terra::ext(rasterRGB)$ymax - zoom_rectangle[4],  terra::ext(rasterRGB)$ymax - zoom_rectangle[3] + 1)))
   }
 
   #Setting my tricky par values...
@@ -193,14 +199,14 @@
     aux <- img_Ymax - roi_rectangle[4]
     roi_rectangle[4] <- img_Ymax - roi_rectangle[3]
     roi_rectangle[3] <- aux
-    rasterRGB <- raster::flip(rasterRGB, direction = "y")
+    rasterRGB <- terra::flip(rasterRGB, direction = "vertical")
   }
   if((flipH && rotation == 0) || (flipH && rotation == 180) || (flipV && rotation == 90) || (flipV && rotation == 270))
   {
     aux <- img_Xmax - roi_rectangle[2]
     roi_rectangle[2] <- img_Xmax - roi_rectangle[1]
     roi_rectangle[1] <- aux
-    rasterRGB <- raster::flip(rasterRGB, direction = "x")
+    rasterRGB <- terra::flip(rasterRGB, direction = "horizontal")
   }
 
   #Apply rotation
@@ -235,7 +241,7 @@
     }
 
 
-    rasterRGB <- raster::flip(raster::t(rasterRGB), direction = "y") #90degree rotation
+    rasterRGB <- terra::flip(terra::t(rasterRGB), direction = "vertical") #90degree rotation
   }
   if( rotation == 270 )
   {
@@ -255,7 +261,7 @@
       }
     }
 
-    rasterRGB <- raster::flip(raster::t(rasterRGB), direction = "x") #270degree rotation
+    rasterRGB <- terra::flip(terra::t(rasterRGB), direction = "horizontal") #270degree rotation
   }
   if( rotation == 180 )
   {
@@ -277,26 +283,26 @@
       }
     }
 
-    rasterRGB <- raster::flip(raster::flip(rasterRGB, direction = "y"), direction = "x")#180degree rotation
+    rasterRGB <- terra::flip(terra::flip(rasterRGB, direction = "vertical"), direction = "horizontal")#180degree rotation
   }
 
   #Add a border pixels and plot image
-  raster::extent(rasterRGB) <- border + c(rasterRGB@extent@xmin, rasterRGB@extent@xmax, rasterRGB@extent@ymin, rasterRGB@extent@ymax)
-  rasterRGB <- raster::extend(rasterRGB, raster::extent(rasterRGB@extent@xmin - border, rasterRGB@extent@xmax + border, rasterRGB@extent@ymin - border, rasterRGB@extent@ymax + border), value = 0)
-  raster::plotRGB(rasterRGB, axes = T, asp = 1, interpolate = F )
+  terra::ext(rasterRGB) <- border + c( terra::ext(rasterRGB)$xmin,  terra::ext(rasterRGB)$xmax,  terra::ext(rasterRGB)$ymin,  terra::ext(rasterRGB)$ymax)
+  rasterRGB <- terra::extend(rasterRGB, terra::ext( terra::ext(rasterRGB)$xmin - border,  terra::ext(rasterRGB)$xmax + border,  terra::ext(rasterRGB)$ymin - border,  terra::ext(rasterRGB)$ymax + border), fill = 0)
+  terra::plotRGB(rasterRGB, axes = T, smooth = F )
 
   if(display_axes)
   {
     #Add calibrated axes
-    xAxis<- seq(0, rasterRGB@extent@xmax, by = (rasterRGB@extent@xmax/10))
+    xAxis<- seq(0,  terra::ext(rasterRGB)$xmax, by = ( terra::ext(rasterRGB)$xmax/10))
     xLabels <- sprintf( "%0.1f", xAxis * cal_um2pixels)
-    yAxis<- seq(0, rasterRGB@extent@ymax, by = (rasterRGB@extent@ymax/10))
+    yAxis<- seq(0,  terra::ext(rasterRGB)$ymax, by = ( terra::ext(rasterRGB)$ymax/10))
     yLabels <- sprintf( "%0.1f", yAxis * cal_um2pixels)
     par(xaxt = "l", yaxt = "l")
     axis(side=2, tck = -0.015, cex.axis = 0.7, pos = 0, at = yAxis, labels = yLabels, las = 1) #Y left axes
-    axis(side=4, tck = -0.015, cex.axis = 0.7, pos = rasterRGB@extent@xmax, at = yAxis, labels = yLabels, las = 1) #Y right axes
+    axis(side=4, tck = -0.015, cex.axis = 0.7, pos =  terra::ext(rasterRGB)$xmax, at = yAxis, labels = yLabels, las = 1) #Y right axes
     axis(side=1, tck = -0.015, cex.axis = 0.7, pos = 0, at = xAxis, labels = xLabels ) #X below axes
-    axis(side=3, tck = -0.015, cex.axis = 0.7, pos = rasterRGB@extent@ymax, at = xAxis, labels = xLabels ) #X avobe axes
+    axis(side=3, tck = -0.015, cex.axis = 0.7, pos =  terra::ext(rasterRGB)$ymax, at = xAxis, labels = xLabels ) #X avobe axes
   }
   else
   {
@@ -307,21 +313,21 @@
 
     #Cal the most elegant nearest value
     legend_possible_values <- as.vector(sapply(10^(1:4), function(x){ x*(1:9) }))
-    cal_length <- legend_possible_values[which.min(abs(legend_possible_values - WpTarget*rasterRGB@extent@xmax*cal_um2pixels))]
-    Wp <- cal_length/(cal_um2pixels*rasterRGB@extent@xmax)
-    yB <- Lp*rasterRGB@extent@ymax
-    yT <- (Lp + Hp)*rasterRGB@extent@ymax
+    cal_length <- legend_possible_values[which.min(abs(legend_possible_values - WpTarget*terra::ext(rasterRGB)$xmax*cal_um2pixels))]
+    Wp <- cal_length/(cal_um2pixels* terra::ext(rasterRGB)$xmax)
+    yB <- Lp* terra::ext(rasterRGB)$ymax
+    yT <- (Lp + Hp)* terra::ext(rasterRGB)$ymax
 
     if( rotation == 180  && display_syscoords)
     {
       #Avoid overlapping scale and axes
-      xL <- rasterRGB@extent@xmin + (Lp + Wp)*(rasterRGB@extent@xmax - rasterRGB@extent@xmin)
-      xR <- rasterRGB@extent@xmin + Lp * (rasterRGB@extent@xmax - rasterRGB@extent@xmin)
+      xL <-  terra::ext(rasterRGB)$xmin + (Lp + Wp)*( terra::ext(rasterRGB)$xmax -  terra::ext(rasterRGB)$xmin)
+      xR <-  terra::ext(rasterRGB)$xmin + Lp * ( terra::ext(rasterRGB)$xmax -  terra::ext(rasterRGB)$xmin)
     }
     else
     {
-      xL <- rasterRGB@extent@xmax - (Lp + Wp)*(rasterRGB@extent@xmax - rasterRGB@extent@xmin)
-      xR <- rasterRGB@extent@xmax - Lp * (rasterRGB@extent@xmax - rasterRGB@extent@xmin)
+      xL <-  terra::ext(rasterRGB)$xmax - (Lp + Wp)*( terra::ext(rasterRGB)$xmax -  terra::ext(rasterRGB)$xmin)
+      xR <-  terra::ext(rasterRGB)$xmax - Lp * ( terra::ext(rasterRGB)$xmax -  terra::ext(rasterRGB)$xmin)
     }
     lines( c( xL, xL, xR, xR), c( yB, yT, yT, yB ), col = "white", lwd = 2 )
     text( x = (xL + 0.5*(xR - xL)), y = 1.4*yT, labels = sprintf("%0.0f um", cal_length), col = "white", cex = 0.8, adj = c(0.5,0))
@@ -329,34 +335,34 @@
     #Add coors system arrows
     if(display_syscoords)
     {
-      raster_size <- c(rasterRGB@extent@xmax-rasterRGB@extent@xmin, rasterRGB@extent@ymax-rasterRGB@extent@ymin)
+      raster_size <- c( terra::ext(rasterRGB)$xmax- terra::ext(rasterRGB)$xmin,  terra::ext(rasterRGB)$ymax- terra::ext(rasterRGB)$ymin)
       arrow_length <- 0.25*min(raster_size)
       if( rotation == 0  )
       {
-        P_0 <- c(rasterRGB@extent@xmin + 0.01*(raster_size[1]), rasterRGB@extent@ymax - 0.01*(raster_size[2]))
-        P_X <- c(rasterRGB@extent@xmin + arrow_length, rasterRGB@extent@ymax - 0.01*(raster_size[2]))
-        P_Y <- c(rasterRGB@extent@xmin + 0.01*(raster_size[1]), rasterRGB@extent@ymax - arrow_length)
+        P_0 <- c( terra::ext(rasterRGB)$xmin + 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymax - 0.01*(raster_size[2]))
+        P_X <- c( terra::ext(rasterRGB)$xmin + arrow_length,  terra::ext(rasterRGB)$ymax - 0.01*(raster_size[2]))
+        P_Y <- c( terra::ext(rasterRGB)$xmin + 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymax - arrow_length)
         Txt_Adj <- c(0, 1)
       }
       if( rotation == 90 )
       {
-        P_0 <- c(rasterRGB@extent@xmin + 0.01*(raster_size[1]), rasterRGB@extent@ymin + 0.01*(raster_size[2]))
-        P_X <- c(rasterRGB@extent@xmin + 0.01*(raster_size[1]), rasterRGB@extent@ymin + arrow_length)
-        P_Y <- c(rasterRGB@extent@xmin + arrow_length, rasterRGB@extent@ymin + 0.01*(raster_size[2]))
+        P_0 <- c( terra::ext(rasterRGB)$xmin + 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymin + 0.01*(raster_size[2]))
+        P_X <- c( terra::ext(rasterRGB)$xmin + 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymin + arrow_length)
+        P_Y <- c( terra::ext(rasterRGB)$xmin + arrow_length,  terra::ext(rasterRGB)$ymin + 0.01*(raster_size[2]))
         Txt_Adj <- c(0, 0)
       }
       if( rotation == 270 )
       {
-        P_0 <- c(rasterRGB@extent@xmax - 0.01*(raster_size[1]), rasterRGB@extent@ymax - 0.01*(raster_size[2]))
-        P_X <- c(rasterRGB@extent@xmax - 0.01*(raster_size[1]), rasterRGB@extent@ymax - arrow_length)
-        P_Y <- c(rasterRGB@extent@xmax - arrow_length, rasterRGB@extent@ymax - 0.01*(raster_size[2]))
+        P_0 <- c( terra::ext(rasterRGB)$xmax - 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymax - 0.01*(raster_size[2]))
+        P_X <- c( terra::ext(rasterRGB)$xmax - 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymax - arrow_length)
+        P_Y <- c( terra::ext(rasterRGB)$xmax - arrow_length,  terra::ext(rasterRGB)$ymax - 0.01*(raster_size[2]))
         Txt_Adj <- c(1, 1)
       }
       if( rotation == 180 )
       {
-        P_0 <- c(rasterRGB@extent@xmax - 0.01*(raster_size[1]), rasterRGB@extent@ymin + 0.01*(raster_size[2]))
-        P_X <- c(rasterRGB@extent@xmax - arrow_length, rasterRGB@extent@ymin + 0.01*(raster_size[2]))
-        P_Y <- c(rasterRGB@extent@xmax - 0.01*(raster_size[1]), rasterRGB@extent@ymin + arrow_length)
+        P_0 <- c( terra::ext(rasterRGB)$xmax - 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymin + 0.01*(raster_size[2]))
+        P_X <- c( terra::ext(rasterRGB)$xmax - arrow_length,  terra::ext(rasterRGB)$ymin + 0.01*(raster_size[2]))
+        P_Y <- c( terra::ext(rasterRGB)$xmax - 0.01*(raster_size[1]),  terra::ext(rasterRGB)$ymin + arrow_length)
         Txt_Adj <- c(1, 0)
       }
 
@@ -374,15 +380,15 @@
   }
 }
 
-.plotIntensityScale<-function(img, color = NULL, light=3, intensity_limit = NULL, fixGtkMargin = 0) #fixGtkMargin is used as param to set the line of mtext in gtk
+.plotIntensityScale<-function(img, color = NULL, light=3, intensity_limit = NULL, fixGtkMargin = -1) #fixGtkMargin is used as param to set the line of mtext in gtk
 {
-  max_int<-max(raster::values(img$raster))
-  min_int<-min(raster::values(img$raster))
+  max_int<-max(terra::values(img$raster))
+  min_int<-min(terra::values(img$raster))
 
   #Create the raster
   ncols_scale <- 10
-  scale_raster <- raster::raster( nrow = 255, ncol = ncols_scale, xmn= 0, xmx= ncols_scale, ymn= 0, ymx= 255)
-  raster::values(scale_raster) <- as.vector(matrix(seq(from=max_int, to=min_int, length.out = 255), nrow = ncols_scale, ncol = 255, byrow = T))
+  scale_raster <- terra::rast( nrow = 255, ncol = ncols_scale, xmin= 0, xmax= ncols_scale, ymin= 0, ymax= 255)
+  terra::values(scale_raster) <- as.vector(matrix(seq(from=max_int, to=min_int, length.out = 255), nrow = ncols_scale, ncol = 255, byrow = T))
 
   #Check RGB channels
   if( is.null(color))
@@ -399,46 +405,52 @@
   }
   else
   {
-    img_zero<-.InitRGBEmptyRaster( scale_raster@ncols, scale_raster@nrows )
-    raster::values(scale_raster) <- .NormalizeFrom0to1(raster::values(scale_raster))
+    img_zero<-.InitRGBEmptyRaster( terra::ncol(scale_raster), terra::nrow(scale_raster) )
+    terra::values(scale_raster) <- .NormalizeFrom0to1(terra::values(scale_raster))
     img_255 <-  .NormalizeTo255(scale_raster, light)
     if(color == "R")
     {
-      RGB_raster <- raster::addLayer( img_255, img_zero$raster, img_zero$raster )
+      RGB_raster <- img_255
+      terra::add(RGB_raster) <- img_zero$raster
+      terra::add(RGB_raster) <- img_zero$raster
     }
     if( color == "G" )
     {
-      RGB_raster <- raster::addLayer( img_zero$raster, img_255, img_zero$raster )
+      RGB_raster <- img_zero$raster
+      terra::add(RGB_raster) <- img_255
+      terra::add(RGB_raster) <- img_zero$raster
     }
     if( color == "B")
     {
-      RGB_raster <- raster::addLayer( img_zero$raster, img_zero$raster, img_255 )
+      RGB_raster <- img_zero$raster
+      terra::add(RGB_raster) <- img_zero$raster
+      terra::add(RGB_raster) <- img_255
     }
   }
 
 
   #Setting my tricky par values...
   par( bg = "black", fg =  "white", col.lab="white", xaxt="n", yaxt="n", col.axis = "white", col.main = "white", col.sub = "white",
-       cex.axis = 0.7, mar = c(1,0,1,2),  mgp = c(3, 0.5, 0.5))
+       cex.axis = 0.7, mar = c(3,2,3,2),  mgp = c(3, 0.5, 0.5), oma = c(2,2,2,2))
 
-  raster::plotRGB(RGB_raster, axes = T, asp = 1, interpolate = T  )
+  terra::plotRGB(RGB_raster, axes = T, smooth = T  )
 
   #Add axes
-  yAxis<- seq(0, RGB_raster@extent@ymax, length.out = 11)
+  yAxis<- seq(0, terra::ext(RGB_raster)$ymax, length.out = 11)
   yLabels <- sprintf( "%0.1e", seq(min_int, max_int, length.out = 11))
   par(xaxt = "l", yaxt = "l")
   axis(side=2, tck = -0.015, cex.axis = 0.6, pos = 0, at = yAxis, labels = F, las = 1) #Y left axes
   if( max_int == 0 )
   {
-    axis(side=4, tck = -0.015, cex.axis = 0.6, pos = RGB_raster@extent@xmax, at = yAxis, labels = F) #Y right axes
+    axis(side=4, tck = -0.015, cex.axis = 0.6, pos = terra::ext(RGB_raster)$xmax, at = yAxis, labels = F) #Y right axes
   }
   else
   {
-    axis(side=4, tck = -0.015, cex.axis = 0.6, pos = RGB_raster@extent@xmax, at = yAxis, labels = yLabels, las = 1) #Y right axes
+    axis(side=4, tck = -0.015, cex.axis = 0.6, pos = terra::ext(RGB_raster)$xmax, at = yAxis, labels = yLabels, las = 1) #Y right axes
   }
 
   axis(side = 1, tck = -0.015, cex.axis = 0.6, labels = F, pos = 0, at = c(0,ncols_scale))
-  axis(side = 3, tck = -0.015, cex.axis = 0.6, labels = F, pos = RGB_raster@extent@ymax, at = c(0,ncols_scale))
+  axis(side = 3, tck = -0.015, cex.axis = 0.6, labels = F, pos = terra::ext(RGB_raster)$ymax, at = c(0,ncols_scale))
 
   #Add the main title
   if(max_int == 0)
@@ -495,7 +507,7 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
     #Apply limit intensity to raster object
     if(!is.null(intensity_limit) && !is.na(intensity_limit[1]) )
     {
-      raster::values(im_sgn$raster)[ raster::values(im_sgn$raster) > intensity_limit ] <- intensity_limit[1]
+      terra::values(im_sgn$raster)[ terra::values(im_sgn$raster) > intensity_limit ] <- intensity_limit[1]
     }
 
     if(scale_to_global_intensity)
@@ -523,11 +535,11 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
     {
       if(!is.na(intensity_limit[1]))
       {
-        raster::values(im_R$raster)[ raster::values(im_R$raster) > intensity_limit ] <- intensity_limit[1]
+        terra::values(im_R$raster)[ terra::values(im_R$raster) > intensity_limit ] <- intensity_limit[1]
       }
       if(!is.na(intensity_limit[2]))
       {
-        raster::values(im_G$raster)[ raster::values(im_G$raster) > intensity_limit ] <- intensity_limit[2]
+        terra::values(im_G$raster)[ terra::values(im_G$raster) > intensity_limit ] <- intensity_limit[2]
       }
     }
 
@@ -552,7 +564,7 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
       {
         if(!is.na(intensity_limit[3]))
         {
-          raster::values(im_B$raster)[ raster::values(im_B$raster) > intensity_limit ] <- intensity_limit[3]
+          terra::values(im_B$raster)[ terra::values(im_B$raster) > intensity_limit ] <- intensity_limit[3]
         }
       }
 
@@ -607,8 +619,8 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
   }
 
   #Create the raster objects
-  Ras <- raster::raster( nrow = ncol(layer), ncol = nrow(layer), xmn= 0, xmx= nrow(layer), ymn= 0, ymx= ncol(layer))
-  raster::values(Ras) <- as.vector(layer)
+  Ras <- terra::rast( nrow = ncol(layer), ncol = nrow(layer), xmin= 0, xmax= nrow(layer), ymin= 0, ymax= ncol(layer))
+  terra::values(Ras) <- as.vector(layer)
 
   return(list(raster = Ras, mass = text, tolerance = "", cal_resolution = img$pixel_size_um))
 }
@@ -722,15 +734,15 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
     }
     if(rotation == 90)
     {
-      return(raster::flip(raster::t(rasterImg), direction = "y"))
+      return(terra::flip(terra::t(rasterImg), direction = "vertical"))
     }
     if(rotation == 180)
     {
-      return(raster::flip(raster::flip(rasterImg, direction = "y"), direction = "x"))
+      return(terra::flip(terra::flip(rasterImg, direction = "vertical"), direction = "horizontal"))
     }
     if(rotation == 270)
     {
-      return(raster::flip(raster::t(rasterImg), direction = "x"))
+      return(terra::flip(terra::t(rasterImg), direction = "horizontal"))
     }
     stop("ERROR, invalid rotation parameter. Valid parameters are: 0, 90, 180 and 270\n")
   }
@@ -743,7 +755,7 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
   flipV <- c(flipV, rep(F, length(rasterImgs) - length(flipV)))
   for( i in 1:length(rasterImgs))
   {
-    currMax <- max(raster::values(rasterImgs[[i]]$raster))
+    currMax <- max(terra::values(rasterImgs[[i]]$raster))
     if(currMax > maxIntensity)
     {
       maxIntensity <- currMax
@@ -751,22 +763,22 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
     }
     if(flipH[i])
     {
-      rasterImgs[[i]]$raster <- raster::flip(rasterImgs[[i]]$raster, direction = "x")
+      rasterImgs[[i]]$raster <- terra::flip(rasterImgs[[i]]$raster, direction = "horizontal")
     }
     if(flipV[i])
     {
-      rasterImgs[[i]]$raster <- raster::flip(rasterImgs[[i]]$raster, direction = "y")
+      rasterImgs[[i]]$raster <- terra::flip(rasterImgs[[i]]$raster, direction = "vertical")
     }
     rasterImgs[[i]]$raster <- rotateRaster(rasterImgs[[i]]$raster, rotation[i])
   }
 
   #Layout various rasters horizontally
-  xrangeH <- sum(unlist(lapply(rasterImgs, function(x){ raster::extent(x$raster)@xmax })))
-  yrangeH <- max(unlist(lapply(rasterImgs, function(x){ raster::extent(x$raster)@ymax })))
+  xrangeH <- sum(unlist(lapply(rasterImgs, function(x){ terra::ext(x$raster)$xmax })))
+  yrangeH <- max(unlist(lapply(rasterImgs, function(x){ terra::ext(x$raster)$ymax })))
 
   #Layout various rasters vertically
-  xrangeV <- max(unlist(lapply(rasterImgs, function(x){ raster::extent(x$raster)@xmax })))
-  yrangeV <- sum(unlist(lapply(rasterImgs, function(x){ raster::extent(x$raster)@ymax })))
+  xrangeV <- max(unlist(lapply(rasterImgs, function(x){ terra::ext(x$raster)$xmax })))
+  yrangeV <- sum(unlist(lapply(rasterImgs, function(x){ terra::ext(x$raster)$ymax })))
 
   #Choose betweeb horizontal vs vertical layout
   aspectRatio <- c( xrangeH/yrangeH, xrangeV/yrangeV )
@@ -790,7 +802,7 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
   }
 
   #Prepara main raster
-  globCanvas <- raster::extent(0, xrange, 0, yrange)
+  globCanvas <- terra::ext(0, xrange, 0, yrange)
   xoffset <- 0
   yoffset <- yrange + SUB_BORDER_SIZE
   rasterList <- lapply(rasterImgs, function(x){ return(x$raster) })
@@ -798,18 +810,18 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
   txtYPos <- c()
   for( i in 1:length(rasterList))
   {
-    yoffset <- vMode * (yoffset - raster::extent(rasterList[[i]])@ymax - SUB_BORDER_SIZE) #This is only true for vertical layout
+    yoffset <- vMode * (yoffset - terra::ext(rasterList[[i]])$ymax - SUB_BORDER_SIZE) #This is only true for vertical layout
     txtXPos[i] <- xoffset
     txtYPos[i] <- yoffset
-    raster::extent(rasterList[[i]]) <- c( xoffset , raster::extent(rasterList[[i]])@xmax + xoffset, yoffset, raster::extent(rasterList[[i]])@ymax + yoffset)
-    xoffset <- hMode * (raster::extent(rasterList[[i]])@xmax + SUB_BORDER_SIZE)#This is only true for horitzontal layout
-    rasterList[[i]] <- raster::extend(rasterList[[i]], globCanvas, value = 0)
+    terra::ext(rasterList[[i]]) <- c( xoffset , terra::ext(rasterList[[i]])$xmax + xoffset, yoffset, terra::ext(rasterList[[i]])$ymax + yoffset)
+    xoffset <- hMode * (terra::ext(rasterList[[i]])$xmax + SUB_BORDER_SIZE)#This is only true for horitzontal layout
+    rasterList[[i]] <- terra::ext(rasterList[[i]], globCanvas, value = 0)
   }
 
   #Combain all rasters in a mosaic
   rasterList$fun <- max
   rasterList$na.rm <- TRUE
-  RGBMosaic <- do.call(raster::mosaic, rasterList)
+  RGBMosaic <- do.call(terra::mosaic, rasterList)
   rm(rasterList)
   RGBMosaic <- list(raster = RGBMosaic) #Workaround to be able to use .BuildSingleIonRGBImage function
   RGBMosaic <- .BuildSingleIonRGBImage(RGBMosaic, XResLevel = 3, global_intensity_scaling_factor = maxIntensity, light = light)
@@ -820,13 +832,13 @@ plotVariousMassImagesByPeak <- function(..., mass.peak, tolerance = 0.25 , Norma
   txtYPos <- txtYPos + MAIN_BORDER_SIZE
   txtXPos <- txtXPos + MAIN_BORDER_SIZE
   rect( xleft = txtXPos,
-        xright = txtXPos +  unlist(lapply(rasterImgs, function(x){ return( x$raster@extent@xmax - x$raster@extent@xmin )  }) ),
+        xright = txtXPos +  unlist(lapply(rasterImgs, function(x){ return( terra::ext(x$raster)$xmax - terra::ext(x$raster)$xmin )  }) ),
         ybottom = txtYPos,
-        ytop = txtYPos +  unlist(lapply(rasterImgs, function(x){ return( x$raster@extent@ymax - x$raster@extent@ymin )  }) ),
+        ytop = txtYPos +  unlist(lapply(rasterImgs, function(x){ return( terra::ext(x$raster)$ymax - terra::ext(x$raster)$ymin )  }) ),
         border = "white"
   )
 
-  text(x = txtXPos - hMode, y = vMode + txtYPos + vMode*unlist(lapply(rasterImgs, function(x){ return( x$raster@extent@ymax - x$raster@extent@ymin ) }) ),
+  text(x = txtXPos - hMode, y = vMode + txtYPos + vMode*unlist(lapply(rasterImgs, function(x){ return( terra::ext(x$raster)$ymax - terra::ext(x$raster)$ymin ) }) ),
        labels = unlist(lapply(imgList, function(x){return(x$name)})), adj = c(0, 0), cex = 0.8, col ="white", srt = imgLabelRotation)
   .plotIntensityScale(rasterImgs[[idMaxInt]], intensity_limit = maxIntensity)
 }
