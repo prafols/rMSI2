@@ -170,6 +170,7 @@
   {
     RGB_raster <- .ReMappingIntensity2HSV(img$raster, maxN = global_intensity_scaling_factor, value_multiplier = light)
   }
+  
   interpolated_raster <- terra::rast( nrow= XResLevel*terra::nrow(RGB_raster), ncol= XResLevel*terra::ncol(RGB_raster), xmin= 0, xmax= terra::ncol(RGB_raster), ymin= 0, ymax= terra::nrow(RGB_raster))
   RGB_raster<-terra::resample(RGB_raster, interpolated_raster)
   terra::values(RGB_raster)[ terra::values(RGB_raster) < 0  ] <- 0 #Values below zero are due interpolation artifacts, clip it to zero.
@@ -493,10 +494,6 @@
 #'
 plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, NormalizationCoefs = NULL, rotation = 0, show_axes = F, scale_to_global_intensity = F, vlight = 3, crop_area = NULL, intensity_limit = NULL)
 {
-  
-  #TODO DBG timings
-  pt_start <- Sys.time()
-  
   numberOfChannels <- 1
 
   if(length(mass.peak) == 1 )
@@ -518,6 +515,7 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
     {
       raster_RGB<-.BuildSingleIonRGBImage(im_sgn, XResLevel = XResLevel, global_intensity_scaling_factor = intensity_limit[1], light = vlight)
     }
+
   }
   else
   {
@@ -574,13 +572,6 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
     raster_RGB <-.BuildRGBImage( im_R, im_G, im_B,  XResLevel = XResLevel)
   }
 
-  #TODO DBG timming
-  elap <- Sys.time() - pt_start
-  cat("Time of  .buildImageByPeak() and .BuildSingleIonRGBImage() \n")
-  print(elap)
-  cat("\n\n")
-  pt_start <- Sys.time()
-  
   oldPar <- par(no.readonly = T)
   layout( matrix( (numberOfChannels+1):1, ncol = (1+numberOfChannels), nrow = 1, byrow = TRUE ), widths = c(7, rep(1, numberOfChannels)) )
 
@@ -600,13 +591,6 @@ plotMassImageByPeak<-function(img, mass.peak, tolerance=0.25, XResLevel = 3, Nor
 
   .plotMassImageRGB(raster_RGB, cal_um2pixels = img$pixel_size_um, rotation = rotation, display_axes = show_axes, roi_rectangle = crop_area )
   par(oldPar)
-  
-  #TODO DBG timming
-  elap <- Sys.time() - pt_start
-  cat("Time of  .plotIntensityScale() and .plotMassImageRGB() \n")
-  print(elap)
-  cat("\n\n")
-  pt_start <- Sys.time()
 }
 
 .FillSimpleRaster <- function(img, values, text)
