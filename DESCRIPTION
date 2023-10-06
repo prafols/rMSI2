@@ -16,9 +16,10 @@ Depends:
     R (>= 3.6),
     methods,
     gWidgets2 (>= 1.0),
-    gWidgets2tcltk (>= 1.0)
-Imports:
+    gWidgets2tcltk (>= 1.0),
     terra (>= 1.7),
+    viridisLite (>= 0.4.2)
+Imports:
     digest (>= 0.6.9),
     Rcpp (>= 0.12.2)
 Suggests:
