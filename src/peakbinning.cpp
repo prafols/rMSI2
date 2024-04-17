@@ -72,7 +72,7 @@ void PeakBinning::AppendMassChannel2MassBins(MassBin newMassBin, std::vector<Mas
   double compTolerance;
   if(tolerance_in_ppm)
   {
-    minMassDistance = 1e6*(fabs(minMassDistance)/newMassBin.mass); //Compute distance in ppm
+    minMassDistance = 1e6*(minMassDistance/newMassBin.mass); //Compute distance in ppm
     compTolerance = tolerance;
     newMassBin.binSize = newMassBin.binSize < 0.0 ? (tolerance * newMassBin.mass / 1e6) : newMassBin.binSize; //Overwrite binSize with tolerance when no binSize data is available
   }
