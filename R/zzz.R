@@ -9,3 +9,8 @@
 #' @useDynLib rMSI2
 #' @name rMSI2
 NULL  
+
+.onUnload <- function (libpath)
+{
+  library.dynam.unload("rMSI2", libpath)
+}

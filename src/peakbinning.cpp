@@ -72,8 +72,9 @@ void PeakBinning::AppendMassChannel2MassBins(MassBin newMassBin, std::vector<Mas
   double compTolerance;
   if(tolerance_in_ppm)
   {
-    minMassDistance = 1e6*(fabs(minMassDistance)/newMassBin.mass); //Compute distance in ppm
+    minMassDistance = 1e6*(minMassDistance/newMassBin.mass); //Compute distance in ppm
     compTolerance = tolerance;
+    newMassBin.binSize = newMassBin.binSize < 0.0 ? (tolerance * newMassBin.mass / 1e6) : newMassBin.binSize; //Overwrite binSize with tolerance when no binSize data is available
   }
   else
   {
@@ -129,7 +130,14 @@ void PeakBinning::ProcessingFunction(int threadSlot)
     for(int ipeak = 0; ipeak < mpeaks->mass.size(); ipeak++)
     {
       current_bin.mass = mpeaks->mass[ipeak];
-      current_bin.binSize = mpeaks->binSize[ipeak];
+      if(mpeaks->binSize.size() > 0)
+      {
+        current_bin.binSize = mpeaks->binSize[ipeak];
+      }
+      else
+      {
+        current_bin.binSize = -1; //Set to negative to indicate no bin size data is available
+      }
       current_bin.counts = 1;
       AppendMassChannel2MassBins(current_bin, thread_binMass);
     }

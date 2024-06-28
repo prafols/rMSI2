@@ -2,6 +2,7 @@
 % Please edit documentation in R/zzz.R
 \docType{package}
 \name{rMSI2}
+\alias{rMSI2-package}
 \alias{rMSI2}
 \title{rMSI2}
 \description{

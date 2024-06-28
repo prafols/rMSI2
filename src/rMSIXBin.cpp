@@ -155,9 +155,6 @@ void rMSIXBin::CreateImgStream()
   data=rMSIObj["data"];
   imzML = data["imzML"];
   
-  //Get imzML uuid from the XML part (R  is responsible of verifying the bin part)
-  hexstring2byteuuid(as<std::string>(imzML["uuid"]), UUID_imzML);
-  
   std::string sFilePath = as<std::string>(data["path"]);
   std::string sFnameImzML = as<std::string>(imzML["file"]);
   sFnameImzML= sFilePath + "/" + sFnameImzML + ".ibd";
@@ -198,8 +195,7 @@ void rMSIXBin::CreateImgStream()
   {
     throw std::runtime_error("Error: rMSIXBin could not open the BrMSI file.\n");
   }
-  char UUIDbuffer[16];
-  imzMLReader->readUUID(UUIDbuffer);
+
   fBrMSI.write(UUID_imzML, 16); //Write imzML UUID;
   fBrMSI.write(UUID_rMSIXBin, 16); //Write rMSIXBin UUID;
   

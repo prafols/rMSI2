@@ -184,13 +184,14 @@ getCoordsFromIds<-function(Img, Ids)
 #'
 loadImageSliceFromCols<-function(Img, Cols)
 {
-  #TODO this method is the one which actually created images! but it seams it is not creating the image directely... but new format is... see how it is used and re-implement all!
   dm <- matrix(nrow = nrow(Img$pos), ncol = length(Cols))
-  ptr<-1
-  for( i in 1:length(Img$data))
+  for( i in 1:ncol(dm)) #For each required ion image
   {
-      dm[ ptr:(ptr + nrow(Img$data[[i]]) - 1), ]<-Img$data[[i]][,Cols]
-      ptr <- ptr + nrow(Img$data[[i]])
+    cimg <- builRasterImageFromCols(Img, IonIndex = Cols[i], IonCount = 1) 
+    for( j in 1:nrow(dm))
+    {
+      dm[j, i] <- cimg[Img$pos[j, 1] , Img$pos[j, 2]]
+    }
   }
 
   return(dm)
@@ -253,14 +254,14 @@ getImageColsFromMass<-function(Img, Mass, Tolerance)
 #' @param Mass the slected mass.
 #' @param Tolerance a tolerance expressed in daltons around the slected mass.
 #'
-#' @return a list with data matrix containing the image slice, the used mass and tolerance.
+#' @return a list with data matrix containing the image slice, the used mass - tolerance and, a vector with all mass channels included.
 #'
 #' @export
 #'
 loadImageSliceFromMass<-function(Img, Mass, Tolerance)
 {
   location<-getImageColsFromMass(Img, Mass, Tolerance)
-  return( list( data = loadImageSliceFromCols(Img,location$Cols), Mass = location$Mass, Tolerance = location$Tolerance ) )
+  return( list( data = loadImageSliceFromCols(Img,location$Cols), Mass = location$Mass, Tolerance = location$Tolerance, MassVector = Img$mass[location$Cols] ) )
 }
 
 

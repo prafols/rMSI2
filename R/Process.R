@@ -109,6 +109,16 @@ ProcessImages <- function(proc_params,
                                    subImg_Coords = img_coords,
                                    convertProcessed2Continuous = !data_description$data_is_peaklist,
                                    fixBrokenUUID = data_description$fixBrokenUUID)
+    
+    #In case of data as a peaklist, check if binning tolerance can be set in scans
+    if(data_description$data_is_peaklist)
+    {
+      if(!img_lst[[i]]$data$peaklist$rMSIpeakList & !proc$preprocessing$peakbinning$tolerance_in_ppm)
+      {
+        stop("The binning tolerance must be specified in ppm when processing a peak-list not created with rMSI2\n");
+      }
+    }
+      
   }
   
   # At this point, img_lst contains a list with all the images to process. If various images must be extracted form the same imzML file, then there will be an item for
@@ -265,7 +275,7 @@ RunPreProcessing <- function(proc_params,
       refSpc <- CInternalReferenceSpectrum(img_lst, numOfThreads, memoryPerThreadMB, AverageSpectrum, common_mass)
       
       cat(paste0("Pixel with ID ", refSpc$ID, " from image indexed as ", refSpc$imgIndex, " (", img_lst[[ refSpc$imgIndex]]$name, ") selected as internal reference.\n"))
-      refSpc <- rMSI2::loadImgChunkFromIds(img_lst[[ refSpc$imgIndex]], Ids = refSpc$ID)[1, ]
+      refSpc <- rMSI2::loadImgChunkFromIds(img_lst[[ refSpc$imgIndex]], Ids = refSpc$ID, MassAxis = common_mass)[1, ]
       
       #TODO refSpc must be baseline corrected the same as the rest of the data
       

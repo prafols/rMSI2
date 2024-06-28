@@ -14,7 +14,7 @@ loadImageSliceFromMass(Img, Mass, Tolerance)
 \item{Tolerance}{a tolerance expressed in daltons around the slected mass.}
 }
 \value{
-a list with data matrix containing the image slice, the used mass and tolerance.
+a list with data matrix containing the image slice, the used mass - tolerance and, a vector with all mass channels included.
 }
 \description{
 Loads a slice of an rMSI object into RAM. The slice is determined by a mass and a tolerance.
