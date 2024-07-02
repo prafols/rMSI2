@@ -4,7 +4,7 @@
 \name{rMSI2}
 \alias{rMSI2-package}
 \alias{rMSI2}
-\title{rMSI2}
+\title{rMSI}
 \description{
 MSI data handling and visualization in R
 }

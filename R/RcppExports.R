@@ -5,10 +5,6 @@ CNormalizationsAndMeans <- function(rMSIObj_list, numOfThreads, memoryPerThreadM
     .Call('_rMSI2_CNormalizationsAndMeans', PACKAGE = 'rMSI2', rMSIObj_list, numOfThreads, memoryPerThreadMB, commonMassAxis)
 }
 
-rMSIannotation_C <- function(numberPixels, numberPeaks, numberSpectrumDataPoints, tolerance, scoreThreshold, toleranceInScans, adductElementsDF, peakIntensityMatrix, peakMassAxis, averageSpectrumMassAxis, averageSpectrumIntensity) {
-    invisible(.Call('_rMSI2_rMSIannotation_C', PACKAGE = 'rMSI2', numberPixels, numberPeaks, numberSpectrumDataPoints, tolerance, scoreThreshold, toleranceInScans, adductElementsDF, peakIntensityMatrix, peakMassAxis, averageSpectrumMassAxis, averageSpectrumIntensity))
-}
-
 #' ParseBrukerXML.
 #'
 #' Reads a Bruker's xml file exported using fleximaging.

@@ -24,26 +24,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// rMSIannotation_C
-void rMSIannotation_C(int numberPixels, int numberPeaks, int numberSpectrumDataPoints, int tolerance, double scoreThreshold, bool toleranceInScans, DataFrame adductElementsDF, NumericMatrix peakIntensityMatrix, NumericVector peakMassAxis, NumericVector averageSpectrumMassAxis, NumericVector averageSpectrumIntensity);
-RcppExport SEXP _rMSI2_rMSIannotation_C(SEXP numberPixelsSEXP, SEXP numberPeaksSEXP, SEXP numberSpectrumDataPointsSEXP, SEXP toleranceSEXP, SEXP scoreThresholdSEXP, SEXP toleranceInScansSEXP, SEXP adductElementsDFSEXP, SEXP peakIntensityMatrixSEXP, SEXP peakMassAxisSEXP, SEXP averageSpectrumMassAxisSEXP, SEXP averageSpectrumIntensitySEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type numberPixels(numberPixelsSEXP);
-    Rcpp::traits::input_parameter< int >::type numberPeaks(numberPeaksSEXP);
-    Rcpp::traits::input_parameter< int >::type numberSpectrumDataPoints(numberSpectrumDataPointsSEXP);
-    Rcpp::traits::input_parameter< int >::type tolerance(toleranceSEXP);
-    Rcpp::traits::input_parameter< double >::type scoreThreshold(scoreThresholdSEXP);
-    Rcpp::traits::input_parameter< bool >::type toleranceInScans(toleranceInScansSEXP);
-    Rcpp::traits::input_parameter< DataFrame >::type adductElementsDF(adductElementsDFSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type peakIntensityMatrix(peakIntensityMatrixSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type peakMassAxis(peakMassAxisSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type averageSpectrumMassAxis(averageSpectrumMassAxisSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type averageSpectrumIntensity(averageSpectrumIntensitySEXP);
-    rMSIannotation_C(numberPixels, numberPeaks, numberSpectrumDataPoints, tolerance, scoreThreshold, toleranceInScans, adductElementsDF, peakIntensityMatrix, peakMassAxis, averageSpectrumMassAxis, averageSpectrumIntensity);
-    return R_NilValue;
-END_RCPP
-}
 // CparseBrukerXML
 List CparseBrukerXML(String xml_path);
 RcppExport SEXP _rMSI2_CparseBrukerXML(SEXP xml_pathSEXP) {
@@ -538,7 +518,6 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
-    {"_rMSI2_rMSIannotation_C", (DL_FUNC) &_rMSI2_rMSIannotation_C, 11},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
     {"_rMSI2_CimzMLBinCreateNewIBD", (DL_FUNC) &_rMSI2_CimzMLBinCreateNewIBD, 2},
