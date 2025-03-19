@@ -299,10 +299,14 @@ double Deisotoper::getToleranceFromCurve(int imgIndex)
 //Computes all the scores over a candidates row 
 double* Deisotoper::ScoreCalculator(int* CandidateRow, int NumCan, double* result, double last_ratio_slope, int peakNumber)
 {
-  double x[imgRuninfo->numPixels];  //array containing the image of the principal mass 
-  double y[imgRuninfo->numPixels];  //array containing the image of the candidate mass
-  int x_zero_pixel[imgRuninfo->numPixels];
-  int y_zero_pixel[imgRuninfo->numPixels];
+  double *x, *y; //array containing the image of the candidate mass 
+  x = new double[imgRuninfo->numPixels];
+  y = new double[imgRuninfo->numPixels];
+
+  int *x_zero_pixel, *y_zero_pixel;
+  x_zero_pixel = new int[imgRuninfo->numPixels];
+  y_zero_pixel = new int[imgRuninfo->numPixels];
+  
   int zero_pixels = 0, cnt = 0;
   int pixels_with_intensity = 0;
   double A = 0, B = 0, y_mean = 0, x_mean = 0, SStot, SSres, ratio_slope, intercept;
@@ -359,8 +363,10 @@ double* Deisotoper::ScoreCalculator(int* CandidateRow, int NumCan, double* resul
     }
     
     pixels_with_intensity = imgRuninfo->numPixels-zero_pixels;
-    double nx[pixels_with_intensity];  //array containing the image of the principal mass 
-    double ny[pixels_with_intensity];  //array containing the image of the candidate mass
+
+    double *nx, *ny; //array containing the image of the candidate mass
+    nx = new double[pixels_with_intensity];
+    ny = new double[pixels_with_intensity];
     
     cnt = 0;
     for(int j = 0; j < imgRuninfo->numPixels; j++)
@@ -468,8 +474,15 @@ double* Deisotoper::ScoreCalculator(int* CandidateRow, int NumCan, double* resul
     result[(7*i) + 4] = ScoreMass;                              //mass error score
     result[(7*i) + 5] = ratio_slope;                            //model slope  
     result[(7*i) + 6] = CA;                                     //number of C atmos
+  
+    delete[] nx;
+    delete[] ny;
   }
   
+  delete[] x;
+  delete[] y;
+  delete[] x_zero_pixel;
+  delete[] y_zero_pixel;
   return result;
 }
 

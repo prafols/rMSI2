@@ -242,7 +242,7 @@ adductAnnotation <- function(rMSIprocPeakMatrix, params, isotopicPatterns)
     row.names(adductsA) <- NULL
     adducts$A <- adductsA[order(adductsA$NeutralMass,decreasing = F),]
   }
-  else {adducts <- adducts[-1]}
+  else {adducts <- adducts[-which(names(adducts)=="A")]}
   
   ## Data frame for B quality adducts ##
   if(length(adducts$B) > 0)
@@ -287,7 +287,7 @@ adductAnnotation <- function(rMSIprocPeakMatrix, params, isotopicPatterns)
     row.names(adductsB) <- NULL
     adducts$B <- adductsB[order(adductsB$NeutralMass,decreasing = F),]
   }
-  else {adducts <- adducts[-2]}
+  else {adducts <- adducts[-which(names(adducts)=="B")]}
   
   return(adducts)
 }
@@ -507,17 +507,20 @@ annotationOutputFormat <- function(rMSIprocPeakMatrix, params, isotopeObj, adduc
   #Adducts table
   flagA <- FALSE
   flagB <- FALSE
-  if(!is.null(adductObj[[1]]))
+  if(length(adductObj) > 0 )
   {
-    if(!is.null(adductObj$A))
+    if(!is.null(adductObj[[1]]))
     {
-      A <- adductObj$A
-      flagA <- TRUE
-    }
-    if(!is.null(adductObj$B))
-    {
-      B <- adductObj$B
-      flagB <- TRUE
+      if(!is.null(adductObj$A))
+      {
+        A <- adductObj$A
+        flagA <- TRUE
+      }
+      if(!is.null(adductObj$B))
+      {
+        B <- adductObj$B
+        flagB <- TRUE
+      }
     }
   }
   
@@ -569,7 +572,7 @@ annotationOutputFormat <- function(rMSIprocPeakMatrix, params, isotopeObj, adduc
   
   
   #Final results list
-  if(!is.null(adductObj[[1]]))
+  if(length(adductObj) > 0)
   {
     if(is.null(adductObj$A))
     {
