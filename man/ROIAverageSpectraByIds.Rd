@@ -4,12 +4,14 @@
 \alias{ROIAverageSpectraByIds}
 \title{ROIAverageSpectraByIds.}
 \usage{
-ROIAverageSpectraByIds(img, Ids)
+ROIAverageSpectraByIds(img, Ids, maxMemMB = 200)
 }
 \arguments{
 \item{img}{an rMSI object.}
 
 \item{Ids}{Identifiers of spectra to use for average calculation.}
+
+\item{maxMemMB}{maximum memory usage during spectral buffering in MB.}
 }
 \value{
 the ROI average spectrum.

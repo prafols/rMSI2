@@ -1048,44 +1048,10 @@ ROIAverageSpectra <- function( img, roi_list )
   }
   
   cat("Calculating Average Spectra of ROI's...\n")
-
-  roi_cubes <- lapply(roi_list, function(x){ getCubeRowFromIds(img, x$id) })
-  rois_avg <- lapply(roi_list, function(x){list(name = x$name, mean = rep(0, length(img$mass)) )})
-  
-  pb <- txtProgressBar(min = 0, max = length(img$data), initial = 0, style = 3)
-  LastId <- 0
-  for( ic in 1:length(img$data) )
-  {
-    setTxtProgressBar(pb, ic)
-    dm <- img$data[[ic]][,] #Load the complete data cube #TODO reimplement with the new data model!!!!
-    current_ids <- (LastId+1):(LastId+nrow(dm))
-    
-    for( ir in 1:length(roi_cubes))
-    {
-      idCube <- which(unlist(lapply(roi_cubes[[ir]], function(x){ x$cube})) == ic, arr.ind = T)
-      if( length(idCube) > 0 )
-      {
-        idRows <- roi_cubes[[ir]][[idCube]]$row
-        if(length(idRows) > 1)
-        {
-          rois_avg[[ir]]$mean <- rois_avg[[ir]]$mean + apply(dm[idRows,], 2, sum)
-        }
-        else
-        {
-          rois_avg[[ir]]$mean <- rois_avg[[ir]]$mean + dm[idRows,]
-        }
-      }
-    }
-    
-    LastId <- current_ids[length(current_ids)]
-  }
-  
-  #And divide by the pixel count on each roi
-  for( ir in 1:length(rois_avg))
-  {
-    rois_avg[[ir]]$mean <- rois_avg[[ir]]$mean / length(roi_list[[ir]]$id)
-  }
-  close(pb)
+  rois_avg <- lapply(roi_list, function(x){
+    cat(paste0("Processing ROI ", x$name, "\n"))
+    list(name = x$name, mean = ROIAverageSpectraByIds(img, x$id) )
+    })
   
   return(rois_avg)
 }
@@ -1096,46 +1062,41 @@ ROIAverageSpectra <- function( img, roi_list )
 #'
 #' @param img an rMSI object.
 #' @param Ids Identifiers of spectra to use for average calculation.
+#' @param maxMemMB maximum memory usage during spectral buffering in MB.
 #'
 #' @return the ROI average spectrum.
 #' @export
 #'
-ROIAverageSpectraByIds <- function( img, Ids )
+ROIAverageSpectraByIds <- function( img, Ids, maxMemMB = 200 )
 {
   cat("Calculating Average Spectra of slected pixels...\n")
-  
-  roi_cubes <- getCubeRowFromIds(img, Ids)
+  pb <- txtProgressBar(min = 0, max = length(Ids), initial = 0, style = 3)
   roi_avg <-  rep(0, length(img$mass))
-  
-  pb <- txtProgressBar(min = 0, max = length(img$data), initial = 0, style = 3)
-  LastId <- 0
-  for( ic in 1:length(img$data) )
+  maxPixels <- max(floor((maxMemMB * 1024 * 1024) / (length(img$mass)*8.0)), 1)
+  start_i <- 1
+  bEnd <- FALSE
+  while (!bEnd)
   {
-    setTxtProgressBar(pb, ic)
-    dm <- img$data[[ic]][,] #Load the complete data cube
-    current_ids <- (LastId+1):(LastId+nrow(dm))
-    
-    idCube <- which(unlist(lapply(roi_cubes, function(x){ x$cube})) == ic, arr.ind = T)
-    if( length(idCube) > 0 )
+    remaining_ids <-  length(Ids) - start_i + 1
+    if(remaining_ids > maxPixels )
     {
-      idRows <- roi_cubes[[idCube]]$row
-      if(length(idRows) > 1)
-      {
-        roi_avg <- roi_avg + apply(dm[idRows,], 2, sum)
-      }
-      else
-      {
-        roi_avg <- roi_avg + dm[idRows,]
-      }
+      load_ids <- Ids[start_i:(start_i + maxPixels -1)]
+      start_i <- start_i + maxPixels
+      setTxtProgressBar(pb, start_i -1)
     }
-    
-    LastId <- current_ids[length(current_ids)]
-  }
-  
-  #And divide by the pixel count
-  roi_avg <- roi_avg / length(Ids)
-
-  close(pb)
+    else
+    {
+      load_ids <- Ids[start_i:length(Ids)]
+      setTxtProgressBar(pb, length(Ids))
+      bEnd <- TRUE
+    }
+    dm <- loadImgChunkFromIds(img, load_ids)
+    dm <- dm / as.numeric(length(Ids))
+    roi_avg <- roi_avg + apply(dm, 2, sum)
+    rm(dm)
+  } 
+  gc()
+  close(pb) 
   
   return(roi_avg)
 }
