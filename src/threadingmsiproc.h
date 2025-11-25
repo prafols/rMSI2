@@ -42,6 +42,10 @@ class ThreadingMsiProc
     //Pure virtual function to be implemented in ThreadingMsiProc class derivations.
     virtual void ProcessingFunction(int threadSlot);
     
+    //Pure virtual function to be implemented in ThreadingMsiProc class derivations.
+    // This function is desired to be called when a thread finishes its work
+    virtual void ThreadCompleteCallback(int threadSlot);
+    
     //Function to control threaded execution
     void runMSIProcessingCpp();
     

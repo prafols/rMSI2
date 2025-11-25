@@ -18,6 +18,7 @@
 
 #include <Rcpp.h>
 #include <cmath>
+#include <algorithm>    // std::fill
 #include "MTNormalizationMeanSpectra.h"
 using namespace Rcpp;
 
@@ -28,6 +29,13 @@ MTNormalizationMeanSpectra::MTNormalizationMeanSpectra(Rcpp::List rMSIObj_list, 
   averageSpectrum.resize(rMSIObj_lst.length());
   baseSpectrum.resize(rMSIObj_lst.length());
   num_of_pixels.resize(rMSIObj_lst.length());
+  threadBuffers.resize(numOfThreadsDouble);
+  
+  for( int i = 0; i < numOfThreadsDouble; i++)
+  {
+    threadBuffers[i].thread_average.resize(ioObj->get_images_count());
+    threadBuffers[i].thread_base.resize(ioObj->get_images_count());
+  }
   
   for( int i = 0; i < rMSIObj_lst.length(); i++)
   {
@@ -85,12 +93,13 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
 {
   //Perform the average value of each mass channel in the current loaded cube
   double TIC, RMS, MAX;
-  std::vector<std::vector<double>> thread_average(ioObj->get_images_count());
-  std::vector<std::vector<double>> thread_base(ioObj->get_images_count());
+
   for(unsigned int i = 0; i < ioObj->get_images_count(); i++)
   {
-    thread_average[i].resize(cubes[threadSlot]->ncols);
-    thread_base[i].resize(cubes[threadSlot]->ncols);
+    threadBuffers[threadSlot].thread_average[i].resize(cubes[threadSlot]->ncols);
+    threadBuffers[threadSlot].thread_base[i].resize(cubes[threadSlot]->ncols);
+    std::fill(threadBuffers[threadSlot].thread_average[i].begin(), threadBuffers[threadSlot].thread_average[i].end(), 0.0);
+    std::fill(threadBuffers[threadSlot].thread_base[i].begin(), threadBuffers[threadSlot].thread_base[i].end(), 0.0);
   }
   
   for (int j = 0; j < cubes[threadSlot]->nrows; j++)
@@ -107,8 +116,8 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
       RMS += (cubes[threadSlot]->dataInterpolated[j][k] * cubes[threadSlot]->dataInterpolated[j][k]);
       MAX = cubes[threadSlot]->dataInterpolated[j][k] > MAX ? cubes[threadSlot]->dataInterpolated[j][k] : MAX;
       
-      thread_average[imgID][k] += cubes[threadSlot]->dataInterpolated[j][k] / ((double)(num_of_pixels[imgID]));
-      thread_base[imgID][k] = cubes[threadSlot]->dataInterpolated[j][k] > thread_base[imgID][k] ? cubes[threadSlot]->dataInterpolated[j][k] : thread_base[imgID][k];
+      threadBuffers[threadSlot].thread_average[imgID][k] += cubes[threadSlot]->dataInterpolated[j][k] / ((double)(num_of_pixels[imgID]));
+      threadBuffers[threadSlot].thread_base[imgID][k] = cubes[threadSlot]->dataInterpolated[j][k] >  threadBuffers[threadSlot].thread_base[imgID][k] ? cubes[threadSlot]->dataInterpolated[j][k] :  threadBuffers[threadSlot].thread_base[imgID][k];
     }
     RMS = sqrt(RMS);
     
@@ -116,19 +125,22 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
     Normalizations[imgID][pixelID].RMS = RMS;
     Normalizations[imgID][pixelID].MAX = MAX;
   }
+}
+
+void MTNormalizationMeanSpectra::ThreadCompleteCallback(int threadSlot) 
+{
   
-  mutex_copyData.lock();
   for(unsigned int i = 0; i < ioObj->get_images_count(); i++)
   {
-    for (int k= 0; k < cubes[threadSlot]->ncols; k++)
+    for (int k= 0; k < massAxis.length(); k++)
     {
-      averageSpectrum[i][k] += thread_average[i][k];
-      baseSpectrum[i][k] = thread_base[i][k] > baseSpectrum[i][k] ? thread_base[i][k] : baseSpectrum[i][k];
+      averageSpectrum[i][k] +=  threadBuffers[threadSlot].thread_average[i][k];
+      baseSpectrum[i][k] =  threadBuffers[threadSlot].thread_base[i][k] > baseSpectrum[i][k] ?  threadBuffers[threadSlot].thread_base[i][k] : baseSpectrum[i][k];
     }
   }
-  mutex_copyData.unlock();
-  
+ 
 }
+
 
 // Calculate the average spectrum from a list of rMSI objects.
 // [[Rcpp::export]]

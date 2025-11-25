@@ -48,13 +48,22 @@ class MTNormalizationMeanSpectra : public ThreadingMsiProc
     
     std::vector<std::vector<PixelNorms>> Normalizations;
     
-    std::mutex mutex_copyData; //Mutex to avoid coping data to lsNorms (R object) from various threads simultaneously
+    typedef struct
+    {
+      std::vector<std::vector<double>> thread_average;
+      std::vector<std::vector<double>> thread_base;
+    }ThreadSpecrtaBuffers;
+    
+    std::vector<ThreadSpecrtaBuffers> threadBuffers;
     
     std::vector<Rcpp::NumericVector> averageSpectrum;
     std::vector<Rcpp::NumericVector> baseSpectrum;
     
     //Thread Processing function definition
-    void ProcessingFunction(int threadSlot);
+    void ProcessingFunction(int threadSlot) override;
+    
+    //Thread complete callback
+    void ThreadCompleteCallback(int threadSlot) override;
     
     Rcpp::List rMSIObj_lst; //Copy of the rMSI object
     std::vector<unsigned int> num_of_pixels; //Number of pixel in each rMSI object

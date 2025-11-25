@@ -205,7 +205,12 @@ void ThreadingMsiProc::runMSIProcessingCpp()
 #ifdef __DEBUG__
         Rcpp::Rcout << "DBG: Free completed, joning thread...\n";
 #endif
+        
         tworkers[iThread].join();
+        
+        //Signal thread completion
+        ThreadCompleteCallback(iThread);
+        
 #ifdef __DEBUG__
         Rcpp::Rcout << "DBG: Join completed\n";
 #endif
@@ -274,4 +279,9 @@ void ThreadingMsiProc::ProcessingFunction(int threadSlot)
 {
   Rcpp::Rcout<<"Function ThreadingMsiProc::ProcessingFunction(int threadSlot) has been called from thread slot: "<<threadSlot<<"\n";
   Rcpp::Rcout<<"The base class ThreadingMsiProc can not be used directly and must be derived reimplementing the ProcessingFunction()\n";
+}
+
+void ThreadingMsiProc::ThreadCompleteCallback(int threadSlot)
+{
+  //Do nothing by default. Derived classes may overrride this to execute code post-thread completion
 }
