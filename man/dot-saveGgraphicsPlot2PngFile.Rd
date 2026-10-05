@@ -9,8 +9,6 @@ A file dialog is presented to allow the user selecting where png file will be pl
 }
 \arguments{
 \item{evt}{the evt$action must be a pointer to gWidgets2::ggraphic to save.}
-
-\item{...}{}
 }
 \description{
 Save a gWidgets2::ggraphic widget to a png file.

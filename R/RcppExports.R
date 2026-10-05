@@ -19,6 +19,13 @@ CparseBrukerXML <- function(xml_path) {
     .Call('_rMSI2_CparseBrukerXML', PACKAGE = 'rMSI2', xml_path)
 }
 
+#' Accumulate Overall Mean and Base Peak Spectra Across Mass Spectrometry Images
+NULL
+
+CaccumulateOverallSpectra <- function(common_mass, img_mass, img_mean, img_base, overall_mean, overall_base) {
+    invisible(.Call('_rMSI2_CaccumulateOverallSpectra', PACKAGE = 'rMSI2', common_mass, img_mass, img_mean, img_base, overall_mean, overall_base))
+}
+
 #' Generic method for the imzMLreader
 #' testingimzMLBinRead
 #' @param ibdFname: full path to the ibd file.

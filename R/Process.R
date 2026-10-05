@@ -164,7 +164,7 @@ ProcessImages <- function(proc_params,
       if(!is.null(result$PeakMatrix))
       {
         cat("Storing merged peak-matrix...\n")
-        StorePeakMatrix( file.path(data_description$outputpath, "merged-peakmatrix.pkmat"),  result$PeakMatrix)
+        StorePeakMatrix( file.path(data_description$outputpath, "merged-peakmatrix-legacy.pkmat"),  result$PeakMatrix)
       }
     }
     else
@@ -174,7 +174,7 @@ ProcessImages <- function(proc_params,
         if(!is.null(result[[i]]$PeakMatrix))
         {
           cat(paste0("Storing peak-matrix ", i, " of ", length(result), "...\n"))
-          StorePeakMatrix( file.path(data_description$outputpath, paste0(result[[i]]$PeakMatrix$names, "-peakmatrix.pkmat")),  result[[i]]$PeakMatrix)
+          StorePeakMatrix( file.path(data_description$outputpath, paste0(result[[i]]$PeakMatrix$names, "-peakmatrix-legacy.pkmat")),  result[[i]]$PeakMatrix)
         }
       }
     }
@@ -184,7 +184,7 @@ ProcessImages <- function(proc_params,
   StoreProcParams(file.path(data_description$outputpath, "proc_parameters.params"), proc_params)
   
   #Create the rMSIXbin objects
-  if(create_rMSIXBin_files)
+  if(create_rMSIXBin_files || proc_params$preprocessing$peakbinning$rapid_peaks)
   {
     for( i in 1:length(result$processed_data))
     {
@@ -200,6 +200,59 @@ ProcessImages <- function(proc_params,
       }
       cat("\n")
     }
+    
+    
+    # Rapid Peak binning after .XrMSI files
+    if(proc_params$preprocessing$peakbinning$rapid_peaks)
+    {
+      
+      if(data_description$data_is_peaklist)
+      {
+        stop("Error: Rapid Peak-Binning cannot be used with peaks-lists data.")
+      }
+      
+      if(proc_params$preprocessing$peakbinning$tolerance_in_ppm)
+      {
+        stop("Error: Tolerance for Rapid Peak-Binning must be set in scans.")
+      }
+      
+  
+      #TODO add some kind of progress indication
+    
+      if(proc_params$getMergedProcessing())
+      {
+        cat(paste0("Running Rapid Binning...\n"))
+        RapidpeakMatrix <- FastPeakBinning(result$processed_data, #TODO revise this!
+                                    peak_width_scans = proc_params$preprocessing$peakbinning$tolerance,
+                                    max_mem_MB = proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB,
+                                    min_SNR = 0.5,
+                                    n_cores = numOfThreads,
+                                    OS.type = .Platform$OS.type )
+    
+        #Store the peak Matrices
+        cat("Storing merged Rapid Binning peak-matrix...\n")
+        StorePeakMatrix( file.path(data_description$outputpath, "merged-peakmatrix.pkmat"), RapidpeakMatrix)
+      }
+      else
+      {
+        for(i in 1:length(result))
+        {
+          cat(paste0("Running Rapid Binning ", i, " of ", length(result), "...\n"))
+          RapidpeakMatrix <- FastPeakBinning(result[[i]]$processed_data, #TODO revise and test this this!
+                                             peak_width_scans = proc_params$preprocessing$peakbinning$tolerance,
+                                             max_mem_MB = proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB,
+                                             min_SNR = 0.5,
+                                             n_cores = numOfThreads,
+                                             OS.type = .Platform$OS.type )
+
+          cat(paste0("Storing Rapid Binning peak-matrix ", i, " of ", length(result), "...\n"))
+          StorePeakMatrix( file.path(data_description$outputpath, paste0(RapidpeakMatrix$names[1], "-peakmatrix.pkmat")),  RapidpeakMatrix)
+          
+        }
+      }
+      
+      }
+    
   }
   
   #Display the used processing time
@@ -272,6 +325,9 @@ RunPreProcessing <- function(proc_params,
       
       #Calculate the internal reference for alignment and mass calibration
       AverageSpectrum <- COverallAverageSpectrum(img_lst, numOfThreads, memoryPerThreadMB, common_mass, ticMin, ticMax) 
+      
+      #TODO if using prod spectra for fast-binning, maybe i should use it for refSpc too
+      
       refSpc <- CInternalReferenceSpectrum(img_lst, numOfThreads, memoryPerThreadMB, AverageSpectrum, common_mass)
       
       cat(paste0("Pixel with ID ", refSpc$ID, " from image indexed as ", refSpc$imgIndex, " (", img_lst[[ refSpc$imgIndex]]$name, ") selected as internal reference.\n"))
@@ -500,9 +556,11 @@ RunPreProcessing <- function(proc_params,
     }
   }
   
-  #Run the peakbining
-  if((proc_params$preprocessing$peakpicking$enable && proc_params$preprocessing$peakbinning$enable) || data_is_peaklist)
+  #Run the legacy peakbining
+  if((proc_params$preprocessing$peakpicking$enable && proc_params$preprocessing$peakbinning$enable) 
+     || data_is_peaklist)
   {
+    
     peakMatrix <- CRunPeakBinning(img_lst_proc, numOfThreads, memoryPerThreadMB, proc_params$preprocessing)
     
     #Execute the fillpeaks after running the binning routine
@@ -512,6 +570,7 @@ RunPreProcessing <- function(proc_params,
       common_mass <- numeric() #Using an empty mass axis to signal non spectral data available
     }
     CRunFillPeaks(img_lst_proc, numOfThreads, memoryPerThreadMB, proc_params$preprocessing, common_mass, peakMatrix)
+  
     
     #Append normalizations to the peak matrix
     if(data_is_peaklist) 

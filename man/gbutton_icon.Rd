@@ -6,13 +6,6 @@
 \usage{
 gbutton_icon(image_file, container, handler)
 }
-\arguments{
-\item{image_file}{}
-
-\item{container}{}
-
-\item{handler}{}
-}
 \value{
 a gbutton widget
 }

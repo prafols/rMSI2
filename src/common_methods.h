@@ -21,6 +21,9 @@
 #define RMSI_COMMON_METHODS_H
 
 #include <string>
+#include <Rcpp.h>
+#include <vector>
+#include "mlinterp.hpp" // Include your existing header
 
 //Parse the UUID from a XML file to get just the hex representation in a string (without dashes and {})
 std::string parse_xml_uuid(std::string uuid);

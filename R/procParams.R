@@ -253,6 +253,8 @@ PeakPickingParams <- setRefClass("PeakPickingParams",
 PeakBinningParams <- setRefClass("PeakBinningParams", 
                                  fields = list(
                                    enable = "logical",
+                                   rapid_peaks = "logical",
+                                   max_rapidPeaksMEM_MB = "numeric",
                                    tolerance = "numeric",
                                    tolerance_in_ppm = "logical",
                                    binFilter = "numeric"
@@ -262,6 +264,8 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                  method = list(
                                    initialize = function(...,
                                                          enable = T,
+                                                         rapid_peaks = T,
+                                                         max_rapidPeaksMEM_MB = 0.2 * ps::ps_system_memory()$avail / (1024^2),
                                                          tolerance = 6,
                                                          tolerance_in_ppm = F,
                                                          binFilter = 0.05,

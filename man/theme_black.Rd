@@ -7,11 +7,6 @@ custom ggplot theme to display ion map images with a black background}
 \usage{
 theme_black(base_size = 12, base_family = "")
 }
-\arguments{
-\item{base_size}{}
-
-\item{base_family}{}
-}
 \description{
 theme_black.
 custom ggplot theme to display ion map images with a black background

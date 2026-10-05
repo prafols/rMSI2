@@ -35,6 +35,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// CaccumulateOverallSpectra
+void CaccumulateOverallSpectra(Rcpp::NumericVector common_mass, Rcpp::NumericVector img_mass, Rcpp::NumericVector img_mean, Rcpp::NumericVector img_base, Rcpp::NumericVector overall_mean, Rcpp::NumericVector overall_base);
+RcppExport SEXP _rMSI2_CaccumulateOverallSpectra(SEXP common_massSEXP, SEXP img_massSEXP, SEXP img_meanSEXP, SEXP img_baseSEXP, SEXP overall_meanSEXP, SEXP overall_baseSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type common_mass(common_massSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type img_mass(img_massSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type img_mean(img_meanSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type img_base(img_baseSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type overall_mean(overall_meanSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type overall_base(overall_baseSEXP);
+    CaccumulateOverallSpectra(common_mass, img_mass, img_mean, img_base, overall_mean, overall_base);
+    return R_NilValue;
+END_RCPP
+}
 // testingimzMLBinWriteSequential
 Rcpp::DataFrame testingimzMLBinWriteSequential(const char* ibdFname, Rcpp::String mz_dataTypeString, Rcpp::String int_dataTypeString, Rcpp::String str_uuid, Rcpp::NumericMatrix mzArray, Rcpp::NumericMatrix intArray);
 RcppExport SEXP _rMSI2_testingimzMLBinWriteSequential(SEXP ibdFnameSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP str_uuidSEXP, SEXP mzArraySEXP, SEXP intArraySEXP) {
@@ -563,6 +578,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
+    {"_rMSI2_CaccumulateOverallSpectra", (DL_FUNC) &_rMSI2_CaccumulateOverallSpectra, 6},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
     {"_rMSI2_CimzMLBinCreateNewIBD", (DL_FUNC) &_rMSI2_CimzMLBinCreateNewIBD, 2},
     {"_rMSI2_CimzMLBinAppendMass", (DL_FUNC) &_rMSI2_CimzMLBinAppendMass, 3},

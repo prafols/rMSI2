@@ -6,15 +6,6 @@
 \usage{
 gcombobox_rMSI(items, selected = 1, container = NULL, handler = NULL)
 }
-\arguments{
-\item{items}{}
-
-\item{selected}{}
-
-\item{container}{}
-
-\item{handler}{}
-}
 \value{
 a gcombobox widget
 }

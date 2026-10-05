@@ -6,9 +6,6 @@
 \usage{
 getValue_coloredCheckBox(widget)
 }
-\arguments{
-\item{widget}{}
-}
 \value{
 checkboz current value
 }

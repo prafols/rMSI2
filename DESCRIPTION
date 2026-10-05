@@ -11,9 +11,10 @@ Maintainer: Pere Rafols Soler<pere.rafols@urv.cat>
 Description: MSI data handling and visualization in R
 License: GPL3
 LazyData: TRUE
-SystemRequirements: C++11, fftw3 (>= 3.3.5)
+SystemRequirements: fftw3 (>= 3.3.5)
 Depends:
     R (>= 3.6),
+    ps,
     methods,
     gWidgets2 (>= 1.0),
     gWidgets2tcltk (>= 1.0),
@@ -26,5 +27,5 @@ Suggests:
     ggplot2 (>= 3.0.0),
     gridExtra (>= 2.3)
 LinkingTo: Rcpp
-RoxygenNote: 7.3.3
 Encoding: UTF-8
+Config/roxygen2/version: 8.1.0

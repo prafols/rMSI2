@@ -1,0 +1,198 @@
+---
+title: "Test RapidBinning"
+author: "Pere Rafols"
+date: "2026-10-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Start by setting the data_path variable pointing to the folder containing the data.
+data_path <- "~/MSI_DATASETS/rMSI2_workshop"
+
+data_desc <- rMSI2::ImzMLDataDescription() #Create an empty data description object
+data_desc$setOutputPath(file.path(data_path,"out")) #Set the output data path
+data_desc$fixBrokenUUID <- T #Ideally leave it to False (the default)
+#Append an imzML to process. We can call this method multiple times to append more imzML file to the same processing pipeline (data merging).
+data_desc$appendImzMLDataPath(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")) 
+```
+
+
+
+Process data using the old Binning method. Note that no peak-picking is needed!
+```{r, eval=T}
+proc_params <- rMSI2::ProcessingParameters() #Create a processing parameters object prefilled with the default settings.
+proc_params$preprocessing$smoothing$enable <- F
+proc_params$preprocessing$massCalibration <- F
+proc_params$preprocessing$alignment$enable <- F
+proc_params$preprocessing$peakpicking$enable <- T
+proc_params$preprocessing$peakpicking$SNR <- 5
+proc_params$preprocessing$peakbinning$rapid_peaks <- F
+proc_params$preprocessing$peakbinning$enable <- T
+proc_params$preprocessing$peakbinning$tolerance_in_ppm <- F
+proc_params$preprocessing$peakbinning$tolerance <- as.integer(4) #Set the binning tolerance to avoid merging peaks from different species
+
+start_time <- Sys.time()
+rMSI2::ProcessImages( proc_params, data_desc,  ) # This will take 2 minutes
+end_time <- Sys.time()
+elapsed_oldBinning <- end_time - start_time
+print(elapsed_oldBinning)
+```
+
+```{r, eval=T}
+pkMatLegacy <- rMSI2::LoadPeakMatrix(file.path(data_path, "out", "merged-peakmatrix-legacy.pkmat"))
+pkMatLegacy_ram_mb <- as.numeric(object.size(pkMatLegacy$intensity)) / (1024^2)
+cat(sprintf("Memory used by leagacy peak matrix: %.2f MB\n", pkMatLegacy_ram_mb))
+```
+
+Process data using the new Rapid Binning method. Note that no peak-picking is needed!
+```{r, eval=T}
+proc_params <- rMSI2::ProcessingParameters() #Create a processing parameters object prefilled with the default settings.
+proc_params$preprocessing$smoothing$enable <- F
+proc_params$preprocessing$massCalibration <- F
+proc_params$preprocessing$alignment$enable <- F
+proc_params$preprocessing$peakpicking$enable <- F #No need to use the full image peak picking with the new binning approach
+proc_params$preprocessing$peakbinning$rapid_peaks <- T #This is the key to use the new binning approach
+proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB <- pkMatLegacy_ram_mb #Max memory allocated to store the peak matrix
+proc_params$preprocessing$peakbinning$tolerance_in_ppm <- F
+proc_params$preprocessing$peakbinning$tolerance <- as.integer(4) #Set the binning tolerance to avoid merging peaks from different species
+
+data_desc <- rMSI2::ImzMLDataDescription() #Create an empty data description object
+data_desc$setOutputPath(file.path(data_path,"out")) #Set the output data path
+data_desc$appendImzMLDataPath(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")) #Append an imzML to process. We can call this method multiple times to append more imzML file to the same processing pipeline (data merging).
+
+start_time <- Sys.time()
+rMSI2::ProcessImages( proc_params, data_desc ) # This will take 2 minutes
+end_time <- Sys.time()
+elapsed_rapidBinning <- end_time - start_time
+print(elapsed_rapidBinning)
+
+
+pkMatRapid <- rMSI2::LoadPeakMatrix(file.path(data_path, "out", "merged-peakmatrix.pkmat"))
+```
+
+
+Time diffs:
+```{r, eval=T}
+cat(sprintf("Time diff old - rapid = %s\n", format(elapsed_oldBinning - elapsed_rapidBinning)))
+cat(sprintf("Performance gain: %.2f%% time reduction\n", 
+            ((as.numeric(elapsed_oldBinning, units = "secs") - as.numeric(elapsed_rapidBinning, units = "secs")) / as.numeric(elapsed_oldBinning, units = "secs")) * 100))
+
+```
+
+Compare information in old vs. new peak matrices
+
+Single ion image test
+```{r, eval=T}
+test_ion_mz <- 281
+
+#Old peak mat
+rMSI2::plotPeakImage(pkMatLegacy, mz = test_ion_mz, labels = "Legacy" )
+
+#New peak mat without peak-picking
+rMSI2::plotPeakImage(pkMatRapid, mz =  test_ion_mz, labels = "Rapid" )
+
+```
+
+
+Compare both matrices using PCA:
+```{r, eval=T}
+pca_old <- prcomp(pkMatLegacy$intensity, scale. = F, center = F)
+pca_new <- prcomp(pkMatRapid$intensity, scale. = F, center = F)
+
+
+library(ggplot2)
+dfPCA <- data.frame(PC1 = c(pca_old$x[,1], pca_new$x[,1]), 
+                    PC2 = c(pca_old$x[,2], pca_new$x[,2]), 
+                    group = c(rep("old", nrow(pca_old$x)), rep("new", nrow(pca_new$x))) )
+dfPCA <- dfPCA[sample(1:nrow(dfPCA)), ]
+scorePlot <- ggplot(dfPCA, aes(PC1, PC2))  + theme_bw()
+scorePlot <- scorePlot + geom_point(aes(colour = factor(group)), alpha = 0.2, size = 1)
+#scorePlot <- scorePlot + scale_colour_manual(values = clusterColors, name = "Cluster")
+scorePlot <- scorePlot + guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.8)))
+scorePlot
+
+for(pci in 1:5)
+{
+  rMSI2::plotValuesImage(pkMatLegacy, pca_old$x[,pci], labels = paste0("PC", pci, " Legacy") ) 
+  rMSI2::plotValuesImage(pkMatRapid, pca_new$x[,pci], labels = paste0("PC", pci, " Rapid") )   
+}
+```
+
+Compare peak matrices using UMAP projections
+```{r, eval=T}
+library(uwot)
+
+# Run fast multi-threaded UMAP (returns matrix directly)
+umap_old_layout <- uwot::umap(pkMatLegacy$intensity, n_components = 5, n_threads = parallel::detectCores() - 1)
+umap_new_layout <- uwot::umap(pkMatRapid$intensity,  n_components = 5, n_threads = parallel::detectCores() - 1)
+
+# Plot spatial images
+for (pci in 1:5)
+{
+  rMSI2::plotValuesImage(pks, umap_old_layout[, pci], labels = paste0("UMAP", pci, " Legacy"))
+  rMSI2::plotValuesImage(pks, umap_new_layout[, pci], labels = paste0("UMAP", pci, " Rapid"))
+}
+```
+
+Check mass accuracy for the feat_list agains the old 
+```{r, eval=T}
+feat_list <- data.frame( mass = pkMatRapid$mass, mass_old = NA, err_ppm = NA)
+pksmass_cpy <- pkMatLegacy$mass
+for( i in 1:nrow(feat_list))
+{
+  id <- which.min(abs(pksmass_cpy - feat_list$mass[i] ))
+  
+  cur_err <- 1e6 * (pksmass_cpy[id] - feat_list$mass[i]) / pksmass_cpy[id]
+  
+  dupId <- which(feat_list$mass_old == pksmass_cpy[id])
+  if(length(dupId) > 0 )
+  {
+    if(abs(cur_err) < abs(feat_list$err_ppm[dupId]))
+    {
+      
+      feat_list$mass_old[dupId] <- NA
+      feat_list$err_ppm[i] <- cur_err
+      feat_list$err_ppm[dupId] <- NA
+    }
+  }
+  else
+  {
+    feat_list$mass_old[i] <- pksmass_cpy[id]
+    feat_list$err_ppm[i] <- cur_err
+  }
+
+}
+
+target_max_error <- 2
+nokids <- which(abs(feat_list$err_ppm) > target_max_error)
+plot(feat_list$mass_old, feat_list$err_ppm, col = "red", pch = 20, xlab = "m/z", ylab = "error [ppm]", main = "m/z Error Legacy vs. Rapid ")
+points(feat_list$mass_old[-nokids], feat_list$err_ppm[-nokids], col = "blue", pch = 20)
+abline(h = c(-target_max_error,target_max_error), col = "gray")
+
+
+####nokids_featList <- 
+for(nokid in nokids)
+{
+  #Old peak mat
+  rMSI2::plotPeakImage(pkMatLegacy, mz = feat_list$mass_old[nokid], labels = "Legacy" )
+  
+  #New peak mat without peak-picking
+  rMSI2::plotPeakImage(pkMatRapid, mz =  feat_list$mass[nokid], labels = "Rapid" )
+}
+
+```
+Launch MSI windows to see what happens at peak m/z 328.1351
+```{r, eval=F}
+
+#Load RAW DATA
+img <- rMSI2::LoadMsiData(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML"))
+rMSI2::MSIWindow(img)
+```
+
+TODO:
+-> Modify the GUI with the new settings
+-> create drifted mass test-data (using same data) to check merged and non-merged modes
+-> Rethink about mass calibration: at the end, with other reference spectrum...etc
+

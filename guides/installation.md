@@ -13,7 +13,7 @@ The simplest way to install rMSI2 and keep it updated is using devtools package.
 ```
 Then tell devtools to install rMSI2 from github latest release:
 ```R
-> devtools::install_github("prafols/rMSI2")
+> devtools::install_github("prafols/rMSI2", ref = "2.0")
 ```
 
 Please note that is a development version and no release has been made yet. So, keep looking at this page for future updates and releases.

@@ -14,15 +14,6 @@ gspinbutton_rMSI(
   handler = NULL
 )
 }
-\arguments{
-\item{from}{}
-
-\item{to}{}
-
-\item{container}{}
-
-\item{handler}{}
-}
 \value{
 a gcombobox widget
 }

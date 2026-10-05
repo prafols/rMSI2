@@ -14,21 +14,6 @@ coloredCheckBox(
   bold = F
 )
 }
-\arguments{
-\item{text}{}
-
-\item{checked}{}
-
-\item{handler}{}
-
-\item{container}{}
-
-\item{foreground}{}
-
-\item{background}{}
-
-\item{bold}{}
-}
 \description{
 A speciall checkbox using only tcltk to set colors and font types.
 }
