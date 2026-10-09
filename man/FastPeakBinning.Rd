@@ -9,8 +9,7 @@ FastPeakBinning(
   peak_width_scans = 6,
   max_mem_MB = 0.2 * ps::ps_system_memory()$avail/(1024^2),
   min_SNR = 0.5,
-  n_cores = max(1, parallel::detectCores() - 1, na.rm = T),
-  OS.type = .Platform$OS.type
+  n_cores = max(1, parallel::detectCores() - 1, na.rm = T)
 )
 }
 \arguments{
@@ -27,9 +26,6 @@ peak detection on the product spectrum. Default is \code{0.5}.}
 
 \item{n_cores}{\code{integer} scalar. Number of CPU cores for parallel extraction on 
 Unix operating systems. Defaults to available cores minus 1.}
-
-\item{OS.type}{\code{character} string. Operating system platform identifier 
-(\code{"unix"} or \code{"windows"}). Defaults to \code{.Platform$OS.type}.}
 }
 \value{
 An \code{rMSI} peak matrix object containing:

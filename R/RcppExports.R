@@ -26,6 +26,13 @@ CaccumulateOverallSpectra <- function(common_mass, img_mass, img_mean, img_base,
     invisible(.Call('_rMSI2_CaccumulateOverallSpectra', PACKAGE = 'rMSI2', common_mass, img_mass, img_mean, img_base, overall_mean, overall_base))
 }
 
+#' Cload_RapidBinning
+NULL
+
+C_RapidBinning <- function(rMSIobj, pmasses, pwidths, pMat, img_row_offset, number_of_threads) {
+    invisible(.Call('_rMSI2_C_RapidBinning', PACKAGE = 'rMSI2', rMSIobj, pmasses, pwidths, pMat, img_row_offset, number_of_threads))
+}
+
 #' Generic method for the imzMLreader
 #' testingimzMLBinRead
 #' @param ibdFname: full path to the ibd file.
@@ -337,6 +344,18 @@ TestAreaWindow <- function(mass, WinSize = 20L, UpSampling = 10L) {
 ReduceDataPointsC <- function(mass, intensity, massMin, massMax, npoints) {
     .Call('_rMSI2_ReduceDataPointsC', PACKAGE = 'rMSI2', mass, intensity, massMin, massMax, npoints)
 }
+
+#' decodeImgStream2Buffer.
+#'
+#' Obtain a multiple mass channel ion image by decoding the hdd img stream at a specified ionIndex.
+#' The MAX operator will be used to merge all ion images in a single image matrix.
+#'
+#' @param ionIndex the index of ion to extract from the img stream. C style indexing, starting with zero.
+#' @param ionCount number of ion image to decode.
+#' 
+#' @return A Buffer containing the ion image.
+#' 
+NULL
 
 #' decodePngStream2IonImages.
 #'

@@ -35,8 +35,6 @@
 #'   peak detection on the product spectrum. Default is \code{0.5}.
 #' @param n_cores \code{integer} scalar. Number of CPU cores for parallel extraction on 
 #'   Unix operating systems. Defaults to available cores minus 1.
-#' @param OS.type \code{character} string. Operating system platform identifier 
-#'   (\code{"unix"} or \code{"windows"}). Defaults to \code{.Platform$OS.type}.
 #'
 #' @details
 #' The binning workflow executes in five stages:
@@ -74,8 +72,8 @@ FastPeakBinning<- function(img_lst,
                 peak_width_scans = 6,
                 max_mem_MB = 0.2*ps::ps_system_memory()$avail/(1024^2),
                 min_SNR = 0.5,
-                n_cores = max(1, parallel::detectCores() - 1, na.rm = T),
-                OS.type = .Platform$OS.type )
+                n_cores = max(1, parallel::detectCores() - 1, na.rm = T)
+                )
 {
 
   # 1. Get Overall average and base by maxing all of them
@@ -158,57 +156,23 @@ FastPeakBinning<- function(img_lst,
   masses  <- sub_feat_list$mass
   peakWidths  <- sub_feat_list$peakwidth
   n_peaks <- length(sub_feat_list$mass)
-  peakMatrixInt <- matrix(0.0, nrow = total_num_of_pixels, ncol = n_peaks)
+  peakMatrixInt <- matrix(0.0, nrow = total_num_of_pixels, ncol = n_peaks) 
   
   # 4. Execute parallel loop
   pkmat_current_first_row <- 1
   for (i in seq_along(img_lst))
   {
+    cat(paste0("Working on image ", i, " of ", length(img_lst), " ...\n"))
     img_i <- img_lst[[i]]
     pos_idx <- img_i$pos
     n_pixels_i <- nrow(pos_idx)
     pkmat_current_last_row <- pkmat_current_first_row + n_pixels_i - 1
 
-    if (OS.type == "unix")
-    {
-      # macOS / Linux: Use lightweight zero-copy forking
-      slices_list <- parallel::mclapply(seq_len(n_peaks), function(j) 
-        {
-          location <- getImageColsFromMass(img_i, masses[j], peakWidths[j])
-          
-          builRasterImageFromCols(
-            img_i, 
-            IonIndex = location$Cols[1], 
-            IonCount = length(location$Cols)
-            )[pos_idx]
-        }, mc.cores = n_cores)
+    # Call C++ backend
+    C_RapidBinning(img_i, masses, peakWidths, peakMatrixInt, pkmat_current_first_row, n_cores)
       
-      peakMatrixInt[pkmat_current_first_row:pkmat_current_last_row, ] <- matrix(unlist(slices_list, use.names = FALSE), 
-                                                                                nrow = n_pixels_i,
-                                                                                ncol = n_peaks)
-      
-      rm(slices_list)
-      
-    }
-    else
-    {
-      # Windows: Fall back to fast single-core loop 
-      # (Avoids heavy socket cluster serialization overhead on large 'img' objects)
-      for (j in seq_len(n_peaks))
-      {
-        location <-  getImageColsFromMass(img_i, masses[j], peakWidths[j])
-        peakMatrixInt[pkmat_current_first_row:pkmat_current_last_row, j] <- 
-            builRasterImageFromCols(
-            img_i, 
-            IonIndex = location$Cols[1], 
-            IonCount = length(location$Cols)
-          )[pos_idx]
-      }
-    }
-  
     pkmat_current_first_row <- pkmat_current_last_row + 1
   }
-  
   
   # 5. Combine matrix
   PkMat <- list( mass = sub_feat_list$mass, 

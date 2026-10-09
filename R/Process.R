@@ -226,8 +226,8 @@ ProcessImages <- function(proc_params,
                                     peak_width_scans = proc_params$preprocessing$peakbinning$tolerance,
                                     max_mem_MB = proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB,
                                     min_SNR = 0.5,
-                                    n_cores = numOfThreads,
-                                    OS.type = .Platform$OS.type )
+                                    n_cores = numOfThreads
+                                    )
     
         #Store the peak Matrices
         cat("Storing merged Rapid Binning peak-matrix...\n")
@@ -242,8 +242,8 @@ ProcessImages <- function(proc_params,
                                              peak_width_scans = proc_params$preprocessing$peakbinning$tolerance,
                                              max_mem_MB = proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB,
                                              min_SNR = 0.5,
-                                             n_cores = numOfThreads,
-                                             OS.type = .Platform$OS.type )
+                                             n_cores = numOfThreads
+                                            )
 
           cat(paste0("Storing Rapid Binning peak-matrix ", i, " of ", length(result), "...\n"))
           StorePeakMatrix( file.path(data_description$outputpath, paste0(RapidpeakMatrix$names[1], "-peakmatrix.pkmat")),  RapidpeakMatrix)

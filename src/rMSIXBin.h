@@ -23,6 +23,7 @@
 #include <Rcpp.h>
 #include <string>
 #include <fstream>
+#include <vector>
 #include <mutex>
 #include "imzMLBin.h"
 #include "encoder_settings.h"
@@ -49,11 +50,17 @@ class rMSIXBin
     //Get the number of pixels
     unsigned int get_numOfPixels();
     
+    //Get image Width and Height
+    unsigned int getImgWidth();
+    unsigned int getImgHeight();
+    
     //Create the ImgStream in the rMSXBin (both XML and binary parts). Any previois rMSXBin files will be deleted!
     void CreateImgStream(); 
     
     //Get multiple ion image in a matrix object by decoding the ImgStream
     //The MAX operator will be used to merge all ion images in a single image matrix
+    // Returns native std::vector<double> (Thread-safe for RapidBinning, zero R GC triggers)
+    std::vector<double> decodeImgStream2Buffer(unsigned int ionIndex, unsigned int ionCount);
     Rcpp::NumericMatrix decodeImgStream2IonImages(unsigned int ionIndex, unsigned int ionCount, Rcpp::NumericVector normalization_coefs);
     
   private:
@@ -106,8 +113,8 @@ class rMSIXBin
     //buffer: pointer to char with the raw imgStream readed form hdd
     //bufferOffset: buffer offsets in bytes to read the corresponfing scaling factor
     //bufferLength: number of bytes for a single ion image including scaling in the buffer
-    //ionImage: pointer to the finall ion image
-    void startThreadIonImageDecoding(char* buffer, unsigned long bufferOffset, unsigned long bufferLength, Rcpp::NumericMatrix *ionImage);
+    //imgBuffer: pointer to the finall ion image
+    void startThreadIonImageDecoding(char* buffer, unsigned long bufferOffset, unsigned long bufferLength, double* imgBuffer);
     
     //Store normalization vectors
     void storeNormalizations2Binary();

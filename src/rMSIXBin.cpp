@@ -140,6 +140,16 @@ unsigned int rMSIXBin::get_numOfPixels()
   return _rMSIXBin->numOfPixels;
 }
 
+unsigned int rMSIXBin::getImgWidth()
+{
+  return img_width;
+}
+
+unsigned int rMSIXBin::getImgHeight()
+{
+  return img_height;
+}
+
 void rMSIXBin::CreateImgStream()
 {
   List data;
@@ -338,6 +348,7 @@ rMSIXBin::ImgStreamEncoder_result rMSIXBin::encodeBuffer2SingleImgStream(imgstre
 //buffer: potiner to the preloaded buffer with imzML data.
 //ionIndex: the ion index at which the partial encoding process is started.
 //ionCount: the number of ion images to encode at current encoding exectuion.
+/*
 void rMSIXBin::startThreadedEncoding(imgstreamencoding_type *buffer, unsigned int ionIndex, unsigned int ionCount)
 {
   std::ofstream fBrMSI;
@@ -399,6 +410,119 @@ void rMSIXBin::startThreadedEncoding(imgstreamencoding_type *buffer, unsigned in
       running_threads--;
       futures.erase(futures.begin());
       bThreadResultReady = true;
+    }
+  }
+  
+  fBrMSI.close();
+}
+ */
+
+// Start the encoding of multiple ion images in separated threads
+// buffer: pointer to the preloaded buffer with imzML data.
+// ionIndex: the ion index at which the partial encoding process is started.
+// ionCount: the number of ion images to encode at current encoding execution.
+void rMSIXBin::startThreadedEncoding(imgstreamencoding_type *buffer, unsigned int ionIndex, unsigned int ionCount)
+{
+  if (ionCount == 0) return;
+  
+  std::ofstream fBrMSI(_rMSIXBin->Bin_file, std::ios::out | std::ios::app | std::ios::binary);
+  if (!fBrMSI.is_open())
+  {
+    throw std::runtime_error("Error: rMSIXBin could not open the BrMSI file.\n");
+  }
+  
+  // Pre-allocate slots to prevent vector reallocations and O(N) erase overhead
+  std::vector<std::future<ImgStreamEncoder_result>> futures;
+  futures.reserve(number_of_encoding_threads);
+  
+  // Buffer to hold finished results in exact relative order [0 ... ionCount - 1]
+  std::vector<ImgStreamEncoder_result> completed_results(ionCount);
+  
+  unsigned int i_encoding = 0;   // Dispatch counter
+  unsigned int i_written = 0;    // Sequential file write counter
+  
+  while (i_written < ionCount)
+  {
+    // 1. Fill available thread slots up to the worker thread limit
+    while (futures.size() < number_of_encoding_threads && i_encoding < ionCount)
+    {
+      // Pass i_encoding as the relative index for output slot placement
+      futures.emplace_back(std::async(
+          std::launch::async, 
+          &rMSIXBin::encodeBuffer2SingleImgStream, 
+          this, 
+          buffer, 
+          ionIndex + i_encoding, 
+          i_encoding, 
+          ionCount
+      ));
+      i_encoding++;
+    }
+    
+    // 2. Collect any completed futures non-blockingly (or wait for the front thread)
+    for (auto it = futures.begin(); it != futures.end(); )
+    {
+      // Check if thread finished without blocking main thread
+      if (it->wait_for(std::chrono::microseconds(50)) == std::future_status::ready)
+      {
+        ImgStreamEncoder_result res = it->get();
+        
+        // Store result in its exact relative slot [0 .. ionCount-1]
+        // relative_index = res.ionIndex - ionIndex
+        unsigned int relative_idx = res.ionIndex - ionIndex;
+        completed_results[relative_idx] = std::move(res);
+        
+        it = futures.erase(it); // Fast erase on small vector
+      }
+      else
+      {
+        ++it;
+      }
+    }
+    
+    // 3. Write all ready results sequentially to disk in exact ion order
+    while (i_written < i_encoding && !completed_results[i_written].png_stream.empty())
+    {
+      const auto& res = completed_results[i_written];
+      unsigned int current_global_ion = res.ionIndex;
+      
+      // Compute byte lengths and offsets strictly sequentially
+      unsigned long total_bytes = sizeof(float) + res.png_stream.size();
+      _rMSIXBin->iByteLen[current_global_ion] = total_bytes;
+      
+      if (current_global_ion == 0)
+      {
+        // Special case: Header offset calculation for the first ion
+        _rMSIXBin->iByteOffset[0] = 16 + 16 + 3 * (sizeof(double) * massAxis.length());
+      }
+      else
+      {
+        _rMSIXBin->iByteOffset[current_global_ion] = 
+          _rMSIXBin->iByteOffset[current_global_ion - 1] + 
+          _rMSIXBin->iByteLen[current_global_ion - 1];
+      }
+      
+      // Perform contiguous disk write
+      fBrMSI.write(reinterpret_cast<const char*>(&(res.scaling)), sizeof(float));
+      fBrMSI.write(reinterpret_cast<const char*>(res.png_stream.data()), res.png_stream.size());
+      
+      if (fBrMSI.fail() || fBrMSI.bad())
+      {
+        fBrMSI.close();
+        throw std::runtime_error("FATAL ERROR: rMSIXBin got fail or bad bit condition writing the .BrMSI file.\n");
+      }
+      
+      // Free PNG buffer memory immediately after writing to keep memory footprint low
+      completed_results[i_written].png_stream.clear();
+      completed_results[i_written].png_stream.shrink_to_fit();
+      
+      i_written++;
+    }
+    
+    // Short sleep to prevent high CPU spinning while waiting for encoding threads
+    if (i_written < ionCount && futures.size() >= number_of_encoding_threads)
+    {
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
   }
   
@@ -1146,27 +1270,21 @@ void rMSIXBin::readBrMSI_header()
   binFile.close();
 }
 
-//' decodePngStream2IonImages.
+//' decodeImgStream2Buffer.
 //'
 //' Obtain a multiple mass channel ion image by decoding the hdd img stream at a specified ionIndex.
 //' The MAX operator will be used to merge all ion images in a single image matrix.
 //'
 //' @param ionIndex the index of ion to extract from the img stream. C style indexing, starting with zero.
 //' @param ionCount number of ion image to decode.
-//' @param normalization_coefs a vector containing the intensy normalization coeficients.
 //' 
-//' @return A NumerixMatrix containing the ion image.
+//' @return A Buffer containing the ion image.
 //' 
-NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigned int ionCount, NumericVector normalization_coefs)
+std::vector<double> rMSIXBin::decodeImgStream2Buffer(unsigned int ionIndex, unsigned int ionCount)  
 {
   if(ionIndex + ionCount > massAxis.length())
   {
-    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2IonImages(): ionIndex+ionCount is out of range.\n");
-  }
-  
-  if(normalization_coefs.length() != _rMSIXBin->numOfPixels)
-  {
-    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2IonImages(): normalization_coefs have a different number of elements than total number of pixels.\n");
+    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2Buffer(): ionIndex+ionCount is out of range.\n");
   }
   
   //1- Read the complete stream in a buffer
@@ -1178,73 +1296,72 @@ NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigne
   }
   
   //Too large ion image windows, raise an error
-  if( byte_count > IONIMG_BUFFER_MB * 1024 * 1024)
+  if( byte_count > static_cast<unsigned long>(IONIMG_BUFFER_MB) * 1024 * 1024)
   {
-    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2IonImages(): number of mass channels too large to load in memory.\n");
+    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2Buffer(): number of mass channels too large to load in memory.\n");
   }
   
   //Read the complete buffer
-  char* buffer = new char[byte_count];
+  std::vector<char> buffer(byte_count);
   std::ifstream  binFile;
   binFile.open(_rMSIXBin->Bin_file, std::fstream::in | std::ios::binary);
   if(!binFile.is_open())
   {
-    delete[] buffer;
-    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2IonImages could not open the .BrMSI file.\n"); 
+    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2Buffer could not open the .BrMSI file.\n"); 
   }
   
   binFile.seekg(_rMSIXBin->iByteOffset[ionIndex]);
   if(binFile.eof())
   {
     binFile.close();
-    delete[] buffer;
-    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2IonImages reached EOF seeking the .BrMSI file.\n"); 
+    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2Buffer reached EOF seeking the .BrMSI file.\n"); 
   }
   if(binFile.fail() || binFile.bad())
   {
     binFile.close();
-    delete[] buffer;
-    throw std::runtime_error("FATAL ERROR: rMSIXBin::decodeImgStream2IonImages got fail or bad bit condition seeking the .BrMSI file.\n"); 
+    throw std::runtime_error("FATAL ERROR: rMSIXBin::decodeImgStream2Buffer got fail or bad bit condition seeking the .BrMSI file.\n"); 
   }
   
-  binFile.read (buffer, byte_count);
+  binFile.read (buffer.data(), byte_count);
   if(binFile.eof())
   {
     binFile.close();
-    delete[] buffer;
-    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2IonImages reached EOF reading the .BrMSI file.\n"); 
+    throw std::runtime_error("ERROR: rMSIXBin::decodeImgStream2Buffer reached EOF reading the .BrMSI file.\n"); 
   }
   if(binFile.fail() || binFile.bad())
   {
     binFile.close();
-    delete[] buffer;
-    throw std::runtime_error("FATAL ERROR:  rMSIXBin::decodeImgStream2IonImages got fail or bad bit condition reading the .BrMSI file.\n"); 
+    throw std::runtime_error("FATAL ERROR:  rMSIXBin::decodeImgStream2Buffer got fail or bad bit condition reading the .BrMSI file.\n"); 
   }
   binFile.close();
   
-  //2- Decode the buffer
-  NumericMatrix ionImage(img_width, img_height);
+  // 2. Decode stream into raw C++ vector (Column-major layout: x + y * img_width)
+  // std::vector initializes to 0.0 automatically
+  std::vector<double> imgBuffer(static_cast<size_t>(img_width * img_height), 0.0);
+  
   std::vector< std::future <void> > futures;
   unsigned int running_threads = 0; //Threads counter
-  int i = 0; //Current ion image
+  unsigned i = 0; //Current ion image
+  
   try
   {
     while(true)
     {
+      
       while((running_threads < number_of_encoding_threads) && (i < ionCount))
       {
         futures.emplace_back(std::async(std::launch::async, &rMSIXBin::startThreadIonImageDecoding, this, 
-                                        buffer,
+                                        buffer.data(),
                                         (_rMSIXBin->iByteOffset[i + ionIndex] - _rMSIXBin->iByteOffset[ionIndex]), 
                                         _rMSIXBin->iByteLen[i + ionIndex],
-                                        &ionImage));
+                                          imgBuffer.data()));
         
         running_threads++;
         i++;
       }
-  
+      
       //Wait for a thread to finish
-      if(futures.size() > 0)
+      if(!futures.empty())
       {
         futures.front().get();
         running_threads--;
@@ -1259,9 +1376,38 @@ NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigne
   }
   catch(std::runtime_error &e)
   {
-    delete[] buffer;
     throw std::runtime_error(e.what());
+  } 
+  
+  return imgBuffer;
+}
+
+//' decodePngStream2IonImages.
+//'
+//' Obtain a multiple mass channel ion image by decoding the hdd img stream at a specified ionIndex.
+//' The MAX operator will be used to merge all ion images in a single image matrix.
+//'
+//' @param ionIndex the index of ion to extract from the img stream. C style indexing, starting with zero.
+//' @param ionCount number of ion image to decode.
+//' @param normalization_coefs a vector containing the intensy normalization coeficients.
+//' 
+//' @return A NumerixMatrix containing the ion image.
+//' 
+NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigned int ionCount, NumericVector normalization_coefs)
+{
+  if(static_cast<size_t>(normalization_coefs.length()) != _rMSIXBin->numOfPixels)
+  {
+    throw std::runtime_error("ERROR in rMSIXBin::decodeImgStream2IonImages(): normalization_coefs have a different number of elements than total number of pixels.\n");
   }
+  
+  // Call thread-safe native decoder core
+  std::vector<double> rawBuffer = decodeImgStream2Buffer(ionIndex, ionCount);
+  
+  // Create Rcpp matrix ON MAIN THREAD ONLY
+  NumericMatrix ionImage(img_width, img_height);
+  
+  // Copy native buffer to Rcpp matrix
+  std::copy(rawBuffer.begin(), rawBuffer.end(), REAL(ionImage));
 
   //Apply normalization
   for(int i = 0; i < _rMSIXBin->numOfPixels; i++)
@@ -1272,7 +1418,6 @@ NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigne
     }
   }
 
-  delete[] buffer;
   return ionImage;
 }
 
@@ -1280,8 +1425,8 @@ NumericMatrix rMSIXBin::decodeImgStream2IonImages(unsigned int ionIndex, unsigne
 //buffer: pointer to char with the raw imgStream readed form hdd
 //bufferOffset: buffer offsets in bytes to read the corresponfing scaling factor
 //bufferLength: number of bytes for a single ion image including scaling in the buffer
-//ionImage: pointer to the finall ion image
-void rMSIXBin::startThreadIonImageDecoding(char* buffer, unsigned long bufferOffset, unsigned long bufferLength, NumericMatrix *ionImage)
+//imgBuffer: pointer to the finall ion image
+void rMSIXBin::startThreadIonImageDecoding(char* buffer, unsigned long bufferOffset, unsigned long bufferLength, double* imgBuffer)
 {
   float scaling;
   std::vector<unsigned char> raw_image;
@@ -1320,7 +1465,12 @@ void rMSIXBin::startThreadIonImageDecoding(char* buffer, unsigned long bufferOff
     img_offset = img_x  + img_width*img_y;
     std::memcpy(&pixel_value_raw, raw_image.data() + img_offset*sizeof(imgstreamencoding_type), sizeof(imgstreamencoding_type));
     pixel_value = (((double)pixel_value_raw)/ENCODER_RANGE) * (double)scaling; 
-    (*ionImage)(img_x,img_y) = pixel_value > (*ionImage)(img_x,img_y) ? pixel_value : (*ionImage)(img_x,img_y);
+    
+    // MAX operator reduction across mass channels into the raw buffer
+    imgBuffer[img_offset] = pixel_value > imgBuffer[img_offset] ? pixel_value : imgBuffer[img_offset];
+    
+    //TODO remove OLD!
+    //(*ionImage)(img_x,img_y) = pixel_value > (*ionImage)(img_x,img_y) ? pixel_value : (*ionImage)(img_x,img_y);
     
     img_x++;
     if(img_x >= img_width)

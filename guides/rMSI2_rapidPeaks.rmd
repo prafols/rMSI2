@@ -34,7 +34,7 @@ proc_params$preprocessing$peakbinning$tolerance_in_ppm <- F
 proc_params$preprocessing$peakbinning$tolerance <- as.integer(4) #Set the binning tolerance to avoid merging peaks from different species
 
 start_time <- Sys.time()
-rMSI2::ProcessImages( proc_params, data_desc,  ) # This will take 2 minutes
+rMSI2::ProcessImages( proc_params, data_desc, create_rMSIXBin_files = T ) # This will take 2 minutes
 end_time <- Sys.time()
 elapsed_oldBinning <- end_time - start_time
 print(elapsed_oldBinning)
@@ -58,10 +58,6 @@ proc_params$preprocessing$peakbinning$max_rapidPeaksMEM_MB <- pkMatLegacy_ram_mb
 proc_params$preprocessing$peakbinning$tolerance_in_ppm <- F
 proc_params$preprocessing$peakbinning$tolerance <- as.integer(4) #Set the binning tolerance to avoid merging peaks from different species
 
-data_desc <- rMSI2::ImzMLDataDescription() #Create an empty data description object
-data_desc$setOutputPath(file.path(data_path,"out")) #Set the output data path
-data_desc$appendImzMLDataPath(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")) #Append an imzML to process. We can call this method multiple times to append more imzML file to the same processing pipeline (data merging).
-
 start_time <- Sys.time()
 rMSI2::ProcessImages( proc_params, data_desc ) # This will take 2 minutes
 end_time <- Sys.time()
@@ -80,6 +76,34 @@ cat(sprintf("Performance gain: %.2f%% time reduction\n",
             ((as.numeric(elapsed_oldBinning, units = "secs") - as.numeric(elapsed_rapidBinning, units = "secs")) / as.numeric(elapsed_oldBinning, units = "secs")) * 100))
 
 ```
+
+
+DRAFT run of the new Cpp implementation
+```{r, eval=F}
+#Load MSI data
+start_time <- Sys.time()
+img <- rMSI2::LoadMsiData("~/MSI_DATASETS/rMSI2_workshop/0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML")
+#img <- rMSI2::LoadMsiData("~/MSI_DATASETS/cbookmeyer/2022-Q2 test MALDI/0420_cerebellum_neg_DAN_LMWCs.imzML")
+end_time <- Sys.time()
+elapsed_loadMSI <- end_time - start_time
+print(elapsed_loadMSI)
+
+
+#Run the new binning C++ backend
+start_time <- Sys.time()
+pksC <- rMSI2::FastPeakBinning(img_lst = list(img), min_SNR = 0.5, max_mem_MB =  27.3802, peak_width_scans = 4, n_cores = parallel::detectCores() )
+end_time <- Sys.time()
+elapsed_rapidBinning_C <- end_time - start_time
+print(elapsed_rapidBinning_C)
+
+#Compare R vs. C matrices
+pkMatRapid <- pksC
+
+identical(pkMatLegacy$intensity, pkMatRapid$intensity)
+
+```
+
+
 
 Compare information in old vs. new peak matrices
 
@@ -131,8 +155,8 @@ umap_new_layout <- uwot::umap(pkMatRapid$intensity,  n_components = 5, n_threads
 # Plot spatial images
 for (pci in 1:5)
 {
-  rMSI2::plotValuesImage(pks, umap_old_layout[, pci], labels = paste0("UMAP", pci, " Legacy"))
-  rMSI2::plotValuesImage(pks, umap_new_layout[, pci], labels = paste0("UMAP", pci, " Rapid"))
+  rMSI2::plotValuesImage(pkMatLegacy, umap_old_layout[, pci], labels = paste0("UMAP", pci, " Legacy"))
+  rMSI2::plotValuesImage(pkMatRapid, umap_new_layout[, pci], labels = paste0("UMAP", pci, " Rapid"))
 }
 ```
 
@@ -188,7 +212,57 @@ Launch MSI windows to see what happens at peak m/z 328.1351
 
 #Load RAW DATA
 img <- rMSI2::LoadMsiData(file.path(data_path,"0330_neg_DAN_cerebellum_MSI_2_lowrange.imzML"))
-rMSI2::MSIWindow(img)
+#rMSI2::MSIWindow(img)
+
+topTIC_rows <- order(img$normalizations$TIC, decreasing = TRUE)[1:20]
+spc <- rMSI2::loadImgChunkFromIds(img, topTIC_rows)
+
+library(ggplot2)
+library(reshape2)
+
+# Convert matrix to long format
+df_spc <- as.data.frame(t(spc))
+df_spc$mass <- img$mass
+
+df_long <- melt(df_spc, id.vars = "mass", variable.name = "spectrum", value.name = "intensity")
+
+# Define target m/z window
+mz_OldPeak <- feat_list$mass_old[nokid[1]]
+mz_NewPeak <- feat_list$mass[nokid[1]] 
+target_mz <- feat_list$mass[nokid[1]]
+mz_window <- 0.02
+mz_min    <- target_mz - mz_window
+mz_max    <- target_mz + mz_window
+
+# Filter data inside the window to compute dynamic Y limits
+df_window <- df_long[df_long$mass >= mz_min & df_long$mass <= mz_max, ]
+
+y_min <- 0  # Set to min(df_window$intensity) if negative values exist
+y_max <- max(df_window$intensity, na.rm = TRUE) * 1.05 # Add 5% padding for top space
+
+# Plot centered on window with auto-scaled Y-axis
+ggplot(df_long, aes(x = mass, y = intensity, color = spectrum)) +
+  geom_line(alpha = 0.7) +
+  # Add vertical reference lines
+  geom_vline(xintercept = mz_OldPeak, color = "red", linetype = "dashed", size = 0.6) +
+  geom_vline(xintercept = mz_NewPeak, color = "blue", linetype = "dashed", size = 0.6) +
+  # Optional text labels above the lines
+  annotate("text", x = mz_OldPeak, y = y_min, label = sprintf("Old %.4f", mz_OldPeak), 
+           color = "red", angle = 90, vjust = -0.5, hjust = 0, size = 3) +
+  annotate("text", x = mz_NewPeak, y = y_min, label = sprintf("New %.4f", mz_NewPeak), 
+           color = "blue", angle = 90, vjust = -0.5, hjust = 0, size = 3) +
+  coord_cartesian(
+    xlim = c(mz_min, mz_max),
+    ylim = c(y_min, y_max)
+  ) +
+  theme_bw() +
+  labs(
+    x = "m/z", 
+    y = "Intensity", 
+    title = sprintf("Spectra centered at m/z %.4f (±0.5 Da)", target_mz)
+  ) +
+  theme(legend.position = "none")
+
 ```
 
 TODO:

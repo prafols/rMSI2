@@ -50,6 +50,21 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// C_RapidBinning
+void C_RapidBinning(List rMSIobj, NumericVector pmasses, NumericVector pwidths, NumericMatrix pMat, unsigned int img_row_offset, int number_of_threads);
+RcppExport SEXP _rMSI2_C_RapidBinning(SEXP rMSIobjSEXP, SEXP pmassesSEXP, SEXP pwidthsSEXP, SEXP pMatSEXP, SEXP img_row_offsetSEXP, SEXP number_of_threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type rMSIobj(rMSIobjSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pmasses(pmassesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pwidths(pwidthsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type pMat(pMatSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type img_row_offset(img_row_offsetSEXP);
+    Rcpp::traits::input_parameter< int >::type number_of_threads(number_of_threadsSEXP);
+    C_RapidBinning(rMSIobj, pmasses, pwidths, pMat, img_row_offset, number_of_threads);
+    return R_NilValue;
+END_RCPP
+}
 // testingimzMLBinWriteSequential
 Rcpp::DataFrame testingimzMLBinWriteSequential(const char* ibdFname, Rcpp::String mz_dataTypeString, Rcpp::String int_dataTypeString, Rcpp::String str_uuid, Rcpp::NumericMatrix mzArray, Rcpp::NumericMatrix intArray);
 RcppExport SEXP _rMSI2_testingimzMLBinWriteSequential(SEXP ibdFnameSEXP, SEXP mz_dataTypeStringSEXP, SEXP int_dataTypeStringSEXP, SEXP str_uuidSEXP, SEXP mzArraySEXP, SEXP intArraySEXP) {
@@ -579,6 +594,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rMSI2_CNormalizationsAndMeans", (DL_FUNC) &_rMSI2_CNormalizationsAndMeans, 4},
     {"_rMSI2_CparseBrukerXML", (DL_FUNC) &_rMSI2_CparseBrukerXML, 1},
     {"_rMSI2_CaccumulateOverallSpectra", (DL_FUNC) &_rMSI2_CaccumulateOverallSpectra, 6},
+    {"_rMSI2_C_RapidBinning", (DL_FUNC) &_rMSI2_C_RapidBinning, 6},
     {"_rMSI2_testingimzMLBinWriteSequential", (DL_FUNC) &_rMSI2_testingimzMLBinWriteSequential, 6},
     {"_rMSI2_CimzMLBinCreateNewIBD", (DL_FUNC) &_rMSI2_CimzMLBinCreateNewIBD, 2},
     {"_rMSI2_CimzMLBinAppendMass", (DL_FUNC) &_rMSI2_CimzMLBinAppendMass, 3},
