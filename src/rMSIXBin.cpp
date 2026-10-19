@@ -23,6 +23,8 @@
 #include <string>
 #include <cstdlib>
 #include <future>
+#include <thread>
+#include <chrono>
 
 #include "rMSIXBin.h"
 #include "lodepng.h"
