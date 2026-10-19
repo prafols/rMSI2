@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <future>
+#include <thread>
 #include <chrono>
 
 #include "fastbinning.h"
