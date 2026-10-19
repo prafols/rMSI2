@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <future>
+#include <chrono>
 
 #include "fastbinning.h"
 #include "progressbar.h"
