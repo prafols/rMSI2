@@ -121,10 +121,13 @@ rMSI2::plotPeakImage(pkMatRapid, mz =  test_ion_mz, labels = "Rapid" )
 
 
 Compare both matrices using PCA:
-```{r, eval=T}
+```{r, eval=F}
+start_time <- Sys.time()
 pca_old <- prcomp(pkMatLegacy$intensity, scale. = F, center = F)
 pca_new <- prcomp(pkMatRapid$intensity, scale. = F, center = F)
-
+end_time <- Sys.time()
+elapsed_prcomp <- end_time - start_time
+print(elapsed_prcomp)
 
 library(ggplot2)
 dfPCA <- data.frame(PC1 = c(pca_old$x[,1], pca_new$x[,1]), 
@@ -141,6 +144,53 @@ for(pci in 1:5)
 {
   rMSI2::plotValuesImage(pkMatLegacy, pca_old$x[,pci], labels = paste0("PC", pci, " Legacy") ) 
   rMSI2::plotValuesImage(pkMatRapid, pca_new$x[,pci], labels = paste0("PC", pci, " Rapid") )   
+}
+
+```
+
+Compare both matrices using PCA from irlba for faster comp:
+```{r, eval=T}
+start_time <- Sys.time()
+library(irlba)
+library(ggplot2)
+
+n_pcs <- 5
+
+pca_old_res <- irlba(pkMatLegacy$intensity, nv = n_pcs, scale = FALSE, center = FALSE)
+pca_new_res <- irlba(pkMatRapid$intensity,  nv = n_pcs,  scale = FALSE, center = FALSE)
+
+# Compute scores
+pca_old_x <- pca_old_res$u %*% diag(pca_old_res$d)
+pca_new_x <- pca_new_res$u %*% diag(pca_new_res$d)
+
+# Enforce deterministic sign alignment between the two runs
+for (i in 1:n_pcs) {
+  # If the cross-correlation of scores between old and new is negative, flip the sign
+  if (cor(pca_old_x[, i], pca_new_x[, i]) < 0) {
+    pca_new_x[, i] <- -pca_new_x[, i]
+  }
+}
+
+# Score plot comparison
+dfPCA <- data.frame(
+  PC1 = c(pca_old_x[, 1], pca_new_x[, 1]),
+  PC2 = c(pca_old_x[, 2], pca_new_x[, 2]),
+  group = c(rep("old", nrow(pca_old_x)), rep("new", nrow(pca_new_x)))
+)
+dfPCA <- dfPCA[sample(1:nrow(dfPCA)), ]
+
+scorePlot <- ggplot(dfPCA, aes(PC1, PC2)) + 
+  theme_bw() +
+  geom_point(aes(colour = factor(group)), alpha = 0.2, size = 1) +
+  guides(color = guide_legend(override.aes = list(size = 3, alpha = 0.8)))
+
+print(scorePlot)
+
+# Spatial PC score image plots for PC1 to PC5
+for (pci in 1:n_pcs)
+{
+  rMSI2::plotValuesImage(pkMatLegacy, pca_old_x[, pci], labels = paste0("PC", pci, " Legacy"))
+  rMSI2::plotValuesImage(pkMatRapid,  pca_new_x[, pci], labels = paste0("PC", pci, " Rapid"))
 }
 ```
 

@@ -65,7 +65,7 @@ class ThreadingMsiProc
     //Function to suspend main thread execution until some thread ends.
     void WaitForSomeThreadEnd();
     
-    std::mutex mtx; //Lock mechanism for signalling bDataReady vector
+    std::mutex *slot_mutexes; //Lock mechanism for signalling bDataReady vector
     bool *bDataReady; //This vector will contain true when a worker thread completes a datacube processing
     bool *bRunningThread; //Keep track if a thread is runnning for a data slot
     
