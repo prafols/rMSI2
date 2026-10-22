@@ -110,14 +110,24 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
     int imgID = ioObj->getImageIndex(cubes[threadSlot]->cubeID, j);
     int pixelID = ioObj->getPixelId(cubes[threadSlot]->cubeID, j);
     
+
+    auto& avg_buf = threadBuffers[threadSlot].thread_average[imgID];
+    auto& base_buf = threadBuffers[threadSlot].thread_base[imgID];
+    auto& data_row = cubes[threadSlot]->dataInterpolated[j];
+    double inv_num_pixels = 1.0 / ((double)(num_of_pixels[imgID]));
+    
     for (int k= 0; k < cubes[threadSlot]->ncols; k++)
     {
-      TIC += cubes[threadSlot]->dataInterpolated[j][k];
-      RMS += (cubes[threadSlot]->dataInterpolated[j][k] * cubes[threadSlot]->dataInterpolated[j][k]);
-      MAX = cubes[threadSlot]->dataInterpolated[j][k] > MAX ? cubes[threadSlot]->dataInterpolated[j][k] : MAX;
+      double val = data_row[k];
+      TIC += val;
+      RMS += (val * val);
+      if (val > MAX) MAX = val;
       
-      threadBuffers[threadSlot].thread_average[imgID][k] += cubes[threadSlot]->dataInterpolated[j][k] / ((double)(num_of_pixels[imgID]));
-      threadBuffers[threadSlot].thread_base[imgID][k] = cubes[threadSlot]->dataInterpolated[j][k] >  threadBuffers[threadSlot].thread_base[imgID][k] ? cubes[threadSlot]->dataInterpolated[j][k] :  threadBuffers[threadSlot].thread_base[imgID][k];
+      avg_buf[k] += val * inv_num_pixels;
+      if (val > base_buf[k])
+      {
+        base_buf[k] = val;
+      }
     }
     RMS = sqrt(RMS);
     
