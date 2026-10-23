@@ -56,14 +56,11 @@ class MTNormalizationMeanSpectra : public ThreadingMsiProc
     
     std::vector<ThreadSpecrtaBuffers> threadBuffers;
     
-    std::vector<Rcpp::NumericVector> averageSpectrum;
-    std::vector<Rcpp::NumericVector> baseSpectrum;
+    std::vector<std::vector<double>> averageSpectrum;
+    std::vector<std::vector<double>> baseSpectrum;
     
     //Thread Processing function definition
     void ProcessingFunction(int threadSlot) override;
-    
-    //Thread complete callback
-    void ThreadCompleteCallback(int threadSlot) override;
     
     Rcpp::List rMSIObj_lst; //Copy of the rMSI object
     std::vector<unsigned int> num_of_pixels; //Number of pixel in each rMSI object

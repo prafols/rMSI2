@@ -19,6 +19,7 @@
 #include <Rcpp.h>
 #include <cmath>
 #include <algorithm>    // std::fill
+#include <future>
 #include "MTNormalizationMeanSpectra.h"
 using namespace Rcpp;
 
@@ -26,15 +27,22 @@ MTNormalizationMeanSpectra::MTNormalizationMeanSpectra(Rcpp::List rMSIObj_list, 
   ThreadingMsiProc(rMSIObj_list, numberOfThreads, memoryPerThreadMB, commonMassAxis), 
   rMSIObj_lst(rMSIObj_list)
 {
-  averageSpectrum.resize(rMSIObj_lst.length());
-  baseSpectrum.resize(rMSIObj_lst.length());
   num_of_pixels.resize(rMSIObj_lst.length());
   threadBuffers.resize(numOfThreadsDouble);
   
-  for( int i = 0; i < numOfThreadsDouble; i++)
+  for( int threadSlot = 0; threadSlot < numOfThreadsDouble; threadSlot++)
   {
-    threadBuffers[i].thread_average.resize(ioObj->get_images_count());
-    threadBuffers[i].thread_base.resize(ioObj->get_images_count());
+    threadBuffers[threadSlot].thread_average.resize(ioObj->get_images_count());
+    threadBuffers[threadSlot].thread_base.resize(ioObj->get_images_count());
+    
+    for(unsigned int i = 0; i < ioObj->get_images_count(); i++)
+    {
+      threadBuffers[threadSlot].thread_average[i].resize(massAxis.length());
+      threadBuffers[threadSlot].thread_base[i].resize(massAxis.length());
+      
+      std::fill(threadBuffers[threadSlot].thread_average[i].begin(), threadBuffers[threadSlot].thread_average[i].end(), 0.0);
+      std::fill(threadBuffers[threadSlot].thread_base[i].begin(), threadBuffers[threadSlot].thread_base[i].end(), 0.0);
+    }
   }
   
   for( int i = 0; i < rMSIObj_lst.length(); i++)
@@ -49,9 +57,10 @@ MTNormalizationMeanSpectra::MTNormalizationMeanSpectra(Rcpp::List rMSIObj_list, 
       Normalizations[i][j].RMS = 0.0;
     }
    
-    averageSpectrum[i] = NumericVector(massAxis.length());
-    baseSpectrum[i] = NumericVector(massAxis.length());
   }
+  
+  averageSpectrum.assign(rMSIObj_lst.length(), std::vector<double>(massAxis.length(), 0.0));
+  baseSpectrum.assign(rMSIObj_lst.length(), std::vector<double>(massAxis.length(), 0.0));
 }
 
 MTNormalizationMeanSpectra::~MTNormalizationMeanSpectra()
@@ -65,6 +74,46 @@ List MTNormalizationMeanSpectra::Run()
   
   //Run in multi-threading
   runMSIProcessingCpp();
+  
+  //Final acumulator of mean and base spectra
+  unsigned int numImages = ioObj->get_images_count();
+  int numMasses = massAxis.length();
+  size_t batchSize = static_cast<size_t>(numOfThreadsDouble);
+  
+  for (size_t iStart = 0; iStart < numImages; iStart += batchSize)
+  {
+    size_t iEnd = std::min(iStart + batchSize, static_cast<size_t>(numImages));
+    std::vector<std::future<void>> futures;
+    
+    // Launch a batch
+    for (size_t i = iStart; i < iEnd; i++)
+    {
+      futures.push_back(std::async(std::launch::async, [this, i, numMasses]() {
+        
+        for(int iThread = 0; iThread < numOfThreadsDouble; iThread++)
+        {
+          for(int k = 0; k < numMasses; k++)
+          {
+            // Mean
+            averageSpectrum[i][k] += threadBuffers[iThread].thread_average[i][k];
+            
+            // Base
+            if(threadBuffers[iThread].thread_base[i][k] > baseSpectrum[i][k])
+            {
+              baseSpectrum[i][k] = threadBuffers[iThread].thread_base[i][k];
+            }
+          }
+        }
+        
+      }));
+    }
+    
+    // Esperar a que termine este lote antes de pasar al siguiente
+    for(auto& f : futures)
+    {
+      f.get();
+    }
+  }
   
   //Add averages and norms to each image and return the rMSIobj
   for( int i = 0; i < rMSIObj_lst.length(); i++)
@@ -80,8 +129,8 @@ List MTNormalizationMeanSpectra::Run()
     }
     
     DataFrame NormsDF = DataFrame::create( Named("TIC") = vTic, Named("RMS") = vRms, Named("MAX") = vMax);
-    (as<List>(rMSIObj_lst[i])["mean"]) = averageSpectrum[i]; 
-    (as<List>(rMSIObj_lst[i])["base"]) = baseSpectrum[i]; 
+    (as<List>(rMSIObj_lst[i])["mean"]) = Rcpp::wrap(averageSpectrum[i]);
+    (as<List>(rMSIObj_lst[i])["base"]) = Rcpp::wrap(baseSpectrum[i]); 
     (as<List>(rMSIObj_lst[i])["normalizations"]) = NormsDF;
   }
   
@@ -93,14 +142,6 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
 {
   //Perform the average value of each mass channel in the current loaded cube
   double TIC, RMS, MAX;
-
-  for(unsigned int i = 0; i < ioObj->get_images_count(); i++)
-  {
-    threadBuffers[threadSlot].thread_average[i].resize(cubes[threadSlot]->ncols);
-    threadBuffers[threadSlot].thread_base[i].resize(cubes[threadSlot]->ncols);
-    std::fill(threadBuffers[threadSlot].thread_average[i].begin(), threadBuffers[threadSlot].thread_average[i].end(), 0.0);
-    std::fill(threadBuffers[threadSlot].thread_base[i].begin(), threadBuffers[threadSlot].thread_base[i].end(), 0.0);
-  }
   
   for (int j = 0; j < cubes[threadSlot]->nrows; j++)
   {
@@ -136,21 +177,6 @@ void MTNormalizationMeanSpectra::ProcessingFunction(int threadSlot)
     Normalizations[imgID][pixelID].MAX = MAX;
   }
 }
-
-void MTNormalizationMeanSpectra::ThreadCompleteCallback(int threadSlot) 
-{
-  
-  for(unsigned int i = 0; i < ioObj->get_images_count(); i++)
-  {
-    for (int k= 0; k < massAxis.length(); k++)
-    {
-      averageSpectrum[i][k] +=  threadBuffers[threadSlot].thread_average[i][k];
-      baseSpectrum[i][k] =  threadBuffers[threadSlot].thread_base[i][k] > baseSpectrum[i][k] ?  threadBuffers[threadSlot].thread_base[i][k] : baseSpectrum[i][k];
-    }
-  }
- 
-}
-
 
 // Calculate the average spectrum from a list of rMSI objects.
 // [[Rcpp::export]]

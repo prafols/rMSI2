@@ -264,7 +264,7 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                  method = list(
                                    initialize = function(...,
                                                          enable = T,
-                                                         rapid_peaks = T,
+                                                         rapid_peaks = F,
                                                          max_rapidPeaksMEM_MB = 0.2 * ps::ps_system_memory()$avail / (1024^2),
                                                          tolerance = 6,
                                                          tolerance_in_ppm = F,
@@ -272,7 +272,7 @@ PeakBinningParams <- setRefClass("PeakBinningParams",
                                                          fillpeaks = T
                                    )
                                    {
-                                     callSuper(..., enable = enable, tolerance = tolerance, tolerance_in_ppm = tolerance_in_ppm, binFilter = binFilter)
+                                     callSuper(..., enable = enable, rapid_peaks = rapid_peaks, max_rapidPeaksMEM_MB = max_rapidPeaksMEM_MB, tolerance = tolerance, tolerance_in_ppm = tolerance_in_ppm, binFilter = binFilter)
                                    })
 )
 
